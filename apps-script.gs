@@ -12,6 +12,12 @@ const REPLY_TO = 'karas.jan2@gmail.com';
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
+
+    // Formio (rezervácia hovoru z fitness kalkulačky) — vlastná vetva, kvízu sa nedotýka
+    if (data.source && String(data.source).indexOf('formio') === 0) {
+      return handleFormio_(data);
+    }
+
     const sheet = getSheet_();
 
     sheet.appendRow([
@@ -28,13 +34,71 @@ function doPost(e) {
       '',                            // K: e-mail 2 (deň 2)
       '',                            // L: e-mail 3 (deň 5)
     ]);
+    const row = sheet.getLastRow();
 
-    sendEmail1_(data);
+    // E-mail 1 leadovi — ak zlyhá (kvóta, plné úložisko…), zapíše sa to do sheetu
+    let mailErr = '';
+    try {
+      sendEmail1_(data);
+    } catch (err) {
+      mailErr = String(err);
+      sheet.getRange(row, 10).setValue('CHYBA: ' + mailErr);
+    }
+
+    // Notifikácia Jánovi o novom leade
+    try {
+      MailApp.sendEmail({
+        to: REPLY_TO,
+        name: FROM_NAME,
+        subject: '🎯 Nový lead z kvízu: ' + (data.name || '?') + ' (' + (data.email || '?') + ')',
+        body:
+          'Meno: ' + (data.name || '') +
+          '\nE-mail: ' + (data.email || '') +
+          '\nSkóre: ' + data.score + '/' + data.maxScore + ' — ' + (data.bandName || '') +
+          '\nSegment: ' + (data.segment || '') +
+          '\nChybné otázky: ' + ((data.wrong || []).join(' | ') || '—') +
+          (mailErr ? '\n\n⚠️ POZOR: vyhodnocovací e-mail leadovi ZLYHAL: ' + mailErr : ''),
+      });
+    } catch (e2) {}
 
     return ContentService.createTextOutput('ok');
   } catch (err) {
     return ContentService.createTextOutput('error: ' + err.message);
   }
+}
+
+/* ---------- FORMIO: REZERVÁCIA HOVORU ---------- */
+const FORMIO_SHEET = 'Formio rezervácie';
+
+function handleFormio_(d) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(FORMIO_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(FORMIO_SHEET);
+    sheet.appendRow(['Čas', 'Meno', 'Telefón', 'Kedy volať', 'Z kalkulačky', 'Zdroj', 'Zavolané?']);
+    sheet.setFrozenRows(1);
+  }
+  sheet.appendRow([
+    new Date(),
+    d.name || '',
+    d.phone || '',
+    d.preferredTime || '',
+    d.summary || '',
+    d.source || '',
+    '',
+  ]);
+  MailApp.sendEmail({
+    to: REPLY_TO,
+    subject: '📞 Nová rezervácia hovoru: ' + (d.name || '?') + ' (' + (d.phone || '?') + ')',
+    body:
+      'Meno: ' + (d.name || '') +
+      '\nTelefón: ' + (d.phone || '') +
+      '\nKedy volať: ' + (d.preferredTime || '') +
+      '\n\n' + (d.summary || '') +
+      '\n\nZdroj: ' + (d.source || ''),
+    name: FROM_NAME,
+  });
+  return ContentService.createTextOutput('ok');
 }
 
 function getSheet_() {
