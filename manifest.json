@@ -1,0 +1,14 @@
+{
+  "name": "Pravda o chudnutí",
+  "short_name": "Pravda kvíz",
+  "description": "9 otázok, 2 minúty. Si v obraze, alebo veríš mýtom?",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F6F1F0",
+  "theme_color": "#7C2B4E",
+  "lang": "sk",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
