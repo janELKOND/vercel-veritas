@@ -30,11 +30,14 @@
     t.src=v;s=b.getElementsByTagName(e)[0];
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
+    // Duálny pixel — 2221207801987418 sleduje aktívna FB kampaň (learning history),
+    // 1529505581872759 je Valyra pixel. Rovnaké poradie ako na kalkulačke a valyra.sk.
+    fbq('init', '2221207801987418');
     fbq('init', '1529505581872759');
     fbq('track', 'PageView');
   </script>
   <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=1529505581872759&ev=PageView&noscript=1"/></noscript>
+    src="https://www.facebook.com/tr?id=2221207801987418&ev=PageView&noscript=1"/></noscript>
 
   <!-- Microsoft Clarity -->
   <script type="text/javascript">

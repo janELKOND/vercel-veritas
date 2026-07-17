@@ -6,9 +6,9 @@
 const CONFIG = {
   // Sem vlož webhook na zber leadov (Make.com / Google Apps Script / Formspree).
   // Ak necháš prázdne, lead sa nikam neodošle — pixel event sa vystrelí aj tak.
-  WEBHOOK_URL: 'https://script.google.com/macros/s/AKfycbw9BOdByARG0Y9TwwlipzQEGRNZT7CuiRQpap9-XUzLeRusGhzA9Y8tsJFFT0RymDM/exec',
+  WEBHOOK_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
   CONTACT_EMAIL: 'karas.jan2@gmail.com',
-  VALYRA_URL: 'https://valyra.pro/',
+  VALYRA_URL: 'https://valyra.sk/',
   UTM: {
     utm_source: 'kviz',
     utm_medium: 'referral',
