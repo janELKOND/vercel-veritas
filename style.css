@@ -239,6 +239,19 @@ h1, h2, .display {
 /* ---------- results ---------- */
 .result { animation: rise .45s ease both; padding-top: 26px; }
 
+.offer-stack {
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 14.5px;
+  color: var(--ink);
+  margin: 0 0 14px;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+}
+
 .email-note {
   background: var(--sage-tint);
   border: 2px solid var(--sage);

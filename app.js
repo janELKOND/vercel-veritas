@@ -411,10 +411,14 @@ function showResult(name) {
         <p><strong>Ja som Ján.</strong> Sám som schudol 45 kg — z 133 na 88 — a držím si to už 8 rokov. Presne preto viem, že nerozhodujú zázračné diéty, ale systém a podpora. Tú dostaneš vo Valyre.</p>
         <a class="coach-link" href="https://www.instagram.com/janykaras" target="_blank" rel="noopener" id="igLink">📸 Sleduj ma na Instagrame @janykaras</a>
       </div>
+      <div class="offer-stack">
+        <div>✓ jedálniček vypočítaný na tvoje telo a cieľ — hotový za 2 minúty</div>
+        <div>✓ Ján v chate — reálny kouč, nie robot</div>
+        <div>✓ bez karty — po 7 dňoch sa ti nič samo nestrhne</div>
+      </div>
       <button class="btn" id="ctaBtn">Vyskúšať Valyru — 7 dní zadarmo →</button>
       <a class="btn secondary" id="consultBtn" href="#">✉️ Chcem prebrať svoj výsledok — napíš mi</a>
       <p class="retry-line"><button class="link-btn" id="againBtn">Skúsiť kvíz znova</button></p>
-      <p class="footnote">Valyra — chudnutie s reálnym koučom a plánom šitým na tvoj život. Prvých 7 dní zadarmo.</p>
     </section>
   `;
 
