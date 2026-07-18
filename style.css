@@ -220,8 +220,34 @@ h1, h2, .display {
 .error-msg { color: var(--berry-deep); font-size: 14px; font-weight: 700; margin-bottom: 14px; display: none; }
 .error-msg.show { display: block; }
 
+.gender-row { display: flex; gap: 10px; }
+.gender-pill {
+  flex: 1;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 12px 16px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+.gender-pill.active { border-color: var(--berry); background: var(--berry-tint, var(--card)); }
+.gender-pill:focus-visible { outline: 3px solid var(--berry); outline-offset: 2px; }
+
 /* ---------- results ---------- */
 .result { animation: rise .45s ease both; padding-top: 26px; }
+
+.email-note {
+  background: var(--sage-tint);
+  border: 2px solid var(--sage);
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 14.5px;
+  color: var(--ink);
+  margin: 14px 0 18px;
+}
 .score-hero {
   background: var(--berry-deep);
   color: #FFF6F0;

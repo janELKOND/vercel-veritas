@@ -108,10 +108,8 @@ const QUESTIONS = [
 
 // Segmentačná otázka — bez bodov, bez správnej odpovede
 const SEGMENT_Q = {
-  q: {
-    zena: 'A posledná otázka — keby si mohla na sebe zmeniť jednu vec, čo by to bolo?',
-    muz: 'A posledná otázka — keby si mohol na sebe zmeniť jednu vec, čo by to bolo?',
-  },
+  // Neutrálny tvar — pohlavie v tomto bode ešte nepoznáme (pýta sa až vo formulári)
+  q: 'A posledná otázka — keby si mohol/mohla na sebe zmeniť jednu vec, čo by to bolo?',
   options: [
     { label: 'Schudnúť a cítiť sa dobre vo svojom tele', value: 'schudnut' },
     { label: 'Mať viac energie počas dňa', value: 'energia' },
@@ -187,27 +185,9 @@ function showIntro() {
   document.getElementById('startBtn').addEventListener('click', () => {
     if (typeof fbq === 'function') fbq('trackCustom', 'QuizStart');
     state.quizStarted = true;
-    showGender();
-  });
-}
-
-function showGender() {
-  progressTrack.hidden = true;
-  app.innerHTML = `
-    <section class="question-screen">
-      <div class="step-label">Ešte sekundu</div>
-      <h2>Aby som ťa vedel správne osloviť…</h2>
-      <div class="options">
-        <button class="option" data-g="zena">Som žena</button>
-        <button class="option" data-g="muz">Som muž</button>
-      </div>
-    </section>
-  `;
-  document.querySelectorAll('.option').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.gender = btn.dataset.g;
-      showQuestion();
-    });
+    // Rovno do prvej otázky — pohlavie sa vyberá až vo formulári na konci
+    // (menej trenia po kliku z reklamy, prvá otázka je najsilnejší hook).
+    showQuestion();
   });
 }
 
@@ -288,7 +268,7 @@ function showSegment() {
   app.innerHTML = `
     <section class="question-screen">
       <div class="step-label">Posledná otázka — táto sa neboduje</div>
-      <h2>${SEGMENT_Q.q[state.gender]}</h2>
+      <h2>${SEGMENT_Q.q}</h2>
       <div class="options">
         ${SEGMENT_Q.options.map((o, idx) => `<button class="option" data-idx="${idx}">${o.label}</button>`).join('')}
       </div>
@@ -310,6 +290,13 @@ function showGate() {
       <h2>Kam ti mám poslať výsledok + 3 tipy presne podľa tvojich odpovedí?</h2>
       <p class="sub">Skóre uvidíš hneď. Do e-mailu ti pošlem vyhodnotenie a konkrétne tipy, čo ti podľa odpovedí najviac brzdí výsledky.</p>
       <div class="field">
+        <label>Píšem ti ako…</label>
+        <div class="gender-row" id="genderRow">
+          <button type="button" class="gender-pill${state.gender === 'zena' ? ' active' : ''}" data-g="zena">Žena</button>
+          <button type="button" class="gender-pill${state.gender === 'muz' ? ' active' : ''}" data-g="muz">Muž</button>
+        </div>
+      </div>
+      <div class="field">
         <label for="name">Krstné meno</label>
         <input type="text" id="name" autocomplete="given-name" placeholder="${state.gender === 'muz' ? 'Napr. Peter' : 'Napr. Zuzana'}">
       </div>
@@ -327,6 +314,14 @@ function showGate() {
   `;
 
   document.getElementById('submitBtn').addEventListener('click', submitLead);
+
+  document.querySelectorAll('.gender-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.gender = btn.dataset.g;
+      document.querySelectorAll('.gender-pill').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('name').placeholder = state.gender === 'muz' ? 'Napr. Peter' : 'Napr. Zuzana';
+    });
+  });
 }
 
 function submitLead() {
@@ -410,12 +405,13 @@ function showResult(name) {
         <div class="typology">${band.name[state.gender]}</div>
       </div>
       <p class="verdict-text">${name}, ${band.text[state.gender]}</p>
+      <p class="email-note">📬 Podrobné vyhodnotenie + 3 tipy presne pre teba ti práve odišli na e-mail. Ak neprídu do pár minút, pozri si priečinok Hromadné/Spam.</p>
       ${recapHtml}
       <div class="coach-card">
         <p><strong>Ja som Ján.</strong> Sám som schudol 45 kg — z 133 na 88 — a držím si to už 8 rokov. Presne preto viem, že nerozhodujú zázračné diéty, ale systém a podpora. Tú dostaneš vo Valyre.</p>
         <a class="coach-link" href="https://www.instagram.com/janykaras" target="_blank" rel="noopener" id="igLink">📸 Sleduj ma na Instagrame @janykaras</a>
       </div>
-      <button class="btn" id="ctaBtn">Chcem plán, ktorý funguje →</button>
+      <button class="btn" id="ctaBtn">Vyskúšať Valyru — 7 dní zadarmo →</button>
       <a class="btn secondary" id="consultBtn" href="#">✉️ Chcem prebrať svoj výsledok — napíš mi</a>
       <p class="retry-line"><button class="link-btn" id="againBtn">Skúsiť kvíz znova</button></p>
       <p class="footnote">Valyra — chudnutie s reálnym koučom a plánom šitým na tvoj život. Prvých 7 dní zadarmo.</p>
