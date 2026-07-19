@@ -7,7 +7,7 @@ const CONFIG = {
   WEBHOOK_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
   CONTACT_EMAIL: 'karas.jan2@gmail.com',
   // Človek už na výsledku klikol na vyskúšanie produktu, preto ide priamo do onboardingu.
-  VALYRA_URL: 'https://valyra.pro/Onboarding',
+  VALYRA_URL: 'https://valyra.sk/Onboarding',
   UTM: {
     utm_source: 'kviz',
     utm_medium: 'referral',
@@ -202,9 +202,9 @@ function showQuestion() {
 function answer(chosenIdx) {
   const item = QUESTIONS[state.index];
   const isCorrect = chosenIdx === item.correct;
-  if (isCorrect) state.score++;
-
   state.answers.push({ q: item.q, correct: isCorrect });
+  // Skóre vždy odvodíme zo zaznamenaných odpovedí, aby sa nemohlo rozísť s výsledkom.
+  state.score = state.answers.filter(a => a.correct).length;
 
   // zamkni možnosti a vyfarbi
   document.querySelectorAll('.option').forEach((btn, idx) => {
@@ -328,17 +328,19 @@ async function submitLead() {
   submitBtn.disabled = true;
   submitBtn.textContent = 'Odosielam vyhodnotenie…';
 
-  const band = bandFor(state.score);
+  const correctCount = state.answers.filter(a => a.correct).length;
+  const wrongAnswers = state.answers.filter(a => !a.correct);
+  const band = bandFor(correctCount);
   const payload = {
     name,
     email,
-    score: state.score,
+    score: correctCount,
     maxScore: QUESTIONS.length,
     band: band.slug,
     bandName: band.name[state.gender],
     gender: state.gender,
     segment: state.segment,
-    wrong: state.answers.filter(a => !a.correct).map(a => a.q),
+    wrong: wrongAnswers.map(a => a.q),
     ts: new Date().toISOString(),
     source: 'pravda-o-chudnuti',
   };
@@ -375,8 +377,10 @@ function bandFor(score) {
 
 function showResult(name) {
   progressTrack.hidden = true;
-  const band = bandFor(state.score);
+  const correctCount = state.answers.filter(a => a.correct).length;
   const missed = state.answers.filter(a => !a.correct);
+  const wrongCount = missed.length;
+  const band = bandFor(correctCount);
 
   const params = new URLSearchParams({
     ...CONFIG.UTM,
@@ -401,7 +405,11 @@ function showResult(name) {
   app.innerHTML = `
     <section class="result">
       <div class="score-hero">
-        <div class="score-num">${state.score}<small> / ${QUESTIONS.length}</small></div>
+        <div class="score-num">${correctCount}<small> / ${QUESTIONS.length}</small></div>
+        <div class="score-breakdown">
+          <span>✓ Správne: <strong>${correctCount}</strong></span>
+          <span>✕ Nesprávne: <strong>${wrongCount}</strong></span>
+        </div>
         <div class="typology">${band.name[state.gender]}</div>
       </div>
       <p class="verdict-text">${name}, ${band.text[state.gender]}</p>
@@ -424,11 +432,11 @@ function showResult(name) {
   `;
 
   const consultBtn = document.getElementById('consultBtn');
-  const mailSubject = encodeURIComponent(`Môj výsledok v kvíze: ${state.score}/${QUESTIONS.length}`);
+  const mailSubject = encodeURIComponent(`Môj výsledok v kvíze: ${correctCount}/${QUESTIONS.length}`);
   const mailBody = encodeURIComponent(
     state.gender === 'muz'
-      ? `Ahoj Ján,\n\npráve som dokončil kvíz Pravda o chudnutí a vyšlo mi ${state.score} z ${QUESTIONS.length} (${band.name.muz}).\n\nChcel by som svoj výsledok prebrať s tebou.\n\n${name}`
-      : `Ahoj Ján,\n\npráve som dokončila kvíz Pravda o chudnutí a vyšlo mi ${state.score} z ${QUESTIONS.length} (${band.name.zena}).\n\nChcela by som svoj výsledok prebrať s tebou.\n\n${name}`
+      ? `Ahoj Ján,\n\npráve som dokončil kvíz Pravda o chudnutí a vyšlo mi ${correctCount} z ${QUESTIONS.length} (${band.name.muz}).\n\nChcel by som svoj výsledok prebrať s tebou.\n\n${name}`
+      : `Ahoj Ján,\n\npráve som dokončila kvíz Pravda o chudnutí a vyšlo mi ${correctCount} z ${QUESTIONS.length} (${band.name.zena}).\n\nChcela by som svoj výsledok prebrať s tebou.\n\n${name}`
   );
   consultBtn.href = `mailto:${CONFIG.CONTACT_EMAIL}?subject=${mailSubject}&body=${mailBody}`;
   consultBtn.addEventListener('click', () => {
