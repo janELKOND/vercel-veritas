@@ -18,6 +18,41 @@ function doPost(e) {
       return handleFormio_(data);
     }
 
+    // Supabase quizLead → len zápis do sheetu (prehľad pre Jána).
+    // E-maily posiela Supabase most (bridge_0..7); stĺpce J-L označíme
+    // 'SUPABASE', aby ich followUp() nikdy neposlal druhýkrát.
+    if (data.mode === 'sheet_only') {
+      const lock = LockService.getScriptLock();
+      lock.waitLock(20000);
+      const s = getSheet_();
+      // dedup:true (backfill) — e-mail už v sheete = preskoč, nech sa nič nezdvojí
+      if (data.dedup && data.email) {
+        const emails = s.getRange(2, 3, Math.max(s.getLastRow() - 1, 1), 1).getValues();
+        for (let i = 0; i < emails.length; i++) {
+          if (String(emails[i][0]).toLowerCase() === String(data.email).toLowerCase()) {
+            lock.releaseLock();
+            return ContentService.createTextOutput('ok skip');
+          }
+        }
+      }
+      s.appendRow([
+        data.ts ? new Date(data.ts) : new Date(),
+        data.name || '',
+        data.email || '',
+        data.score,
+        data.maxScore,
+        data.bandName || '',
+        data.band || '',
+        data.segment || '',
+        Array.isArray(data.wrong) ? data.wrong.join(' | ') : (data.wrong || ''),
+        'SUPABASE',
+        'SUPABASE',
+        'SUPABASE',
+      ]);
+      lock.releaseLock();
+      return ContentService.createTextOutput('ok');
+    }
+
     const sheet = getSheet_();
 
     sheet.appendRow([
