@@ -370,14 +370,6 @@ a.btn {
 }
 
 .retry-line { text-align: center; margin-top: 18px; }
-.consult-status {
-  min-height: 20px;
-  margin-top: 9px;
-  text-align: center;
-  color: var(--sage);
-  font-size: 13.5px;
-  font-weight: 700;
-}
 .social-line {
   text-align: center;
   margin-top: 10px;
