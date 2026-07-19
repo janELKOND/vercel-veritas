@@ -292,6 +292,21 @@ h1, h2, .display {
   line-height: 1;
 }
 .score-hero .score-num small { font-size: 26px; opacity: .65; }
+.score-hero .score-breakdown {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.score-hero .score-breakdown span {
+  background: rgba(255, 255, 255, .1);
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 13px;
+}
+.score-hero .score-breakdown strong { color: #fff; }
 .score-hero .typology {
   font-family: 'Fraunces', serif;
   font-size: 24px;
