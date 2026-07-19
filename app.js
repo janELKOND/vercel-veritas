@@ -5,7 +5,6 @@
 // ---------- KONFIGURÁCIA ----------
 const CONFIG = {
   WEBHOOK_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
-  CONSULT_URL: 'https://formsubmit.co/ajax/jan@valyra.sk',
   CONTACT_EMAIL: 'karas.jan2@gmail.com',
   // Človek už na výsledku klikol na vyskúšanie produktu, preto ide priamo do onboardingu.
   VALYRA_URL: 'https://valyra.sk/Onboarding',
@@ -138,7 +137,6 @@ const state = {
   gender: 'zena', // 'zena' | 'muz'
   quizStarted: false,
   gateTracked: false,
-  lead: null,
 };
 
 const app = document.getElementById('app');
@@ -359,7 +357,6 @@ async function submitLead() {
 
     if (!response.ok) throw new Error(`Lead API: ${response.status}`);
 
-    state.lead = { name, email };
     if (typeof fbq === 'function') {
       fbq('track', 'CompleteRegistration', { value: 5.00, currency: 'EUR' });
     }
@@ -420,8 +417,7 @@ function showResult(name) {
         <div>✓ bez karty — po 7 dňoch sa ti nič samo nestrhne</div>
       </div>
       <button class="btn" id="ctaBtn">Zostaviť môj plán vo Valyre →</button>
-      <button class="btn secondary" id="consultBtn">Chcem, aby sa mi Ján ozval</button>
-      <div class="consult-status" id="consultStatus" aria-live="polite"></div>
+      <a class="btn secondary" id="consultBtn" href="#">✉️ Chcem prebrať výsledok s Jánom</a>
       <p class="retry-line"><button class="link-btn" id="againBtn">Skúsiť kvíz znova</button></p>
       <p class="social-line"><a href="https://www.instagram.com/janykaras" target="_blank" rel="noopener" id="igLink">Sledovať Jána na Instagrame</a></p>
     </section>
@@ -434,42 +430,10 @@ function showResult(name) {
       ? `Ahoj Ján,\n\npráve som dokončil kvíz Pravda o chudnutí a vyšlo mi ${state.score} z ${QUESTIONS.length} (${band.name.muz}).\n\nChcel by som svoj výsledok prebrať s tebou.\n\n${name}`
       : `Ahoj Ján,\n\npráve som dokončila kvíz Pravda o chudnutí a vyšlo mi ${state.score} z ${QUESTIONS.length} (${band.name.zena}).\n\nChcela by som svoj výsledok prebrať s tebou.\n\n${name}`
   );
-  const mailtoFallback = `mailto:${CONFIG.CONTACT_EMAIL}?subject=${mailSubject}&body=${mailBody}`;
-  let consultFallbackReady = false;
-  consultBtn.addEventListener('click', async () => {
-    if (consultFallbackReady) {
-      window.location.href = mailtoFallback;
-      return;
-    }
-
-    const status = document.getElementById('consultStatus');
-    consultBtn.disabled = true;
-    consultBtn.textContent = 'Odosielam žiadosť…';
-    status.textContent = '';
-
-    try {
-      const response = await fetch(CONFIG.CONSULT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          name: state.lead?.name || name,
-          email: state.lead?.email || '',
-          _subject: `Konzultácia z kvízu: ${state.score}/${QUESTIONS.length}`,
-          message: `Prosím, ozvi sa mi k výsledku ${state.score}/${QUESTIONS.length} (${band.name[state.gender]}). Segment: ${state.segment}.`,
-        }),
-      });
-      if (!response.ok) throw new Error(`Consult API: ${response.status}`);
-
-      consultBtn.textContent = '✓ Žiadosť je odoslaná';
-      status.textContent = 'Ďakujem. Ozvem sa ti osobne na e-mail.';
-      if (typeof fbq === 'function') {
-        fbq('trackCustom', 'ConsultRequest', { segment: state.segment, band: band.slug });
-      }
-    } catch (error) {
-      consultFallbackReady = true;
-      consultBtn.disabled = false;
-      consultBtn.textContent = 'Otvoriť e-mail a napísať Jánovi';
-      status.textContent = 'Automatické odoslanie nevyšlo. Kliknutím otvoríš pripravený e-mail.';
+  consultBtn.href = `mailto:${CONFIG.CONTACT_EMAIL}?subject=${mailSubject}&body=${mailBody}`;
+  consultBtn.addEventListener('click', () => {
+    if (typeof fbq === 'function') {
+      fbq('trackCustom', 'ConsultClick', { segment: state.segment, band: band.slug });
     }
   });
 
@@ -483,7 +447,7 @@ function showResult(name) {
   });
   document.getElementById('againBtn').addEventListener('click', () => {
     state.index = 0; state.score = 0; state.answers = []; state.segment = null;
-    state.gateTracked = false; state.lead = null;
+    state.gateTracked = false;
     showIntro();
     window.scrollTo(0, 0);
   });
