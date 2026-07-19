@@ -1,4 +1,4 @@
-const CACHE = 'pravda-kviz-v6';
+const CACHE = 'pravda-kviz-v7';
 const CORE = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -14,7 +14,7 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Network-first pre navigáciu (vždy čerstvý HTML), cache-first pre assety
+// Network-first pre navigáciu aj vlastné assety, aby sa po nasadení nezobrazoval starý kvíz.
 self.addEventListener('fetch', (e) => {
   if (e.request.mode === 'navigate') {
     e.respondWith(
@@ -24,7 +24,13 @@ self.addEventListener('fetch', (e) => {
   }
   if (e.request.url.startsWith(self.location.origin)) {
     e.respondWith(
-      caches.match(e.request).then((hit) => hit || fetch(e.request))
+      fetch(e.request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(e.request, copy));
+          return response;
+        })
+        .catch(() => caches.match(e.request))
     );
   }
 });
