@@ -1,7 +1,7 @@
 {
   "name": "Pravda o chudnutí",
   "short_name": "Pravda kvíz",
-  "description": "9 otázok, 2 minúty. Si v obraze, alebo veríš mýtom?",
+  "description": "8 otázok, približne 3 minúty. Si v obraze, alebo veríš mýtom?",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F6F1F0",
