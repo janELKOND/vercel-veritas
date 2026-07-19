@@ -261,6 +261,21 @@ h1, h2, .display {
   color: var(--ink);
   margin: 14px 0 18px;
 }
+
+.personal-insight {
+  background: var(--card);
+  border-left: 4px solid var(--berry);
+  border-radius: 14px;
+  padding: 15px 17px;
+  margin: 0 0 16px;
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+.personal-insight strong {
+  display: block;
+  color: var(--ink);
+  margin-bottom: 5px;
+}
 .score-hero {
   background: var(--berry-deep);
   color: #FFF6F0;
@@ -338,6 +353,7 @@ h1, h2, .display {
 .btn:hover { background: var(--berry-deep); }
 .btn:active { transform: scale(0.98); }
 .btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.btn:disabled { opacity: .65; cursor: wait; transform: none; }
 .btn.secondary {
   background: transparent;
   color: var(--berry-deep);
@@ -354,6 +370,20 @@ a.btn {
 }
 
 .retry-line { text-align: center; margin-top: 18px; }
+.consult-status {
+  min-height: 20px;
+  margin-top: 9px;
+  text-align: center;
+  color: var(--sage);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.social-line {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.social-line a { color: var(--ink-soft); }
 .link-btn {
   background: none;
   border: none;
