@@ -4,11 +4,11 @@
 
 // ---------- KONFIGURÁCIA ----------
 const CONFIG = {
-  // Sem vlož webhook na zber leadov (Make.com / Google Apps Script / Formspree).
-  // Ak necháš prázdne, lead sa nikam neodošle — pixel event sa vystrelí aj tak.
   WEBHOOK_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
+  CONSULT_URL: 'https://formsubmit.co/ajax/jan@valyra.sk',
   CONTACT_EMAIL: 'karas.jan2@gmail.com',
-  VALYRA_URL: 'https://valyra.sk/',
+  // Človek už na výsledku klikol na vyskúšanie produktu, preto ide priamo do onboardingu.
+  VALYRA_URL: 'https://valyra.sk/Onboarding',
   UTM: {
     utm_source: 'kviz',
     utm_medium: 'referral',
@@ -39,14 +39,7 @@ const QUESTIONS = [
     q: 'Koľko minút rezkej chôdze potrebuješ na spálenie jednej 100 g tabuľky mliečnej čokolády?',
     options: ['Asi 20 minút', 'Asi 45 minút', 'Asi 90 minút', 'Asi 4 hodiny'],
     correct: 2,
-    explain: 'Tabuľka mliečnej čokolády má okolo <strong>530 kcal</strong> — a rezká chôdza spáli zhruba 330 kcal za hodinu. Takže <strong>asi hodina a pol svižného pochodu</strong>. Preto platí zlaté pravidlo: zlú stravu sa prebehať nedá — jedlom sa dá „zjesť" každý tréning.',
-  },
-  {
-    type: 'mc',
-    q: 'Koľko prírodného cukru (laktózy) obsahuje 1 dcl polotučného mlieka?',
-    options: ['Žiadny', 'Asi 1 g', 'Asi 5 g', 'Asi 15 g'],
-    correct: 2,
-    explain: 'V 1 dcl mlieka je <strong>približne 5 g laktózy</strong> — prírodného mliečneho cukru. Nie je to pridaný cukor a v bežnom množstve nie je problém. Pozor si dávaj skôr na sladené „mliečne nápoje".',
+    explain: 'Tabuľka mliečnej čokolády má okolo <strong>530 kcal</strong>. Podľa hmotnosti a tempa môže jej výdaj predstavovať približne 75–100 minút rezkej chôdze. Pointa nie je trestať sa pohybom za jedlo, ale vedieť, že príjem energie sa zvýši oveľa rýchlejšie, než ju pohybom vydáme.',
   },
   {
     type: 'tf',
@@ -54,13 +47,6 @@ const QUESTIONS = [
     correct: 1,
     verdict: 'mytus',
     explain: 'Sval a tuk sú <strong>dve úplne rozdielne tkanivá</strong> — jedno sa na druhé premeniť nevie, rovnako ako sa kosť nepremení na krv. Bez tréningu svaly pomaly ubúdajú a ak jedálniček ostane rovnaký, tuk pribúda. Vyzerá to ako „premena", ale sú to dva samostatné procesy.',
-  },
-  {
-    type: 'mc',
-    q: 'Ktorá živina má najviac kalórií na 1 gram?',
-    options: ['Cukor', 'Bielkoviny', 'Tuk', 'Všetky majú rovnako'],
-    correct: 2,
-    explain: '<strong>Tuk má 9 kcal na gram</strong> — cukor aj bielkoviny len 4. Tichým druhým je alkohol so 7 kcal/g: dva poháre vína majú kalórie ako večera, len bez zasýtenia. Preto lyžica oleja „nevinne" navýši jedlo o 90 kcal.',
   },
   {
     type: 'tf',
@@ -71,24 +57,10 @@ const QUESTIONS = [
   },
   {
     type: 'mc',
-    q: 'Koľko kalórií denne spáli 1 kg svalov navyše — len tak, v pokoji?',
-    options: ['Asi 13 kcal', 'Asi 50 kcal', 'Asi 100 kcal', 'Asi 250 kcal'],
-    correct: 0,
-    explain: 'Prekvapenie: len <strong>asi 13 kcal denne</strong> — mýtus o „100 kcal na kilo svalov" je zveličený takmer 10-násobne. Svaly ti pri chudnutí pomáhajú inak: tréning s nimi spáli veľa energie, tvarujú postavu a chránia ťa pred jojo efektom. Ale zázračná pec v pokoji to nie je.',
-  },
-  {
-    type: 'tf',
-    q: 'Keď žena začne cvičiť s činkami, do pár mesiacov naberie veľké svaly.',
-    correct: 1,
-    verdict: 'mytus',
-    explain: 'Ženy majú výrazne <strong>menej testosterónu</strong> — budovanie viditeľnej svalovej hmoty trvá roky tvrdého tréningu a jedenia v nadbytku. Činky ženskú postavu spevnia a vytvarujú. Kulturistky, ktorých sa ženy boja, tak vyzerajú po dekáde extrémnej driny, nie po 3 mesiacoch v posilke.',
-  },
-  {
-    type: 'mc',
     q: 'Čo u väčšiny ľudí spáli za deň viac energie?',
     options: ['Hodinový tréning v posilňovni', 'Bežný pohyb počas dňa (chôdza, schody, domácnosť)', 'Je to presne rovnaké', 'Ani jedno — rozhoduje len strava'],
     correct: 1,
-    explain: 'Hodina v posilke spáli 300–500 kcal, ale <strong>bežný denný pohyb</strong> (odborne NEAT) dokáže spáliť aj dvojnásobok — po celom dni sa to nasčíta. Preto aktívny nešportovec často spáli viac než človek, čo hodinu cvičí a zvyšok dňa presedí. 8 000 krokov denne je nenápadná superzbraň.',
+    explain: 'Hodina tréningu je užitočná, ale <strong>bežný denný pohyb</strong> (chôdza, schody či domácnosť) sa zbiera počas celého dňa. Preto môže aktívny nešportovec vydať viac energie než človek, ktorý si zacvičí a zvyšok dňa presedí.',
   },
   {
     type: 'tf',
@@ -102,35 +74,43 @@ const QUESTIONS = [
     q: 'Aké je reálne a udržateľné tempo chudnutia?',
     options: ['3–4 kg týždenne', '0,5–1 kg týždenne', 'Aspoň 10 kg mesačne', 'Na tempe nezáleží'],
     correct: 1,
-    explain: '<strong>0,5–1 kg týždenne</strong> je tempo, pri ktorom chudneš tuk, nie svaly a vodu — a hlavne ho udržíš. Rýchle diéty vedú k jojo efektu: 95 % ľudí po nich váhu naberie späť.',
+    explain: 'Pre mnohých ľudí je <strong>0,5–1 kg týždenne</strong> rozumné orientačné tempo. Závisí však od východiskovej hmotnosti, zdravia a nastaveného deficitu. Príliš prísne režimy sa zvyčajne horšie dodržiavajú — dlhodobý výsledok stojí najmä na návykoch, ktoré zvládneš udržať.',
   },
 ];
 
 // Segmentačná otázka — bez bodov, bez správnej odpovede
 const SEGMENT_Q = {
-  // Neutrálny tvar — pohlavie v tomto bode ešte nepoznáme (pýta sa až vo formulári)
-  q: 'A posledná otázka — keby si mohol/mohla na sebe zmeniť jednu vec, čo by to bolo?',
+  q: 'A posledná otázka — čo ťa dnes pri chudnutí brzdí najviac?',
   options: [
-    { label: 'Schudnúť a cítiť sa dobre vo svojom tele', value: 'schudnut' },
-    { label: 'Mať viac energie počas dňa', value: 'energia' },
-    { label: 'Prestať sa točiť v kruhu diét a začínania odznova', value: 'kruh-diet' },
-    { label: 'Vybudovať si návyky, ktoré konečne vydržia', value: 'navyky' },
+    { label: 'Neviem, čo a koľko mám jesť', value: 'co-jest' },
+    { label: 'Cez deň sa držím, večer prídu chute', value: 'vecerne-chute' },
+    { label: 'Vždy začnem, ale po pár dňoch prestanem', value: 'nevydrzim' },
+    { label: 'Nemám čas plánovať jedlo a variť', value: 'nemam-cas' },
+    { label: 'Viem, čo mám robiť, ale potrebujem podporu', value: 'potrebujem-podporu' },
   ],
+};
+
+const SEGMENT_RESULTS = {
+  'co-jest': 'Tvoja hlavná brzda nie je vôľa, ale každodenné rozhodovanie. Pomôže ti mať dopredu pripravený konkrétny plán jedál a porcií, aby si nemusel/a zakaždým hádať, čo je správne.',
+  'vecerne-chute': 'Večerné chute často začínajú už cez deň — príliš malým jedlom, chýbajúcimi bielkovinami alebo dlhými pauzami. Potrebuješ plán, ktorý ťa zasýti a počíta aj s večerom.',
+  'nevydrzim': 'Nepotrebuješ ďalší prísny štart. Potrebuješ systém, ktorý funguje aj počas slabšieho dňa a po zaváhaní ťa vráti späť bez pocitu, že začínaš od nuly.',
+  'nemam-cas': 'Tvoj plán musí rešpektovať reálny život. Jednoduché jedlá, bežné suroviny a rozhodnutia urobené vopred ti pomôžu pokračovať aj počas pracovného alebo rodinného chaosu.',
+  'potrebujem-podporu': 'Vedomosti už pravdepodobne máš. Rozdiel spraví pravidelná spätná väzba a človek, ktorému môžeš napísať práve vtedy, keď motivácia klesne.',
 };
 
 // Vyhodnotenie podľa pásma skóre
 const BANDS = [
   {
-    min: 0, max: 4,
+    min: 0, max: 2,
     name: { zena: 'Mýty ťa vodia za nos', muz: 'Mýty ťa vodia za nos' },
     slug: 'zaciatocnicka',
     text: {
-      zena: 'A nie je to tvoja chyba — <strong>diétny priemysel na týchto mýtoch zarába miliardy</strong>, takže ich počúvaš zo všetkých strán. Dobrá správa? Práve si sa dozvedela viac pravdy o chudnutí než väčšina ľudí za celý rok. S dobrými informáciami a podporou to pôjde rýchlejšie, než čakáš.',
-      muz: 'A nie je to tvoja chyba — <strong>diétny priemysel na týchto mýtoch zarába miliardy</strong>, takže ich počúvaš zo všetkých strán. Dobrá správa? Práve si sa dozvedel viac pravdy o chudnutí než väčšina ľudí za celý rok. S dobrými informáciami a podporou to pôjde rýchlejšie, než čakáš.',
+      zena: 'A nie je to tvoja chyba — protichodné rady počúvaš zo všetkých strán. Dobrá správa? Práve si si ujasnila niekoľko dôležitých základov. S dobrými informáciami a podporou sa rozhoduje jednoduchšie.',
+      muz: 'A nie je to tvoja chyba — protichodné rady počúvaš zo všetkých strán. Dobrá správa? Práve si si ujasnil niekoľko dôležitých základov. S dobrými informáciami a podporou sa rozhoduje jednoduchšie.',
     },
   },
   {
-    min: 5, max: 8,
+    min: 3, max: 5,
     name: { zena: 'Bojovníčka s polovičnou mapou', muz: 'Bojovník s polovičnou mapou' },
     slug: 'pokrocila',
     text: {
@@ -139,7 +119,7 @@ const BANDS = [
     },
   },
   {
-    min: 9, max: 12,
+    min: 6, max: 8,
     name: { zena: 'Teóriu máš v malíčku', muz: 'Teóriu máš v malíčku' },
     slug: 'expertka',
     text: {
@@ -157,6 +137,8 @@ const state = {
   segment: null,
   gender: 'zena', // 'zena' | 'muz'
   quizStarted: false,
+  gateTracked: false,
+  lead: null,
 };
 
 const app = document.getElementById('app');
@@ -170,13 +152,13 @@ function showIntro() {
   progressTrack.hidden = true;
   app.innerHTML = `
     <section class="intro">
-      <div class="eyebrow">Kvíz · 12 otázok · 3 minúty</div>
+      <div class="eyebrow">Kvíz · 8 otázok · približne 3 minúty</div>
       <h1>Pravda o chudnutí: si v obraze, alebo veríš <span class="flip">mýtom?</span></h1>
       <p class="lead">Po každej odpovedi sa hneď dozvieš, ako to je naozaj — takže z kvízu odchádzaš s novými vedomosťami, nech dopadneš akokoľvek.</p>
       <div class="intro-facts">
         <span>🧠 Overené fakty, žiadne poučky</span>
         <span>📊 Osobné vyhodnotenie</span>
-        <span>🎯 3 tipy podľa tvojich odpovedí</span>
+        <span>🎯 3 tipy k tvojmu výsledku</span>
       </div>
       <button class="btn" id="startBtn">Poďme na to</button>
       <p class="footnote">Vytvoril Ján — tréner a výživový poradca, ktorý sám schudol 45 kg a drží si to už 8 rokov.</p>
@@ -284,11 +266,15 @@ function showSegment() {
 
 function showGate() {
   updateProgress(TOTAL_STEPS);
+  if (!state.gateTracked && typeof fbq === 'function') {
+    fbq('trackCustom', 'QuizComplete', { score: state.score, segment: state.segment });
+    state.gateTracked = true;
+  }
   app.innerHTML = `
     <section class="gate">
       <div class="step-label">Hotovo ✓ Tvoje vyhodnotenie je pripravené</div>
-      <h2>Kam ti mám poslať výsledok + 3 tipy presne podľa tvojich odpovedí?</h2>
-      <p class="sub">Skóre uvidíš hneď. Do e-mailu ti pošlem vyhodnotenie a konkrétne tipy, čo ti podľa odpovedí najviac brzdí výsledky.</p>
+      <h2>Kam ti mám poslať výsledok + 3 praktické tipy?</h2>
+      <p class="sub">Skóre uvidíš hneď. Do e-mailu ti pošlem vyhodnotenie a tipy, ktoré nadväzujú na tvoj výsledok.</p>
       <div class="field">
         <label>Píšem ti ako…</label>
         <div class="gender-row" id="genderRow">
@@ -324,11 +310,12 @@ function showGate() {
   });
 }
 
-function submitLead() {
+async function submitLead() {
   const name = document.getElementById('name').value.trim();
   const email = document.getElementById('email').value.trim();
   const gdpr = document.getElementById('gdpr').checked;
   const err = document.getElementById('errMsg');
+  const submitBtn = document.getElementById('submitBtn');
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
   if (!name || !emailOk || !gdpr) {
@@ -339,35 +326,50 @@ function submitLead() {
     return;
   }
 
-  // Meta Pixel — rovnaká udalosť a hodnota ako Formio, kampane porovnáš 1:1
-  if (typeof fbq === 'function') {
-    fbq('track', 'CompleteRegistration', { value: 5.00, currency: 'EUR' });
-  }
+  err.classList.remove('show');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Odosielam vyhodnotenie…';
 
-  // Webhook (ak je nastavený) — Google Apps Script vyžaduje no-cors + text/plain
-  if (CONFIG.WEBHOOK_URL) {
-    const band = bandFor(state.score);
-    fetch(CONFIG.WEBHOOK_URL, {
+  const band = bandFor(state.score);
+  const payload = {
+    name,
+    email,
+    score: state.score,
+    maxScore: QUESTIONS.length,
+    band: band.slug,
+    bandName: band.name[state.gender],
+    gender: state.gender,
+    segment: state.segment,
+    wrong: state.answers.filter(a => !a.correct).map(a => a.q),
+    ts: new Date().toISOString(),
+    source: 'pravda-o-chudnuti',
+  };
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    const response = await fetch(CONFIG.WEBHOOK_URL, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        name,
-        email,
-        score: state.score,
-        maxScore: QUESTIONS.length,
-        band: band.slug,
-        bandName: band.name[state.gender],
-        gender: state.gender,
-        segment: state.segment,
-        wrong: state.answers.filter(a => !a.correct).map(a => a.q),
-        ts: new Date().toISOString(),
-        source: 'pravda-o-chudnuti',
-      }),
-    }).catch(() => { /* lead nesmie zablokovať výsledok */ });
-  }
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
 
-  showResult(name);
+    if (!response.ok) throw new Error(`Lead API: ${response.status}`);
+
+    state.lead = { name, email };
+    if (typeof fbq === 'function') {
+      fbq('track', 'CompleteRegistration', { value: 5.00, currency: 'EUR' });
+    }
+    showResult(name);
+  } catch (error) {
+    err.textContent = 'Vyhodnotenie sa nepodarilo odoslať. Skontroluj pripojenie a skús to ešte raz.';
+    err.classList.add('show');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Skúsiť odoslať znova';
+  }
 }
 
 function bandFor(score) {
@@ -385,6 +387,7 @@ function showResult(name) {
     utm_term: band.slug,
   });
   const valyraLink = `${CONFIG.VALYRA_URL}?${params.toString()}`;
+  const segmentResult = SEGMENT_RESULTS[state.segment] || SEGMENT_RESULTS['co-jest'];
 
   const recapHtml = missed.length
     ? `
@@ -405,20 +408,22 @@ function showResult(name) {
         <div class="typology">${band.name[state.gender]}</div>
       </div>
       <p class="verdict-text">${name}, ${band.text[state.gender]}</p>
-      <p class="email-note">📬 Podrobné vyhodnotenie + 3 tipy presne pre teba ti práve odišli na e-mail. Ak neprídu do pár minút, pozri si priečinok Hromadné/Spam.</p>
+      <div class="personal-insight"><strong>Čo z toho pre teba vyplýva</strong>${segmentResult}</div>
+      <p class="email-note">📬 Podrobné vyhodnotenie + 3 praktické tipy ti práve odišli na e-mail. Ak neprídu do pár minút, pozri si priečinok Hromadné/Spam.</p>
       ${recapHtml}
       <div class="coach-card">
         <p><strong>Ja som Ján.</strong> Sám som schudol 45 kg — z 133 na 88 — a držím si to už 8 rokov. Presne preto viem, že nerozhodujú zázračné diéty, ale systém a podpora. Tú dostaneš vo Valyre.</p>
-        <a class="coach-link" href="https://www.instagram.com/janykaras" target="_blank" rel="noopener" id="igLink">📸 Sleduj ma na Instagrame @janykaras</a>
       </div>
       <div class="offer-stack">
         <div>✓ jedálniček vypočítaný na tvoje telo a cieľ — hotový za 2 minúty</div>
         <div>✓ Ján v chate — reálny kouč, nie robot</div>
         <div>✓ bez karty — po 7 dňoch sa ti nič samo nestrhne</div>
       </div>
-      <button class="btn" id="ctaBtn">Vyskúšať Valyru — 7 dní zadarmo →</button>
-      <a class="btn secondary" id="consultBtn" href="#">✉️ Chcem prebrať svoj výsledok — napíš mi</a>
+      <button class="btn" id="ctaBtn">Zostaviť môj plán vo Valyre →</button>
+      <button class="btn secondary" id="consultBtn">Chcem, aby sa mi Ján ozval</button>
+      <div class="consult-status" id="consultStatus" aria-live="polite"></div>
       <p class="retry-line"><button class="link-btn" id="againBtn">Skúsiť kvíz znova</button></p>
+      <p class="social-line"><a href="https://www.instagram.com/janykaras" target="_blank" rel="noopener" id="igLink">Sledovať Jána na Instagrame</a></p>
     </section>
   `;
 
@@ -429,9 +434,43 @@ function showResult(name) {
       ? `Ahoj Ján,\n\npráve som dokončil kvíz Pravda o chudnutí a vyšlo mi ${state.score} z ${QUESTIONS.length} (${band.name.muz}).\n\nChcel by som svoj výsledok prebrať s tebou.\n\n${name}`
       : `Ahoj Ján,\n\npráve som dokončila kvíz Pravda o chudnutí a vyšlo mi ${state.score} z ${QUESTIONS.length} (${band.name.zena}).\n\nChcela by som svoj výsledok prebrať s tebou.\n\n${name}`
   );
-  consultBtn.href = `mailto:${CONFIG.CONTACT_EMAIL}?subject=${mailSubject}&body=${mailBody}`;
-  consultBtn.addEventListener('click', () => {
-    if (typeof fbq === 'function') fbq('trackCustom', 'ConsultClick', { segment: state.segment, band: band.slug });
+  const mailtoFallback = `mailto:${CONFIG.CONTACT_EMAIL}?subject=${mailSubject}&body=${mailBody}`;
+  let consultFallbackReady = false;
+  consultBtn.addEventListener('click', async () => {
+    if (consultFallbackReady) {
+      window.location.href = mailtoFallback;
+      return;
+    }
+
+    const status = document.getElementById('consultStatus');
+    consultBtn.disabled = true;
+    consultBtn.textContent = 'Odosielam žiadosť…';
+    status.textContent = '';
+
+    try {
+      const response = await fetch(CONFIG.CONSULT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          name: state.lead?.name || name,
+          email: state.lead?.email || '',
+          _subject: `Konzultácia z kvízu: ${state.score}/${QUESTIONS.length}`,
+          message: `Prosím, ozvi sa mi k výsledku ${state.score}/${QUESTIONS.length} (${band.name[state.gender]}). Segment: ${state.segment}.`,
+        }),
+      });
+      if (!response.ok) throw new Error(`Consult API: ${response.status}`);
+
+      consultBtn.textContent = '✓ Žiadosť je odoslaná';
+      status.textContent = 'Ďakujem. Ozvem sa ti osobne na e-mail.';
+      if (typeof fbq === 'function') {
+        fbq('trackCustom', 'ConsultRequest', { segment: state.segment, band: band.slug });
+      }
+    } catch (error) {
+      consultFallbackReady = true;
+      consultBtn.disabled = false;
+      consultBtn.textContent = 'Otvoriť e-mail a napísať Jánovi';
+      status.textContent = 'Automatické odoslanie nevyšlo. Kliknutím otvoríš pripravený e-mail.';
+    }
   });
 
   document.getElementById('igLink').addEventListener('click', () => {
@@ -444,6 +483,7 @@ function showResult(name) {
   });
   document.getElementById('againBtn').addEventListener('click', () => {
     state.index = 0; state.score = 0; state.answers = []; state.segment = null;
+    state.gateTracked = false; state.lead = null;
     showIntro();
     window.scrollTo(0, 0);
   });
