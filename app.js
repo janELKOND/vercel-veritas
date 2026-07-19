@@ -7,7 +7,7 @@ const CONFIG = {
   WEBHOOK_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
   CONTACT_EMAIL: 'karas.jan2@gmail.com',
   // Človek už na výsledku klikol na vyskúšanie produktu, preto ide priamo do onboardingu.
-  VALYRA_URL: 'https://valyra.sk/Onboarding',
+  VALYRA_URL: 'https://valyra.pro/Onboarding',
   UTM: {
     utm_source: 'kviz',
     utm_medium: 'referral',
