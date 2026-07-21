@@ -89,6 +89,30 @@ const SEGMENT_Q = {
   ],
 };
 
+const URGENCY_Q = {
+  q: 'Kedy chceš so zmenou reálne začať?',
+  options: [
+    { label: 'Hneď — chcem konkrétny plán', value: 'hned' },
+    { label: 'V priebehu najbližších 30 dní', value: 'do-30-dni' },
+    { label: 'Zatiaľ si len robím prehľad', value: 'zistujem' },
+  ],
+};
+
+const READINESS_Q = {
+  q: 'Čo by ti teraz pomohlo najviac?',
+  options: [
+    { label: 'Konkrétny jedálniček a jasné kroky', value: 'plan' },
+    { label: 'Podpora, kontrola a niekto, komu môžem napísať', value: 'podpora' },
+    { label: 'Najprv si chcem doplniť informácie', value: 'informacie' },
+  ],
+};
+
+const QUALIFICATION_RESULTS = {
+  'hned': 'Chceš začať hneď — preto ti ukážem najkratšiu cestu ku konkrétnemu plánu bez ďalšieho hľadania.',
+  'do-30-dni': 'Chceš sa pohnúť v najbližšom mesiaci. Najlepší ďalší krok je pripraviť si jednoduchý plán, s ktorým nebudeš štart odkladať.',
+  'zistujem': 'Zatiaľ si robíš prehľad. Výsledok ti ukáže, na čo sa sústrediť, aby si nestrácal/a čas ďalšími protichodnými radami.',
+};
+
 const SEGMENT_RESULTS = {
   'co-jest': 'Tvoja hlavná brzda nie je vôľa, ale každodenné rozhodovanie. Pomôže ti mať dopredu pripravený konkrétny plán jedál a porcií, aby si nemusel/a zakaždým hádať, čo je správne.',
   'vecerne-chute': 'Večerné chute často začínajú už cez deň — príliš malým jedlom, chýbajúcimi bielkovinami alebo dlhými pauzami. Potrebuješ plán, ktorý ťa zasýti a počíta aj s večerom.',
@@ -134,6 +158,8 @@ const state = {
   score: 0,
   answers: [],   // { q, chosen, correct }
   segment: null,
+  urgency: null,
+  readiness: null,
   gender: 'zena', // 'zena' | 'muz'
   quizStarted: false,
   gateTracked: false,
@@ -143,7 +169,7 @@ const app = document.getElementById('app');
 const progressTrack = document.getElementById('progressTrack');
 const progressFill = document.getElementById('progressFill');
 
-const TOTAL_STEPS = QUESTIONS.length + 1; // + segmentačná
+const TOTAL_STEPS = QUESTIONS.length + 3; // + segment, termín a pripravenosť
 
 // ---------- OBRAZOVKY ----------
 function showIntro() {
@@ -257,6 +283,44 @@ function showSegment() {
   document.querySelectorAll('.option').forEach(btn => {
     btn.addEventListener('click', () => {
       state.segment = SEGMENT_Q.options[parseInt(btn.dataset.idx, 10)].value;
+      showUrgency();
+    });
+  });
+}
+
+function showUrgency() {
+  updateProgress(QUESTIONS.length + 1);
+  app.innerHTML = `
+    <section class="question-screen">
+      <div class="step-label">Ešte 2 krátke otázky — bez bodovania</div>
+      <h2>${URGENCY_Q.q}</h2>
+      <div class="options">
+        ${URGENCY_Q.options.map((o, idx) => `<button class="option" data-idx="${idx}">${o.label}</button>`).join('')}
+      </div>
+    </section>
+  `;
+  document.querySelectorAll('.option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.urgency = URGENCY_Q.options[parseInt(btn.dataset.idx, 10)].value;
+      showReadiness();
+    });
+  });
+}
+
+function showReadiness() {
+  updateProgress(QUESTIONS.length + 2);
+  app.innerHTML = `
+    <section class="question-screen">
+      <div class="step-label">Posledná otázka — bez bodovania</div>
+      <h2>${READINESS_Q.q}</h2>
+      <div class="options">
+        ${READINESS_Q.options.map((o, idx) => `<button class="option" data-idx="${idx}">${o.label}</button>`).join('')}
+      </div>
+    </section>
+  `;
+  document.querySelectorAll('.option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.readiness = READINESS_Q.options[parseInt(btn.dataset.idx, 10)].value;
       showGate();
     });
   });
@@ -265,7 +329,12 @@ function showSegment() {
 function showGate() {
   updateProgress(TOTAL_STEPS);
   if (!state.gateTracked && typeof fbq === 'function') {
-    fbq('trackCustom', 'QuizComplete', { score: state.score, segment: state.segment });
+    fbq('trackCustom', 'QuizComplete', {
+      score: state.score,
+      segment: state.segment,
+      urgency: state.urgency,
+      readiness: state.readiness,
+    });
     state.gateTracked = true;
   }
   app.innerHTML = `
@@ -293,7 +362,7 @@ function showGate() {
         <span>Súhlasím so spracovaním údajov na zaslanie vyhodnotenia a tipov k zdravému chudnutiu. Odhlásiť sa dá kedykoľvek jedným klikom.</span>
       </label>
       <div class="error-msg" id="errMsg"></div>
-      <button class="btn" id="submitBtn">Zobraziť moje skóre</button>
+      <button class="btn" id="submitBtn">Získať moje osobné vyhodnotenie</button>
     </section>
   `;
 
@@ -339,7 +408,12 @@ async function submitLead() {
     band: band.slug,
     bandName: band.name[state.gender],
     gender: state.gender,
-    segment: state.segment,
+    // Kvalifikáciu ukladáme aj do existujúceho segmentu, takže je okamžite
+    // viditeľná v Supabase, Google Sheete aj admin e-maile bez zmeny backendu.
+    segment: [state.segment, state.urgency, state.readiness].filter(Boolean).join('|'),
+    baseSegment: state.segment,
+    urgency: state.urgency,
+    readiness: state.readiness,
     wrong: wrongAnswers.map(a => a.q),
     ts: new Date().toISOString(),
     source: 'pravda-o-chudnuti',
@@ -360,7 +434,13 @@ async function submitLead() {
     if (!response.ok) throw new Error(`Lead API: ${response.status}`);
 
     if (typeof fbq === 'function') {
-      fbq('track', 'CompleteRegistration', { value: 5.00, currency: 'EUR' });
+      fbq('track', 'CompleteRegistration', {
+        value: 5.00,
+        currency: 'EUR',
+        segment: state.segment,
+        urgency: state.urgency,
+        readiness: state.readiness,
+      });
     }
     showResult(name);
   } catch (error) {
@@ -389,6 +469,7 @@ function showResult(name) {
   });
   const valyraLink = `${CONFIG.VALYRA_URL}?${params.toString()}`;
   const segmentResult = SEGMENT_RESULTS[state.segment] || SEGMENT_RESULTS['co-jest'];
+  const qualificationResult = QUALIFICATION_RESULTS[state.urgency] || '';
 
   const recapHtml = missed.length
     ? `
@@ -414,6 +495,7 @@ function showResult(name) {
       </div>
       <p class="verdict-text">${name}, ${band.text[state.gender]}</p>
       <div class="personal-insight"><strong>Čo z toho pre teba vyplýva</strong>${segmentResult}</div>
+      <div class="personal-insight"><strong>Tvoj najlepší ďalší krok</strong>${qualificationResult}</div>
       <p class="email-note">📬 Podrobné vyhodnotenie + 3 praktické tipy ti práve odišli na e-mail. Ak neprídu do pár minút, pozri si priečinok Hromadné/Spam.</p>
       ${recapHtml}
       <div class="coach-card">
@@ -450,12 +532,17 @@ function showResult(name) {
   });
 
   document.getElementById('ctaBtn').addEventListener('click', () => {
-    if (typeof fbq === 'function') fbq('trackCustom', 'ValyraCTA', { segment: state.segment, band: band.slug });
+    if (typeof fbq === 'function') fbq('trackCustom', 'ValyraCTA', {
+      segment: state.segment,
+      band: band.slug,
+      urgency: state.urgency,
+      readiness: state.readiness,
+    });
     window.location.href = valyraLink;
   });
   document.getElementById('againBtn').addEventListener('click', () => {
     state.index = 0; state.score = 0; state.answers = []; state.segment = null;
-    state.gateTracked = false;
+    state.urgency = null; state.readiness = null; state.gateTracked = false;
     showIntro();
     window.scrollTo(0, 0);
   });
