@@ -469,6 +469,12 @@ function showResult(name) {
   });
   const valyraLink = `${CONFIG.VALYRA_URL}?${params.toString()}`;
   const segmentResult = SEGMENT_RESULTS[state.segment] || SEGMENT_RESULTS['co-jest'];
+
+  // „Hľadá podporu/vedenie" → primárne CTA = nezáväzný hovor, Valyra ako druhá možnosť (nástroj vedenia)
+  const wantsSupport = state.readiness === 'podpora' || state.segment === 'potrebujem-podporu';
+  const valyraBtn = `<button class="btn${wantsSupport ? ' secondary' : ''}" id="ctaBtn">${wantsSupport ? 'Alebo si najprv skús Valyru — 7 dní zadarmo' : 'Zostaviť môj plán vo Valyre →'}</button>`;
+  const consultBtnHtml = `<a class="btn${wantsSupport ? '' : ' secondary'}" id="consultBtn" href="#">${wantsSupport ? '📞 Dohodnúť nezáväzný 15-min hovor s Jánom' : '✉️ Chcem prebrať výsledok s Jánom'}</a>`;
+  const ctaButtons = wantsSupport ? `${consultBtnHtml}\n      ${valyraBtn}` : `${valyraBtn}\n      ${consultBtnHtml}`;
   const qualificationResult = QUALIFICATION_RESULTS[state.urgency] || '';
 
   const recapHtml = missed.length
@@ -506,8 +512,7 @@ function showResult(name) {
         <div>✓ Ján v chate — reálny kouč, nie robot</div>
         <div>✓ bez karty — po 7 dňoch sa ti nič samo nestrhne</div>
       </div>
-      <button class="btn" id="ctaBtn">Zostaviť môj plán vo Valyre →</button>
-      <a class="btn secondary" id="consultBtn" href="#">✉️ Chcem prebrať výsledok s Jánom</a>
+      ${ctaButtons}
       <p class="retry-line"><button class="link-btn" id="againBtn">Skúsiť kvíz znova</button></p>
       <p class="social-line"><a href="https://www.instagram.com/janykaras" target="_blank" rel="noopener" id="igLink">Sledovať Jána na Instagrame</a></p>
     </section>
