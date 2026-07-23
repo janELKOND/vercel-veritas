@@ -20,6 +20,13 @@ od impresie po platiaceho zákazníka, kde tečie a v akom poradí to opravovať
 Obsahuje aj konkrétne zadania: chýbajúce pixel eventy, oprava `no-cors` zápisu,
 pridanie rezervácie konzultácie.
 
+## Kde sme skončili
+
+Napíš **„kukni do githubu"** (alebo `/stav`) a spustí sa skill
+[`.claude/skills/stav`](.claude/skills/stav/SKILL.md): načíta plán, pozrie
+otvorené PR a **overí priamo v kóde**, čo je reálne hotové — checklist v pláne
+ukazuje zámer, kód ukazuje realitu.
+
 ## Na čo si dať pozor
 
 **Dva pixely.** Stránka inicializuje `2221207801987418` (patrí ad účtu) aj
