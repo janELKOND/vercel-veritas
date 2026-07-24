@@ -262,6 +262,15 @@ h1, h2, .display {
   margin: 14px 0 18px;
 }
 
+.valyra-note {
+  text-align: center;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 14px auto 4px;
+  max-width: 34rem;
+}
+
 .personal-insight {
   background: var(--card);
   border-left: 4px solid var(--berry);

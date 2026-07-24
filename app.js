@@ -6,7 +6,9 @@
 const CONFIG = {
   WEBHOOK_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
   CONTACT_EMAIL: 'karas.jan2@gmail.com',
-  // Človek už na výsledku klikol na vyskúšanie produktu, preto ide priamo do onboardingu.
+  // Rezervácia 15-min hovoru s Jánom (Cal.com) — primárny cieľ výsledku.
+  CAL_URL: 'https://cal.com/jan-karas-kdm2il/15min',
+  // Valyra = nástroj počas platenej spolupráce; z výsledku už len sekundárny odkaz.
   VALYRA_URL: 'https://valyra.sk/Onboarding',
   UTM: {
     utm_source: 'kviz',
@@ -462,19 +464,16 @@ function showResult(name) {
   const wrongCount = missed.length;
   const band = bandFor(correctCount);
 
-  const params = new URLSearchParams({
-    ...CONFIG.UTM,
-    utm_content: state.segment || 'neznamy',
-    utm_term: band.slug,
-  });
-  const valyraLink = `${CONFIG.VALYRA_URL}?${params.toString()}`;
   const segmentResult = SEGMENT_RESULTS[state.segment] || SEGMENT_RESULTS['co-jest'];
 
-  // „Hľadá podporu/vedenie" → primárne CTA = nezáväzný hovor, Valyra ako druhá možnosť (nástroj vedenia)
-  const wantsSupport = state.readiness === 'podpora' || state.segment === 'potrebujem-podporu';
-  const valyraBtn = `<button class="btn${wantsSupport ? ' secondary' : ''}" id="ctaBtn">${wantsSupport ? 'Alebo si najprv skús Valyru — 7 dní zadarmo' : 'Zostaviť môj plán vo Valyre →'}</button>`;
-  const consultBtnHtml = `<a class="btn${wantsSupport ? '' : ' secondary'}" id="consultBtn" href="#">${wantsSupport ? '📞 Dohodnúť nezáväzný 15-min hovor s Jánom' : '✉️ Chcem prebrať výsledok s Jánom'}</a>`;
-  const ctaButtons = wantsSupport ? `${consultBtnHtml}\n      ${valyraBtn}` : `${valyraBtn}\n      ${consultBtnHtml}`;
+  // NOVÁ STRATÉGIA: výsledok vedie na HOVOR s Jánom (nie na appku). Valyra = nástroj počas platenej spolupráce.
+  // Vysoký zámer (chce začať hneď/do 30 dní, alebo chce plán/podporu) → primárne CTA = rezervácia hovoru.
+  // „Len zisťuje" (COLD) → rezervácia zostáva, ale nenápadne (sekundárny štýl); hlavný ťah drží e-mailová séria.
+  const highIntent = state.urgency === 'hned' || state.urgency === 'do-30-dni'
+    || state.readiness === 'plan' || state.readiness === 'podpora';
+  const bookBtnHtml = `<a class="btn${highIntent ? '' : ' secondary'}" id="consultBtn" href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">📞 Rezervovať 15-min hovor s Jánom</a>`;
+  const valyraNoteHtml = `<p class="valyra-note">Valyra nie je appka na stiahnutie zadarmo — je to nástroj, cez ktorý ťa vediem. Ak si na hovore povieme, že ti moje vedenie pomôže, dostaneš ju ako súčasť spolupráce: svoj plán, úlohy, výsledky a kontakt so mnou.</p>`;
+  const ctaButtons = `${bookBtnHtml}\n      ${valyraNoteHtml}`;
   const qualificationResult = QUALIFICATION_RESULTS[state.urgency] || '';
 
   const recapHtml = missed.length
@@ -505,12 +504,12 @@ function showResult(name) {
       <p class="email-note">📬 Podrobné vyhodnotenie + 3 praktické tipy ti práve odišli na e-mail. Ak neprídu do pár minút, pozri si priečinok Hromadné/Spam.</p>
       ${recapHtml}
       <div class="coach-card">
-        <p><strong>Ja som Ján.</strong> Sám som schudol 45 kg — z 133 na 88 — a držím si to už 8 rokov. Presne preto viem, že nerozhodujú zázračné diéty, ale systém a podpora. Tú dostaneš vo Valyre.</p>
+        <p><strong>Ja som Ján.</strong> Sám som schudol 45 kg — z 133 na 88 — a držím si to už 8 rokov. Presne preto viem, že nerozhodujú zázračné diéty, ale systém a podpora. Poď, spolu ti nájdeme tvoju hlavnú brzdu.</p>
       </div>
       <div class="offer-stack">
-        <div>✓ jedálniček vypočítaný na tvoje telo a cieľ — hotový za 2 minúty</div>
-        <div>✓ Ján v chate — reálny kouč, nie robot</div>
-        <div>✓ bez karty — po 7 dňoch sa ti nič samo nestrhne</div>
+        <div>✓ 15 minút, nezáväzne — bez tlaku a bez karty</div>
+        <div>✓ pomenujeme tvoju hlavnú brzdu a ďalší konkrétny krok</div>
+        <div>✓ ak to bude dávať zmysel, poviem ti, ako vyzerá spolupráca so mnou</div>
       </div>
       ${ctaButtons}
       <p class="retry-line"><button class="link-btn" id="againBtn">Skúsiť kvíz znova</button></p>
@@ -519,16 +518,12 @@ function showResult(name) {
   `;
 
   const consultBtn = document.getElementById('consultBtn');
-  const mailSubject = encodeURIComponent(`Môj výsledok v kvíze: ${correctCount}/${QUESTIONS.length}`);
-  const mailBody = encodeURIComponent(
-    state.gender === 'muz'
-      ? `Ahoj Ján,\n\npráve som dokončil kvíz Pravda o chudnutí a vyšlo mi ${correctCount} z ${QUESTIONS.length} (${band.name.muz}).\n\nChcel by som svoj výsledok prebrať s tebou.\n\n${name}`
-      : `Ahoj Ján,\n\npráve som dokončila kvíz Pravda o chudnutí a vyšlo mi ${correctCount} z ${QUESTIONS.length} (${band.name.zena}).\n\nChcela by som svoj výsledok prebrať s tebou.\n\n${name}`
-  );
-  consultBtn.href = `mailto:${CONFIG.CONTACT_EMAIL}?subject=${mailSubject}&body=${mailBody}`;
+  // Odkaz smeruje priamo na Cal.com (rezervácia hovoru). Klik = pixel signál záujmu o hovor.
   consultBtn.addEventListener('click', () => {
     if (typeof fbq === 'function') {
-      fbq('trackCustom', 'ConsultClick', { segment: state.segment, band: band.slug });
+      fbq('trackCustom', 'ConsultClick', {
+        segment: state.segment, band: band.slug, urgency: state.urgency, readiness: state.readiness,
+      });
     }
   });
 
@@ -536,15 +531,6 @@ function showResult(name) {
     if (typeof fbq === 'function') fbq('trackCustom', 'InstagramClick');
   });
 
-  document.getElementById('ctaBtn').addEventListener('click', () => {
-    if (typeof fbq === 'function') fbq('trackCustom', 'ValyraCTA', {
-      segment: state.segment,
-      band: band.slug,
-      urgency: state.urgency,
-      readiness: state.readiness,
-    });
-    window.location.href = valyraLink;
-  });
   document.getElementById('againBtn').addEventListener('click', () => {
     state.index = 0; state.score = 0; state.answers = []; state.segment = null;
     state.urgency = null; state.readiness = null; state.gateTracked = false;
