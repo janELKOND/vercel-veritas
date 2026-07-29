@@ -81,7 +81,7 @@ const QUESTIONS = [
 
 // Segmentačná otázka — bez bodov, bez správnej odpovede
 const SEGMENT_Q = {
-  q: 'A posledná otázka — čo ťa dnes pri chudnutí brzdí najviac?',
+  q: 'Čo ťa pri chudnutí brzdí najviac?',
   options: [
     { label: 'Neviem, čo a koľko mám jesť', value: 'co-jest' },
     { label: 'Cez deň sa držím, večer prídu chute', value: 'vecerne-chute' },
@@ -92,27 +92,21 @@ const SEGMENT_Q = {
 };
 
 const URGENCY_Q = {
-  q: 'Kedy chceš so zmenou reálne začať?',
+  q: 'Nakoľko vážne to teraz myslíš?',
   options: [
-    { label: 'Hneď — chcem konkrétny plán', value: 'hned' },
-    { label: 'V priebehu najbližších 30 dní', value: 'do-30-dni' },
-    { label: 'Zatiaľ si len robím prehľad', value: 'zistujem' },
+    { label: 'Som rozhodnutá to konečne vyriešiť — čím skôr, tým lepšie', value: 'hned' },
+    { label: 'Chcem začať do mesiaca, keď si to zariadim', value: 'do-30-dni' },
+    { label: 'Ešte len zvažujem, či do toho pôjdem', value: 'zistujem' },
   ],
 };
 
 const READINESS_Q = {
-  q: 'Čo by ti teraz pomohlo najviac?',
+  q: 'Ako to chceš tentokrát dotiahnuť?',
   options: [
-    { label: 'Konkrétny jedálniček a jasné kroky', value: 'plan' },
-    { label: 'Podpora, kontrola a niekto, komu môžem napísať', value: 'podpora' },
-    { label: 'Najprv si chcem doplniť informácie', value: 'informacie' },
+    { label: 'Chcem, aby ma niekto viedol a bol pri tom so mnou', value: 'podpora' },
+    { label: 'Stačí mi jasný plán a systém — zvyšok zvládnem sám/sama', value: 'plan' },
+    { label: 'Zatiaľ si chcem len doplniť informácie', value: 'informacie' },
   ],
-};
-
-const QUALIFICATION_RESULTS = {
-  'hned': 'Chceš začať hneď — preto ti ukážem najkratšiu cestu ku konkrétnemu plánu bez ďalšieho hľadania.',
-  'do-30-dni': 'Chceš sa pohnúť v najbližšom mesiaci. Najlepší ďalší krok je pripraviť si jednoduchý plán, s ktorým nebudeš štart odkladať.',
-  'zistujem': 'Zatiaľ si robíš prehľad. Výsledok ti ukáže, na čo sa sústrediť, aby si nestrácal/a čas ďalšími protichodnými radami.',
 };
 
 const SEGMENT_RESULTS = {
@@ -469,12 +463,32 @@ function showResult(name) {
   // NOVÁ STRATÉGIA: výsledok vedie na HOVOR s Jánom (nie na appku). Valyra = nástroj počas platenej spolupráce.
   // Vysoký zámer (chce začať hneď/do 30 dní, alebo chce plán/podporu) → primárne CTA = rezervácia hovoru.
   // „Len zisťuje" (COLD) → rezervácia zostáva, ale nenápadne (sekundárny štýl); hlavný ťah drží e-mailová séria.
-  const highIntent = state.urgency === 'hned' || state.urgency === 'do-30-dni'
-    || state.readiness === 'plan' || state.readiness === 'podpora';
-  const bookBtnHtml = `<a class="btn${highIntent ? '' : ' secondary'}" id="consultBtn" href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">📞 Rezervovať 15-min hovor s Jánom</a>`;
+  // ÚROVEŇ ZÁUJMU (tri pásma). Cieľ: na hovor tlačiť tých, čo chcú vedenie alebo sú
+  // rozhodnutí; zvedavcov (len info + len zvažujú) nechať na e-mailovú sériu.
+  //   HOT  = chce vedenie (podpora) ALEBO je rozhodnutá hneď
+  //   COLD = len si dopĺňa info A zároveň len zvažuje  → tlačidlo na hovor nenápadné
+  //   WARM = zvyšok (chce plán, čoskoro)               → hovor tiež primárne
+  const wantsGuidance = state.readiness === 'podpora';
+  const decidedNow = state.urgency === 'hned';
+  const hot = wantsGuidance || decidedNow;
+  const cold = !hot && (state.readiness === 'informacie' || state.urgency === 'zistujem');
+  const tier = hot ? 'hot' : (cold ? 'cold' : 'warm');
+
+  let nextStep;
+  if (wantsGuidance) {
+    nextStep = 'Nechceš na to byť sám/sama — a to je najrozumnejšie rozhodnutie. Na 15-min hovore spolu pomenujeme tvoju hlavnú brzdu a ukážem ti, ako by vyzeralo vedenie krok za krokom.';
+  } else if (decidedNow) {
+    nextStep = 'Si rozhodnutá začať hneď. Rezervuj si 15-min hovor a odídeš s jasným prvým krokom — bez ďalšieho hľadania.';
+  } else if (cold) {
+    nextStep = 'Pokojne si to nechaj uležať. Vyhodnotenie a tipy ti chodia na e-mail — a keď budeš chcieť ísť do toho naozaj, hovor si vieš rezervovať kedykoľvek.';
+  } else {
+    nextStep = 'Máš k tomu vážny vzťah, len ti chýba jasný plán. Na 15-min hovore ti poviem, ako ho postaviť tak, aby sadol tvojmu reálnemu životu.';
+  }
+
+  const bookBtnHtml = `<a class="btn${cold ? ' secondary' : ''}" id="consultBtn" href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">📞 Rezervovať 15-min hovor s Jánom</a>`;
   const valyraNoteHtml = `<p class="valyra-note">Valyra nie je appka na stiahnutie zadarmo — je to nástroj, cez ktorý ťa vediem. Ak si na hovore povieme, že ti moje vedenie pomôže, dostaneš ju ako súčasť spolupráce: svoj plán, úlohy, výsledky a kontakt so mnou.</p>`;
   const ctaButtons = `${bookBtnHtml}\n      ${valyraNoteHtml}`;
-  const qualificationResult = QUALIFICATION_RESULTS[state.urgency] || '';
+  const qualificationResult = nextStep;
 
   const recapHtml = missed.length
     ? `
@@ -522,7 +536,7 @@ function showResult(name) {
   consultBtn.addEventListener('click', () => {
     if (typeof fbq === 'function') {
       fbq('trackCustom', 'ConsultClick', {
-        segment: state.segment, band: band.slug, urgency: state.urgency, readiness: state.readiness,
+        segment: state.segment, band: band.slug, urgency: state.urgency, readiness: state.readiness, tier,
       });
     }
   });
