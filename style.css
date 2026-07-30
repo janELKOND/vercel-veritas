@@ -70,7 +70,27 @@ h1, h2, .display {
   margin-bottom: 14px;
 }
 
+/* Dôvod, prečo sa nebodovaná otázka vôbec pýta. Bez neho pôsobia kvalifikačné
+   otázky ako skryté triedenie — priznaný účel je aj čestnejší, aj menej podozrivý. */
+.step-note {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: -8px 0 16px;
+}
+
 /* ---------- intro ---------- */
+/* E-mailová stena sa oznamuje dopredu: kto ju nechce, neinvestuje 5 minút zbytočne,
+   a kto kvíz dokončí, na konci neodpadne na prekvapení. */
+.intro-note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  text-align: center;
+  margin: 14px auto 0;
+  max-width: 30rem;
+}
+
 .intro {
   display: flex;
   flex-direction: column;
