@@ -15,10 +15,15 @@ segmentu a vypýta e-mail. Slúži ako vstup do lievika smerom na aplikáciu.
 
 ## Čítaj pred zmenami
 
-**[`docs/PLAN-LIEVIKA.md`](docs/PLAN-LIEVIKA.md)** — vyhodnotenie celého lievika
-od impresie po platiaceho zákazníka, kde tečie a v akom poradí to opravovať.
-Obsahuje aj konkrétne zadania: chýbajúce pixel eventy, oprava `no-cors` zápisu,
-pridanie rezervácie konzultácie.
+**[`docs/VYSLEDOK-A-PONUKA.md`](docs/VYSLEDOK-A-PONUKA.md)** — ako lievik funguje
+**dnes**: tri kvalifikačné otázky a čo každá riadi, diagnóza (`gapDiagnosis`),
+tiering HOT/WARM/COLD, `noPressure`, ponuka hovoru, meranie, payload a
+`quizVersion`. Obsahuje aj chronológiu zmien a pravidlá pre ďalšie úpravy.
+
+**[`docs/PLAN-LIEVIKA.md`](docs/PLAN-LIEVIKA.md)** — vyhodnotenie lievika od
+impresie po platiaceho zákazníka s číslami z reklamy (23. 7. 2026). Čísla a
+poradie priorít platia, ale **časť zámerov je už prekonaná** — čo presne, je
+v sekcii 9 dokumentu vyššie. Nečítaj ho ako popis súčasného stavu.
 
 ## Kde sme skončili
 
@@ -44,10 +49,14 @@ Vymyslené miesta, ktoré sa nikdy nemenia, ľudia odhalia a stoja dôveru.
 hovorov z reklamy sa dá merať až eventom `Lead` z Cal.com webhooku — do vtedy je
 konverzia hovoru odhad. Pomer `ConsultView` → `ConsultClick` hovorí o copy ponuky.
 
-**Zápis do Sheetu je `no-cors`**, teda naslepo bez potvrdenia. Nefunguje na ňom
-žiadna kontrola chýb. Oprava je popísaná v sekcii 7 plánu — podstata je poslať
-POST ako `text/plain`, čím sa vyhne preflightu `OPTIONS`, ktorý Apps Script
-neobslúži.
+**Zápis leadu ide na Supabase funkciu `quizLead`** (`mode: 'cors'`, kontrola
+`response.ok`, timeout 12 s) — **nie** na Apps Script v `no-cors`, ako tvrdí
+sekcia 7 plánu. Tá je prekonaná; `apps-script.gs` v repe je pozostatok.
+
+**Zložený `segment` už dvakrát zmenil význam** — prostredný diel bol urgencia,
+od v3 je to história návratov. Preto je v payloade `quizVersion`. Riadky z
+rôznych verzií sa **nesmú porovnávať naslepo** a pri ďalšej zmene významu
+polí treba `quizVersion` zvýšiť.
 
 **Terminológia.** V tomto projekte „lead" = **dokončený kvíz** = pixel event
 `CompleteRegistration`. Meta „Website leads" = event `Lead` = rezervácia hovoru,
