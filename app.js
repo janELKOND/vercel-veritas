@@ -10,6 +10,23 @@ const CONFIG = {
   CAL_URL: 'https://cal.com/jan-karas-kdm2il/15min',
   // Valyra = nástroj počas platenej spolupráce; z výsledku už len sekundárny odkaz.
   VALYRA_URL: 'https://valyra.sk/Onboarding',
+  // Pixel ad účtu. Signály o záujme o hovor musia ísť explicitne naň (trackSingle),
+  // inak ich kampaň nevidí — druhý pixel je Valyra a ad účet k nemu nemá prístup.
+  PIXEL_AD: '2221207801987418',
+  // Ponuka hovoru. Hovor má meno a hmatateľný výstup — ľudia si rezervujú
+  // výsledok, nie stretnutie („15-min hovor" je stretnutie, „Reštart plán" je výsledok).
+  OFFER: {
+    NAME: 'Reštart plán',
+    LENGTH: '15 minút',
+    // Kapacita. DRŽ TO PRAVDIVÉ — scarcity funguje len dokým je skutočná.
+    // SPOTS_PER_MONTH = koľko ľudí za mesiac naozaj vezmeš (trvalý limit, mení sa zriedka).
+    SPOTS_PER_MONTH: 5,
+    // SPOTS_LEFT = koľko miest je voľných PRÁVE TERAZ. Zobrazí sa len ak je to číslo,
+    // takže `null` znamená „počet voľných miest neuvádzaj". Vypĺňaj len vtedy, keď to
+    // budeš reálne každý mesiac prepisovať — odpočet, ktorý mesiace stojí na tom istom
+    // čísle, ľudia odhalia a stojí to dôveru viac, než by scarcity priniesla.
+    SPOTS_LEFT: null,
+  },
   UTM: {
     utm_source: 'kviz',
     utm_medium: 'referral',
@@ -115,6 +132,25 @@ const SEGMENT_RESULTS = {
   'nevydrzim': 'Nepotrebuješ ďalší prísny štart. Potrebuješ systém, ktorý funguje aj počas slabšieho dňa a po zaváhaní ťa vráti späť bez pocitu, že začínaš od nuly.',
   'nemam-cas': 'Tvoj plán musí rešpektovať reálny život. Jednoduché jedlá, bežné suroviny a rozhodnutia urobené vopred ti pomôžu pokračovať aj počas pracovného alebo rodinného chaosu.',
   'potrebujem-podporu': 'Vedomosti už pravdepodobne máš. Rozdiel spraví pravidelná spätná väzba a človek, ktorému môžeš napísať práve vtedy, keď motivácia klesne.',
+};
+
+// Čo konkrétne sa na hovore vyrieši — podľa brzdy, ktorú človek sám označil v kvíze.
+// Personalizácia prvého bodu ponuky je najlacnejší spôsob, ako hovor prestane znieť všeobecne.
+// Texty sú zámerne bez rodových prípon, aby fungovali pre ženy aj mužov.
+const SEGMENT_CALL_PROMISE = {
+  'co-jest': 'ukážem ti, čo a koľko jesť — bez hádania pri každom jedle',
+  'vecerne-chute': 'nájdeme, čím ti večerné chute začínajú už cez deň, a čo s tým',
+  'nevydrzim': 'postavíme to tak, aby ťa jeden slabší deň nezhodil na začiatok',
+  'nemam-cas': 'zmestíme to do tvojho dňa — bez varenia navyše a hodín v posilňovni',
+  'potrebujem-podporu': 'vieš už, čo robiť — povieme si, ako to udržať, keď motivácia klesne',
+};
+
+// Mikro-veta pod tlačidlom, napojená na to, čo človek povedal o svojom termíne.
+// Urgencia z jeho vlastnej odpovede je vierohodnejšia než akýkoľvek odpočet.
+const URGENCY_NUDGE = {
+  'hned': 'Rozhodnutie máš spravené dnes — nenechaj ho vychladnúť.',
+  'do-30-dni': 'Termín si môžeš vybrať aj o dva týždne. Miesto si držíš už dnes.',
+  'zistujem': '',
 };
 
 // Vyhodnotenie podľa pásma skóre
@@ -451,6 +487,26 @@ function bandFor(score) {
   return BANDS.find(b => score >= b.min && score <= b.max);
 }
 
+// Slovenské skloňovanie miest: 1 miesto · 2–4 miesta · 5 a viac miest.
+function spotsPhrase(n) {
+  if (n === 1) return 'je voľné posledné miesto';
+  if (n < 5) return `sú voľné ${n} miesta`;
+  return `je voľných ${n} miest`;
+}
+
+// Štandardné eventy Meta pixela (majú vlastné `trackSingle`); všetko ostatné je vlastný
+// event a musí ísť cez `trackSingleCustom`, inak ho pixel zahodí.
+const FB_STANDARD_EVENTS = ['Lead', 'CompleteRegistration', 'Contact', 'Schedule', 'ViewContent', 'PageView'];
+
+// Event explicitne na pixel ad účtu. Stránka inicializuje dva pixely a ad účet
+// k druhému (Valyra) nemá prístup — bez adresného odoslania sa signál v Ads Manageri stratí.
+// CompleteRegistration zámerne necháme na `track`: kampaň na ňom má learning history.
+function trackAd(event, params) {
+  if (typeof fbq !== 'function') return;
+  const method = FB_STANDARD_EVENTS.includes(event) ? 'trackSingle' : 'trackSingleCustom';
+  fbq(method, CONFIG.PIXEL_AD, event, params);
+}
+
 function showResult(name) {
   progressTrack.hidden = true;
   const correctCount = state.answers.filter(a => a.correct).length;
@@ -474,20 +530,54 @@ function showResult(name) {
   const cold = !hot && (state.readiness === 'informacie' || state.urgency === 'zistujem');
   const tier = hot ? 'hot' : (cold ? 'cold' : 'warm');
 
+  const offer = CONFIG.OFFER;
+
   let nextStep;
   if (wantsGuidance) {
-    nextStep = 'Nechceš na to byť sám/sama — a to je najrozumnejšie rozhodnutie. Na 15-min hovore spolu pomenujeme tvoju hlavnú brzdu a ukážem ti, ako by vyzeralo vedenie krok za krokom.';
+    nextStep = `Nechceš na to byť sám/sama — a to je najrozumnejšie rozhodnutie. Za ${offer.LENGTH} spolu pomenujeme tvoju hlavnú brzdu a odídeš s napísaným prvým týždňom.`;
   } else if (decidedNow) {
-    nextStep = 'Si rozhodnutá začať hneď. Rezervuj si 15-min hovor a odídeš s jasným prvým krokom — bez ďalšieho hľadania.';
+    nextStep = `Si rozhodnutá začať hneď — tak nezačínaj zbieraním ďalších informácií. Za ${offer.LENGTH} dostaneš svoj prvý týždeň napísaný na papieri.`;
   } else if (cold) {
-    nextStep = 'Pokojne si to nechaj uležať. Vyhodnotenie a tipy ti chodia na e-mail — a keď budeš chcieť ísť do toho naozaj, hovor si vieš rezervovať kedykoľvek.';
+    nextStep = 'Pokojne si to nechaj uležať. Vyhodnotenie a tipy ti chodia na e-mail — a keď budeš chcieť ísť do toho naozaj, termín si vyberieš kedykoľvek.';
   } else {
-    nextStep = 'Máš k tomu vážny vzťah, len ti chýba jasný plán. Na 15-min hovore ti poviem, ako ho postaviť tak, aby sadol tvojmu reálnemu životu.';
+    nextStep = `Máš k tomu vážny vzťah, len ti chýba jasný plán. Za ${offer.LENGTH} ho spolu postavíme tak, aby sadol tvojmu reálnemu životu.`;
   }
 
-  const bookBtnHtml = `<a class="btn${cold ? ' secondary' : ''}" id="consultBtn" href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">📞 Rezervovať 15-min hovor s Jánom</a>`;
+  // Prvý bod ponuky hovorí o TEJ brzde, ktorú človek sám označil — nie o chudnutí vo všeobecnosti.
+  const callPromise = SEGMENT_CALL_PROMISE[state.segment] || SEGMENT_CALL_PROMISE['co-jest'];
+
+  // Scarcity je pravdivá (sólo kouč = reálne limitované miesta), preto ju ukazujeme.
+  // Zvedavcom ju nepodsúvame — na nerozhodnutého tlak nepatrí, tých drží e-mailová séria.
+  // Mesačná kapacita je trvalý fakt, počet voľných miest sa mení. Preto sa kapacita
+  // zobrazuje vždy a odpočet miest len vtedy, keď je SPOTS_LEFT reálne udržiavané číslo —
+  // nepravdivý odpočet je horší než žiadny.
+  const spotsLeftSentence = (typeof offer.SPOTS_LEFT === 'number' && offer.SPOTS_LEFT > 0)
+    ? ` Tento mesiac ${spotsPhrase(offer.SPOTS_LEFT)}.`
+    : '';
+  const spotsHtml = (!cold && offer.SPOTS_PER_MONTH)
+    ? `<p class="offer-scarcity">Beriem maximálne <strong>${offer.SPOTS_PER_MONTH} nových ľudí mesačne</strong>, lebo pri každom som osobne.${spotsLeftSentence}</p>`
+    : '';
+
+  const offerCardHtml = `
+      <div class="offer" id="offerCard">
+        <div class="offer-eyebrow">Tvoj ďalší krok</div>
+        <h3 class="offer-title">${offer.NAME}</h3>
+        <div class="offer-meta">${offer.LENGTH} po telefóne · zadarmo · bez karty</div>
+        <p class="offer-lead">S čím z toho hovoru odídeš:</p>
+        <div class="offer-stack">
+          <div>✓ <strong>Tvoju hlavnú brzdu pomenovanú nahlas</strong> — ${callPromise}.</div>
+          <div>✓ <strong>Napísaný prvý týždeň</strong> — konkrétne kroky na tvoj bežný týždeň. Ten plán je tvoj, aj keby sme spolu viac nehovorili.</div>
+          <div>✓ <strong>Jasno v tom, čo ďalej</strong> — ak budeš chcieť, aby som ťa viedol, poviem ti presne ako to vyzerá. Ak nie, rozlúčime sa v pohode.</div>
+        </div>
+        <p class="offer-guarantee"><strong>Ako pracujem:</strong> keď sa do toho spolu pustíme, ostávam s tebou, kým sa to nepohne. Neplatíš za počet stretnutí, ale za to, že to konečne zaberie.</p>
+        ${spotsHtml}
+      </div>`;
+
+  const bookBtnHtml = `<a class="btn${cold ? ' secondary' : ''}" id="consultBtn" href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">${cold ? `Pozrieť voľné termíny (${offer.LENGTH})` : `📞 Chcem svoj ${offer.NAME}`}</a>`;
+  const nudge = URGENCY_NUDGE[state.urgency];
+  const nudgeHtml = (!cold && nudge) ? `<p class="cta-urgency">${nudge}</p>` : '';
   const valyraNoteHtml = `<p class="valyra-note">Valyra nie je appka na stiahnutie zadarmo — je to nástroj, cez ktorý ťa vediem. Ak si na hovore povieme, že ti moje vedenie pomôže, dostaneš ju ako súčasť spolupráce: svoj plán, úlohy, výsledky a kontakt so mnou.</p>`;
-  const ctaButtons = `${bookBtnHtml}\n      ${valyraNoteHtml}`;
+  const ctaButtons = `${offerCardHtml}\n      ${bookBtnHtml}\n      ${nudgeHtml}\n      ${valyraNoteHtml}`;
   const qualificationResult = nextStep;
 
   const recapHtml = missed.length
@@ -518,12 +608,8 @@ function showResult(name) {
       <p class="email-note">📬 Podrobné vyhodnotenie + 3 praktické tipy ti práve odišli na e-mail. Ak neprídu do pár minút, pozri si priečinok Hromadné/Spam.</p>
       ${recapHtml}
       <div class="coach-card">
-        <p><strong>Ja som Ján.</strong> Sám som schudol 45 kg — z 133 na 88 — a držím si to už 8 rokov. Presne preto viem, že nerozhodujú zázračné diéty, ale systém a podpora. Poď, spolu ti nájdeme tvoju hlavnú brzdu.</p>
-      </div>
-      <div class="offer-stack">
-        <div>✓ 15 minút, nezáväzne — bez tlaku a bez karty</div>
-        <div>✓ pomenujeme tvoju hlavnú brzdu a ďalší konkrétny krok</div>
-        <div>✓ ak to bude dávať zmysel, poviem ti, ako vyzerá spolupráca so mnou</div>
+        <p><strong>Ja som Ján.</strong> Sám som schudol 45 kg — z 133 na 88 — a držím si to už <strong>8 rokov</strong>. Nie mesiac po diéte, osem rokov. Presne preto viem, že nerozhodujú zázračné diéty, ale systém a podpora.</p>
+        <p class="coach-proof">Schudnúť dokáže hladom skoro každý. Udržať si to je tá časť, na ktorej to ľuďom padá — a to je presne to, čo ťa učím.</p>
       </div>
       ${ctaButtons}
       <p class="retry-line"><button class="link-btn" id="againBtn">Skúsiť kvíz znova</button></p>
@@ -531,15 +617,20 @@ function showResult(name) {
     </section>
   `;
 
+  const consultMeta = {
+    segment: state.segment, band: band.slug, urgency: state.urgency, readiness: state.readiness, tier,
+  };
+
+  // Zobrazenie ponuky meriame zvlášť od kliku — inak sa nedá zistiť, či ponuku ľudia
+  // odmietajú, alebo sa k nej vôbec nedostanú. Pomer ConsultView → ConsultClick
+  // je jediné číslo, ktoré povie, či copy ponuky funguje.
+  trackAd('ConsultView', consultMeta);
+
   const consultBtn = document.getElementById('consultBtn');
-  // Odkaz smeruje priamo na Cal.com (rezervácia hovoru). Klik = pixel signál záujmu o hovor.
-  consultBtn.addEventListener('click', () => {
-    if (typeof fbq === 'function') {
-      fbq('trackCustom', 'ConsultClick', {
-        segment: state.segment, band: band.slug, urgency: state.urgency, readiness: state.readiness, tier,
-      });
-    }
-  });
+  // Odkaz smeruje priamo na Cal.com (rezervácia hovoru). Klik = signál záujmu o hovor.
+  // POZOR: klik nie je rezervácia. Skutočnú rezerváciu treba páliť z Cal.com webhooku
+  // ako event `Lead` — bez toho sa počet reálnych hovorov z reklamy nedá vyhodnotiť.
+  consultBtn.addEventListener('click', () => trackAd('ConsultClick', consultMeta));
 
   document.getElementById('igLink').addEventListener('click', () => {
     if (typeof fbq === 'function') fbq('trackCustom', 'InstagramClick');
