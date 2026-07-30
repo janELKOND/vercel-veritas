@@ -214,6 +214,7 @@ než by scarcity priniesla. `0` sa tiež nezobrazí. Skloňovanie rieši `spotsP
 |---|---|---|---|
 | `PageView` | načítanie stránky (`index.html`) | `track` | oba |
 | `QuizStart` | klik na „Poďme na to" | `trackCustom` | oba |
+| `QuizStep` | **zobrazenie každej z 11 obrazoviek** (`step`, `screen`, `total`) | `trackSingleCustom` | **len ad účet** |
 | `QuizComplete` | zobrazenie e-mailového formulára | `trackCustom` | oba |
 | `CompleteRegistration` | **potvrdený** zápis leadu | `track` | oba |
 | `ConsultView` | zobrazenie ponuky na výsledku | `trackSingleCustom` | **len ad účet** |
@@ -231,6 +232,33 @@ stratili. Vlastné eventy musia ísť cez `trackSingleCustom` — `trackSingle` 
 
 `CompleteRegistration` je zámerne ponechané na `fbq('track')` — kampaň na ňom má
 learning history a neoplatí sa do toho zasahovať.
+
+### `QuizStep` — kde presne ľudia odpadávajú
+
+Hlási sa **zobrazenie** obrazovky, nie odpoveď, takže „krok N" znamená *toľkí sa naň
+dostali*. V Events Manageri z toho vznikne rebríček, ktorý ukáže presnú obrazovku,
+na ktorej ľudia zatvárajú okno:
+
+```
+QuizStart      100
+QuizStep 1      92   otazka-1
+…
+QuizStep 9      55   brzda
+QuizStep 10     48   historia
+QuizStep 11     44   pripravenost
+QuizComplete    12   ← e-mailový formulár
+```
+
+Bez toho sa vedel len počet začatých a dokončených kvízov a diera medzi nimi bola
+slepá — pritom „padajú na 3. otázke", „padajú na kvalifikácii" a „padajú na
+e-mailovej stene" sú tri úplne odlišné opravy.
+
+**Jeden krok = najviac jeden event na načítanie stránky** (`state.stepsTracked`).
+Sada sa zámerne **neresetuje** pri „Skúsiť kvíz znova" — inak by opakovaný pokus
+nafúkol prvé kroky a odpadávanie by vyzeralo miernejšie, než je.
+
+Ide len na pixel ad účtu: analyzuje sa platená premávka a druhý pixel by sa zaplnil
+jedenástimi eventmi na návštevníka bez úžitku.
 
 ### `ConsultView` vs. `ConsultClick`
 

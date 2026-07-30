@@ -29,7 +29,7 @@ curl -s https://kviz.valyra.sk/sw.js | head -1
 curl -s https://kviz.valyra.sk/app.js | grep -n "BOOKING_ENABLED\|SPOTS_PER_MONTH:"
 ```
 
-Očakávané k 30. 7.: `pravda-kviz-v17`, `BOOKING_ENABLED: false`, `SPOTS_PER_MONTH: 5`.
+Očakávané k 30. 7.: `pravda-kviz-v18`, `BOOKING_ENABLED: false`, `SPOTS_PER_MONTH: 5`.
 
 ### Beží nasadená NOVÁ Supabase funkcia?
 
@@ -71,8 +71,10 @@ git log --oneline -5
   dopredu, GDPR súhlas kryje aj obchodné oslovenie, žiadny sľub, ktorý 15-minútový
   hovor nesplní
 - **Ponuka vedie na Cal.com** (`CAL_URL`)
-- **Meranie:** `QuizStart`, `QuizComplete`, `CompleteRegistration`, `ConsultView`,
-  `ConsultClick` — signály o hovore idú adresne na pixel ad účtu cez `trackAd()`
+- **Meranie:** `QuizStart`, **`QuizStep` (všetkých 11 obrazoviek)**, `QuizComplete`,
+  `CompleteRegistration`, `ConsultView`, `ConsultClick` — signály o hovore a kroky idú
+  adresne na pixel ad účtu cez `trackAd()`. `QuizStep` konečne ukáže, na ktorej
+  obrazovke ľudia odpadávajú (posledná chýbajúca položka merania z plánu, sekcia 4.1).
 - **E-mailová séria existuje a beží:** `bridge_0` (vyhodnotenie + 3 tipy) ide hneď
   po kvíze, cron `quizBridge` posiela deň 1/3/5/7
 
