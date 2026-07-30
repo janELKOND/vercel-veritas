@@ -870,6 +870,17 @@ function showResult(name) {
       <p class="email-note">📬 Podrobné vyhodnotenie + 3 praktické tipy ti práve odišli na e-mail. Ak neprídu do pár minút, pozri si priečinok Hromadné/Spam.</p>
       ${recapHtml}
       <div class="coach-card">
+        <div class="proof-pair">
+          <figure>
+            <img src="img/jan-pred-133.jpg" width="500" height="760" alt="Ján pred chudnutím" loading="lazy" decoding="async">
+            <figcaption><span>Pred</span><strong>133 kg</strong></figcaption>
+          </figure>
+          <figure class="after">
+            <img src="img/jan-dnes-88.jpg" width="500" height="760" alt="Ján dnes" loading="lazy" decoding="async">
+            <figcaption><span>Dnes</span><strong>88 kg</strong></figcaption>
+          </figure>
+        </div>
+        <p class="proof-note">Toto som ja — vľavo pred ôsmimi rokmi, vpravo dnes. Nie je to fotka klienta: je to cesta, ktorou som prešiel sám a ktorú dnes stavím ľuďom, ktorých vediem.</p>
         <p><strong>Ja som Ján.</strong> Sám som schudol 45 kg — z 133 na 88 — a držím si to už <strong>8 rokov</strong>. Nie mesiac po diéte, osem rokov. Presne preto viem, že nerozhodujú zázračné diéty, ale systém a podpora.</p>
         <p class="coach-proof">Schudnúť dokáže hladom skoro každý. Udržať si to je tá časť, na ktorej to ľuďom padá — a to je presne to, čo ťa učím.</p>
       </div>
