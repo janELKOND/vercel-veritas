@@ -20,7 +20,7 @@ const CONFIG = {
     LENGTH: '15 minút',
     // Kapacita. DRŽ TO PRAVDIVÉ — scarcity funguje len dokým je skutočná.
     // SPOTS_PER_MONTH = koľko ľudí za mesiac naozaj vezmeš (trvalý limit, mení sa zriedka).
-    SPOTS_PER_MONTH: 10,
+    SPOTS_PER_MONTH: 5,
     // SPOTS_LEFT = koľko miest je voľných PRÁVE TERAZ. Zobrazí sa len ak je to číslo,
     // takže `null` znamená „počet voľných miest neuvádzaj". Vypĺňaj len vtedy, keď to
     // budeš reálne každý mesiac prepisovať — odpočet, ktorý mesiace stojí na tom istom
