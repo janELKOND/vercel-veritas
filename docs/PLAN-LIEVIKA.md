@@ -296,7 +296,7 @@ Presne to sa spravilo 13. 7. 2026 na predošlej kampani a stálo to **28,53 € 
 - [ ] Ad set má vek 45+ a iba feed umiestnenia
 
 **Meranie**
-- [ ] Kvíz páli `PageView`, `quiz_start`, `quiz_step`, `quiz_email_shown`
+- [x] Kvíz páli `PageView`, `QuizStart`, **`QuizStep`** (11 obrazoviek, 30. 7.), `QuizComplete`
 - [ ] Každý lead má v Sheete timestamp
 - [ ] Segmenty majú jednotný formát
 - [ ] Testovacie e-maily (`+test`) sú vyfiltrované zo štatistík

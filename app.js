@@ -228,6 +228,10 @@ const state = {
   gender: 'zena', // 'zena' | 'muz'
   quizStarted: false,
   gateTracked: false,
+  // Ktoré kroky už boli nahlásené. Zámerne sa NERESETUJE pri „Skúsiť kvíz znova" —
+  // inak by opakovaný pokus nafúkol prvé kroky a odpadávanie by vyzeralo miernejšie,
+  // než je. Jeden krok = najviac jeden event na načítanie stránky.
+  stepsTracked: new Set(),
   // Meno a e-mail z formulára si držíme, aby ich rezervácia hovoru nemusela pýtať znova.
   name: null,
   email: null,
@@ -267,6 +271,18 @@ function showIntro() {
   });
 }
 
+// Nahlási ZOBRAZENIE obrazovky, nie odpoveď — takže „krok N" znamená „toľkí sa naň
+// dostali". Z toho vznikne v Events Manageri rebríček, ktorý presne povie, na ktorej
+// obrazovke ľudia zatvárajú okno. Bez toho vieme len počet začatých a dokončených
+// kvízov a diera medzi nimi je slepá.
+// Ide len na pixel ad účtu: analyzuje sa platená premávka a druhý pixel by sa
+// zaplnil jedenástimi eventmi na návštevníka bez úžitku.
+function trackStep(step, screen) {
+  if (state.stepsTracked.has(step)) return;
+  state.stepsTracked.add(step);
+  trackAd('QuizStep', { step, screen, total: TOTAL_STEPS });
+}
+
 function updateProgress(step) {
   progressTrack.hidden = false;
   progressFill.style.width = `${Math.round((step / TOTAL_STEPS) * 100)}%`;
@@ -276,6 +292,7 @@ function showQuestion() {
   const i = state.index;
   const item = QUESTIONS[i];
   updateProgress(i);
+  trackStep(i + 1, `otazka-${i + 1}`);
 
   const opts = item.type === 'tf' ? ['Pravda', 'Mýtus'] : item.options;
 
@@ -341,6 +358,7 @@ function answer(chosenIdx) {
 
 function showSegment() {
   updateProgress(QUESTIONS.length);
+  trackStep(QUESTIONS.length + 1, 'brzda');
   app.innerHTML = `
     <section class="question-screen">
       <div class="step-label">Ešte 3 krátke otázky — nebodované</div>
@@ -361,6 +379,7 @@ function showSegment() {
 
 function showHistory() {
   updateProgress(QUESTIONS.length + 1);
+  trackStep(QUESTIONS.length + 2, 'historia');
   app.innerHTML = `
     <section class="question-screen">
       <div class="step-label">Ešte 2 krátke otázky — bez bodovania</div>
@@ -381,6 +400,7 @@ function showHistory() {
 
 function showReadiness() {
   updateProgress(QUESTIONS.length + 2);
+  trackStep(QUESTIONS.length + 3, 'pripravenost');
   app.innerHTML = `
     <section class="question-screen">
       <div class="step-label">Posledná otázka — bez bodovania</div>
