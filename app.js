@@ -177,6 +177,18 @@ const HISTORY_NUDGE = {
 // kde sa tento formát (meno/telefón/kedy volať) už osvedčil.
 const CALL_WINDOWS = ['Dnes večer', 'Zajtra doobeda', 'Zajtra večer', 'Kedykoľvek mi to zavolaj'];
 
+// Krátke pomenovanie brzdy. Ukazuje sa NAD formulárom na e-mail: človek dostane
+// prvý kúsok hodnoty skôr, než ho o niečo požiadame. Dovtedy odpovedal na všetko
+// a videl len sľub — z 389 dokončených otázok nechalo e-mail 163, teda 58 % odišlo
+// na stene, ktorá si vypýtala adresu za mačku vo vreci.
+const SEGMENT_BRAKE = {
+  'co-jest': 'Nevieš, čo a koľko jesť',
+  'vecerne-chute': 'Večerné chute',
+  'nevydrzim': 'Nevydržíš to dlhodobo',
+  'nemam-cas': 'Nemáš čas na jedlo a plánovanie',
+  'potrebujem-podporu': 'Chýba ti podpora a vedenie',
+};
+
 // Ako o histórii hovoríme v diagnóze. Formulácie sú vecné, nie vyčítavé —
 // človek nám práve priznal svoju najcitlivejšiu vec, tak ju nepoužijeme proti nemu.
 const HISTORY_CLAUSE = {
@@ -245,30 +257,27 @@ const progressFill = document.getElementById('progressFill');
 const TOTAL_STEPS = QUESTIONS.length + 3; // + brzda, história návratov a pripravenosť
 
 // ---------- OBRAZOVKY ----------
-function showIntro() {
-  progressTrack.hidden = true;
-  app.innerHTML = `
-    <section class="intro">
-      <div class="eyebrow">Kvíz · 8 otázok o mýtoch + 3 krátke o tebe · asi 5 minút</div>
-      <h1>Pravda o chudnutí: si v obraze, alebo veríš <span class="flip">mýtom?</span></h1>
-      <p class="lead">Po každej odpovedi sa hneď dozvieš, ako to je naozaj — takže z kvízu odchádzaš s novými vedomosťami, nech dopadneš akokoľvek.</p>
-      <div class="intro-facts">
-        <span>🧠 Overené fakty, žiadne poučky</span>
-        <span>📊 Osobné vyhodnotenie</span>
-        <span>🎯 3 tipy k tvojmu výsledku</span>
-      </div>
-      <button class="btn" id="startBtn">Poďme na to</button>
-      <p class="intro-note">Na konci ťa poprosím o e-mail — pošlem ti naň vyhodnotenie a 3 tipy. Skóre a výsledok uvidíš hneď po zadaní adresy.</p>
-      <p class="footnote">Vytvoril Ján — tréner a výživový poradca, ktorý sám schudol 45 kg a drží si to už 8 rokov.</p>
-    </section>
-  `;
-  document.getElementById('startBtn').addEventListener('click', () => {
-    if (typeof fbq === 'function') fbq('trackCustom', 'QuizStart');
-    state.quizStarted = true;
-    // Rovno do prvej otázky — pohlavie sa vyberá až vo formulári na konci
-    // (menej trenia po kliku z reklamy, prvá otázka je najsilnejší hook).
-    showQuestion();
-  });
+// ÚVODNÁ BRÁNA ZRUŠENÁ (30. 7. 2026). Predtým tu bola samostatná obrazovka s nadpisom
+// a tlačidlom „Poďme na to": z 1 063 načítaní stránky sa cez ňu prekliklo 586 ľudí,
+// takže takmer polovica zaplatenej návštevnosti odišla skôr, než čokoľvek spravila.
+// Prvá otázka je teraz rovno vstupná obrazovka — hook z reklamy ostáva nad ňou, aby
+// sedel sľub, ale človek už nemá čo „odkliknúť". Raz začatý kvíz sa dokončuje v 66 %.
+// Dôsledok na meranie: `QuizStart` sa páli pri PRVEJ ODPOVEDI, nie pri kliku na tlačidlo
+// (predtým „klikol na štart", teraz „naozaj odpovedal") — čísla pred a po nie sú
+// priamo porovnateľné, prah je odteraz prísnejší.
+function introHookHtml() {
+  return `
+      <div class="q-hook">
+        <div class="eyebrow">Kvíz · 8 otázok o mýtoch + 3 krátke o tebe</div>
+        <h1>Pravda o chudnutí: si v obraze, alebo veríš <span class="flip">mýtom?</span></h1>
+        <p class="lead">Po každej odpovedi sa hneď dozvieš, ako to je naozaj. Začni prvou otázkou:</p>
+      </div>`;
+}
+
+function introFootHtml() {
+  return `
+      <p class="intro-note">Na konci ťa poprosím o e-mail — pošlem ti naň vyhodnotenie a 3 tipy. Svoju hlavnú brzdu uvidíš ešte predtým.</p>
+      <p class="footnote">Vytvoril Ján — tréner a výživový poradca, ktorý sám schudol 45 kg a drží si to už 8 rokov.</p>`;
 }
 
 // Nahlási ZOBRAZENIE obrazovky, nie odpoveď — takže „krok N" znamená „toľkí sa naň
@@ -291,19 +300,25 @@ function updateProgress(step) {
 function showQuestion() {
   const i = state.index;
   const item = QUESTIONS[i];
-  updateProgress(i);
+  const isFirst = i === 0;
+  // Na prvej obrazovke nemá zmysel ukazovať prázdny ukazovateľ postupu — pôsobí ako
+  // dlhá cesta pred ešte nezačatou prácou.
+  if (isFirst) progressTrack.hidden = true;
+  else updateProgress(i);
   trackStep(i + 1, `otazka-${i + 1}`);
 
   const opts = item.type === 'tf' ? ['Pravda', 'Mýtus'] : item.options;
 
   app.innerHTML = `
-    <section class="question-screen">
+    <section class="question-screen${isFirst ? ' first' : ''}">
+      ${isFirst ? introHookHtml() : ''}
       <div class="step-label">Otázka ${i + 1} z ${QUESTIONS.length}</div>
       <h2>${item.q}</h2>
       <div class="options" id="options">
         ${opts.map((o, idx) => `<button class="option" data-idx="${idx}">${o}</button>`).join('')}
       </div>
       <div id="revealSlot"></div>
+      ${isFirst ? introFootHtml() : ''}
     </section>
   `;
 
@@ -315,6 +330,12 @@ function showQuestion() {
 function answer(chosenIdx) {
   const item = QUESTIONS[state.index];
   const isCorrect = chosenIdx === item.correct;
+  // Kvíz je „začatý" až prvou odpoveďou — bránu na štart sme zrušili, takže by inak
+  // nebolo čím odlíšiť návštevníka od človeka, ktorý sa naozaj pustil do kvízu.
+  if (!state.quizStarted) {
+    state.quizStarted = true;
+    if (typeof fbq === 'function') fbq('trackCustom', 'QuizStart');
+  }
   state.answers.push({ q: item.q, correct: isCorrect });
   // Skóre vždy odvodíme zo zaznamenaných odpovedí, aby sa nemohlo rozísť s výsledkom.
   state.score = state.answers.filter(a => a.correct).length;
@@ -430,11 +451,26 @@ function showGate() {
     });
     state.gateTracked = true;
   }
+  // Kúsok hodnoty PRED stenou: brzdu pomenujeme hneď a zadarmo, e-mail pýtame až
+  // za zvyšok (diagnóza, prvý krok, 3 tipy). Prvá veta segmentovej správy je ukážka,
+  // zvyšok ostáva na výsledok — nič, čo tu sľúbime, sa nedozvie menej.
+  const brakeName = SEGMENT_BRAKE[state.segment] || '';
+  const brakeTeaser = (SEGMENT_RESULTS[state.segment] || '').split('. ')[0];
+  const teaserHtml = brakeName
+    ? `
+      <div class="brake-teaser">
+        <div class="brake-eyebrow">Tvoja hlavná brzda</div>
+        <div class="brake-name">${brakeName}</div>
+        <p>${brakeTeaser}.</p>
+      </div>`
+    : '';
+
   app.innerHTML = `
     <section class="gate">
-      <div class="step-label">Hotovo ✓ Tvoje vyhodnotenie je pripravené</div>
-      <h2>Kam ti mám poslať výsledok + 3 praktické tipy?</h2>
-      <p class="sub">Skóre uvidíš hneď. Do e-mailu ti pošlem vyhodnotenie a tipy, ktoré nadväzujú na tvoj výsledok.</p>
+      <div class="step-label">Hotovo ✓ Máme to</div>
+      ${teaserHtml}
+      <h2>Kam ti mám poslať celé vyhodnotenie?</h2>
+      <p class="sub">Hneď po zadaní adresy uvidíš, prečo ťa to brzdí práve takto, aký je tvoj prvý krok a ako si stojíš v mýtoch. Do e-mailu ti to pošlem aj s 3 tipmi, aby si to mal/a po ruke.</p>
       <div class="field">
         <label>Píšem ti ako…</label>
         <div class="gender-row" id="genderRow">
@@ -887,7 +923,7 @@ function showResult(name) {
   document.getElementById('againBtn').addEventListener('click', () => {
     state.index = 0; state.score = 0; state.answers = []; state.segment = null;
     state.history = null; state.readiness = null; state.gateTracked = false;
-    showIntro();
+    showQuestion();
     window.scrollTo(0, 0);
   });
 }
@@ -898,4 +934,5 @@ if ('serviceWorker' in navigator) {
 }
 
 // ---------- ŠTART ----------
-showIntro();
+// Rovno prvá otázka — bez úvodnej brány (dôvod v komentári pri introHookHtml).
+showQuestion();

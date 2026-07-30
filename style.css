@@ -91,14 +91,13 @@ h1, h2, .display {
   max-width: 30rem;
 }
 
-.intro {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  flex: 1;
+/* Hook z reklamy — od 30. 7. sedí nad PRVOU OTÁZKOU, nie na samostatnej úvodnej
+   obrazovke. Sľub z reklamy tak ostáva, ale nie je čo odklikávať. */
+.q-hook {
   animation: rise .5s ease both;
+  margin-bottom: 26px;
 }
-.intro .eyebrow {
+.q-hook .eyebrow {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -106,31 +105,19 @@ h1, h2, .display {
   color: var(--berry);
   margin-bottom: 16px;
 }
-.intro h1 {
-  font-size: clamp(34px, 9vw, 46px);
-  margin-bottom: 18px;
+.q-hook h1 {
+  font-size: clamp(28px, 7.5vw, 40px);
+  margin-bottom: 14px;
 }
-.intro h1 .flip { color: var(--berry); font-style: italic; }
-.intro p.lead {
+.q-hook h1 .flip { color: var(--berry); font-style: italic; }
+.q-hook p.lead {
   font-size: 17px;
   color: var(--ink-soft);
-  margin-bottom: 26px;
   max-width: 46ch;
 }
-.intro-facts {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 30px;
-}
-.intro-facts span {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 7px 14px;
-  font-size: 14px;
-  font-weight: 500;
-}
+/* Na prvej obrazovke sú pod otázkou ešte poznámka o e-maile a podpis — nech nie sú
+   nalepené na poslednej možnosti. */
+.question-screen.first .intro-note { margin-top: 26px; }
 
 /* ---------- quiz ---------- */
 .question-screen { animation: rise .35s ease both; padding-top: 26px; }
@@ -206,6 +193,35 @@ h1, h2, .display {
 .gate { animation: rise .4s ease both; padding-top: 26px; }
 .gate h2 { font-size: clamp(24px, 6.5vw, 30px); margin-bottom: 10px; }
 .gate p.sub { color: var(--ink-soft); margin-bottom: 24px; font-size: 16px; }
+
+/* Ukážka hodnoty nad e-mailovou stenou — brzda pomenovaná ešte pred formulárom. */
+.brake-teaser {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--berry);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 0 0 22px;
+}
+.brake-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--berry);
+  margin-bottom: 6px;
+}
+.brake-name {
+  font-size: clamp(20px, 5.5vw, 25px);
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 8px;
+}
+.brake-teaser p {
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin: 0;
+}
 
 .field { margin-bottom: 16px; }
 .field label {
