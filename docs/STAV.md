@@ -114,6 +114,31 @@ znenie odpovedí, nie tlačidlá.
   deň 1–7 nevedeli, koho oslovujú.
 - **Mail o novom leade** (`quizLead`) nasadený — viď nižšie.
 
+## 2c. Druhý lead magnet — `/analyza` (naživo, BEZ REKLAMY)
+
+**Osobná analýza chudnutia** na `kviz.valyra.sk/analyza`. Postavená 30. 7. večer,
+nasadená, ale **nechodí na ňu ani jeden klik** — vlastný ad set sa spúšťa až na
+Jánov pokyn (dohoda: 50/50 rozpočtu proti kvízu, aby sa dalo porovnať).
+
+Dôvod: kvíz sľubuje TEST → priťahuje zvedavosť. Kalkulačka mala 72 % dokončení
+z načítania oproti 15 % pri kvíze. Analýza sľubuje ČÍSLO, ktoré sa dá použiť.
+
+- 8 ťukov: pohlavie, vek, výška, váha, cieľová váha, aktivita, problém, história.
+  **Hodnoty problému a histórie sú zhodné s kvízom** — na nich stojí personalizácia
+  e-mailov aj tiering, pri zmene by sa ticho rozbili.
+- Výpočet: Mifflin–St Jeor × aktivita, deficit 500 kcal, dno 1 200/1 500 kcal,
+  strop deficitu 28 % výdaja. Bielkoviny 1,8 g/kg **cieľovej** váhy.
+- Čas do cieľa vždy ako **rozsah** (22–28 týždňov), nikdy jedno číslo.
+- Pri veľmi nízkom výdaji nepredstiera, že to pôjde jedlom — prizná, že bez pohybu
+  to nejde (inak by vyšlo „0 kg/týždeň, cieľ za 2 týždne").
+- Zdieľa backend s kvízom: `quizLead` (`source: 'osobna-analyza'`), notifikácia,
+  e-mailová séria, formulár na telefón, Cal.com, fotky.
+- Backend preto vetví podľa toho, či lead má skóre — bez toho by analytickému
+  leadu prišlo „TVOJE SKÓRE: 0 z 0".
+
+**Čo chýba pred spustením:** reklamná kreatíva pre nový sľub („zisti, koľko máš
+jesť") — text pripraví Claude, vizuál musí dodať Ján.
+
 ## 3. ~~Zmergované, ale NENASADENÉ~~ NASADENÉ 30. 7. ✅
 
 **Mail o novom leade hovorí, či človek chce konzultáciu.**
