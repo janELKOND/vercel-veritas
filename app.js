@@ -10,12 +10,16 @@ const CONFIG = {
   // dátum, čas a znova písať meno aj e-mail, je najväčšie trenie na celom výsledku.
   // Zostáva ako sekundárna možnosť pre tých, čo si radšej vyberú termín sami.
   CAL_URL: 'https://cal.com/jan-karas-kdm2il/15min',
-  // ⚠️ DOPLNIŤ: URL Apps Script web appky (končí na `/exec`).
-  // Kým je prázdna, formulár na rezerváciu sa NEZOBRAZÍ a ponuka vedie na Cal.com —
-  // radšej trenie než sľúbený hovor, na ktorý nie je kam volať.
-  // Prečo nie Supabase `quizLead`: telefón neukladá a list `Leady` naň nemá stĺpec.
-  // Apps Script má vetvu `typ: 'konzultacia'` → list „Hovory z kvízu" + okamžitý e-mail.
-  BOOKING_URL: '',
+  // Rezervácia hovoru ide na tú istú Supabase funkciu ako lead — rozlišuje ich
+  // pole `typ: 'konzultacia'`. Funkcia musí telefón ULOŽIŤ a v odpovedi to POTVRDIŤ
+  // (`kind: 'call'`), inak klient zápis považuje za neúspešný. Dôvod: keby polia len
+  // tichu zahodila, človek by videl „ozvem sa ti" a hovor by nemal kam prísť.
+  // Čo presne doplniť do funkcie: docs/SUPABASE-REZERVACIA.md
+  BOOKING_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
+  // Prepnúť na `true` AŽ keď je funkcia nasadená a otestovaná jednou rezerváciou.
+  // Kým je `false`, formulár sa nevykreslí a ponuka vedie na Cal.com — radšej
+  // trenie než sľúbený hovor, na ktorý nie je kam volať.
+  BOOKING_ENABLED: false,
   // Valyra = nástroj počas platenej spolupráce; z výsledku už len sekundárny odkaz.
   VALYRA_URL: 'https://valyra.sk/Onboarding',
   // Pixel ad účtu. Signály o záujme o hovor musia ísť explicitne naň (trackSingle),
@@ -580,16 +584,21 @@ async function submitCallback(consultMeta, getWindow) {
     const response = await fetch(CONFIG.BOOKING_URL, {
       method: 'POST',
       mode: 'cors',
-      // POZOR: `text/plain` je zámerné, nie omyl. Apps Script web app NEOBSLUHUJE
-      // preflight `OPTIONS`, ktorý by `application/json` vyvolal — request by zlyhal
-      // ešte pred odoslaním. `text/plain` je „simple request", preflight nespustí
-      // a `e.postData.contents` v Apps Scripte aj tak obsahuje JSON string.
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
     clearTimeout(timeout);
     if (!response.ok) throw new Error(`Booking API: ${response.status}`);
+
+    // `response.ok` NESTAČÍ. Funkcia, ktorá o `typ: 'konzultacia'` nevie, request
+    // prijme a neznáme polia tichu zahodí — dostali by sme 200 a človeku by sme
+    // sľúbili hovor, na ktorý nie je kam volať. Preto musí zápis telefónu výslovne
+    // potvrdiť. Kým to nerobí, radšej ukážeme záložné cesty.
+    const out = await response.json().catch(() => null);
+    if (!out || (out.kind !== 'call' && out.typ !== 'konzultacia')) {
+      throw new Error('Booking API: zápis telefónu nepotvrdený');
+    }
 
     state.callbackSent = true;
     // Až teraz je to rezervácia. `Lead` = štandardný event → ide na pixel ad účtu.
@@ -737,7 +746,7 @@ function showResult(name) {
   // Formulár na číslo funguje len ak je kam zapisovať. Bez BOOKING_URL by človek
   // nechal číslo, dostal „ozvem sa ti" a nikto by mu nezavolal — to je horšie než
   // trenie Cal.comu. Preto sa v tom prípade vracia pôvodná cesta na kalendár.
-  const bookingReady = !!CONFIG.BOOKING_URL;
+  const bookingReady = CONFIG.BOOKING_ENABLED && !!CONFIG.BOOKING_URL;
 
   // Tlačidlo NEODCHÁDZA zo stránky — rozbalí formulár priamo pod ponukou.
   // Predtým to bol odkaz na Cal.com: cudzia stránka, výber dátumu a času a opätovné

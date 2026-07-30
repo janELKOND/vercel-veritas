@@ -162,41 +162,47 @@ najväčšia slepá škvrna. Pri zlyhaní zápisu sa `Lead` **nepáli**.
 
 #### Kam číslo dorazí — `CONFIG.BOOKING_URL`
 
-**Nie na Supabase.** Funkcia `quizLead` telefón neukladá a list `Leady` naň nemá ani
-stĺpec — číslo by sa stratilo, `response.ok` by aj tak vrátilo úspech a človeku by sa
-zobrazilo „ozvem sa ti". Sľúbený hovor, na ktorý nie je kam volať, je horší než trenie.
+Rezervácia ide na **tú istú Supabase funkciu `quizLead`** ako lead z kvízu; rozlišuje
+ich pole `typ: 'konzultacia'`. Funkcia to musí podporovať — čo presne do nej doplniť
+(SQL tabuľky, kód, notifikácia, postup nasadenia) je v
+[`SUPABASE-REZERVACIA.md`](SUPABASE-REZERVACIA.md).
 
-Rezervácia preto ide na **Apps Script web app** (`…/exec`), kde má v `apps-script.gs`
-vlastnú vetvu `typ === 'konzultacia'` → `handleHovorZKvizu_()`:
+#### `response.ok` nestačí — vyžaduje sa potvrdenie
 
-- zápis do listu **„Hovory z kvízu"**: `Čas · Meno · Telefón · Kedy volať · E-mail ·
-  Skóre · Segment · História · Pripravenosť · Tier · Zavolané?`
-- **okamžitý e-mail Jánovi** s predmetom „📞 Rezervácia hovoru z kvízu" — v tele je
-  všetko, čo treba vedieť pred vytočením čísla (brzda, história, čo chce), aby nemusel
-  nič dohľadávať
+Funkcia, ktorá o `typ: 'konzultacia'` nevie, request **prijme a neznáme polia tichu
+zahodí**. Dostali by sme `200`, odpálili konverziu `Lead` a človeku napísali „ozvem sa
+ti na 0900…" — pričom číslo by nikde nebolo. Sľúbený hovor, na ktorý nie je kam volať,
+je horší než trenie Cal.comu, ktoré sme odstraňovali.
 
-Vlastný list, nie `Leady` — rezervácia je iná vec než dokončený kvíz.
+Preto klient vyžaduje v odpovedi **explicitné potvrdenie**:
 
-#### Prečo `text/plain` a nie `application/json`
+```json
+{ "ok": true, "kind": "call" }
+```
 
-Apps Script web app **neobsluhuje preflight `OPTIONS`**, ktorý by `application/json`
-vyvolal — request by zlyhal ešte pred odoslaním. `text/plain` je *simple request*,
-preflight nespustí, a `e.postData.contents` v Apps Scripte aj tak obsahuje JSON string.
-**Nemeniť na `application/json`**, aj keď to vyzerá „správnejšie".
+Bez `kind: "call"` (alebo `typ: "konzultacia"`) sa zápis považuje za **neúspešný**:
+zobrazia sa záložné cesty a `Lead` sa **nepáli**.
 
-#### Poistka, kým URL nie je doplnená
+#### Dvojitá poistka: `BOOKING_ENABLED`
 
-Ak je `BOOKING_URL` prázdna, **formulár sa vôbec nevykreslí** a ponuka vedie na Cal.com
-ako predtým. Radšej trenie než stratené číslo.
+`BOOKING_ENABLED: false` znamená, že sa **formulár vôbec nevykreslí** a ponuka vedie na
+Cal.com. Prepnúť na `true` až keď je funkcia nasadená a otestovaná jednou reálnou
+rezerváciou. Kým sa to nestane, ostáva vypnuté.
 
 #### Keď zápis zlyhá
 
-Pri chybe sa zobrazí odkaz na Cal.com **aj** mailto, číslo zostane vyplnené, tlačidlo
-sa prepne na „Skúsiť znova" a `Lead` sa **nepáli**.
+Pri chybe (odmietnutie, timeout, chýbajúce potvrdenie) sa zobrazí odkaz na Cal.com
+**aj** mailto, číslo zostane vyplnené, tlačidlo sa prepne na „Skúsiť znova" a `Lead`
+sa **nepáli**. Lead sa nestratí ani v jednom z týchto prípadov.
 
-**Prvá reálna rezervácia sa musí otestovať naostro** — nechať prejsť jednu a overiť,
-že prišiel e-mail a pribudol riadok v liste. Apps Script po zmene skriptu treba
-**znovu nasadiť** (Deploy → Manage deployments → New version), inak beží stará verzia.
+#### Záložná cesta: Apps Script
+
+V `apps-script.gs` je pripravená vetva `typ === 'konzultacia'` →
+`handleHovorZKvizu_()`: zápis do listu **„Hovory z kvízu"** (`Čas · Meno · Telefón ·
+Kedy volať · E-mail · Skóre · Segment · História · Pripravenosť · Tier · Zavolané?`)
+plus okamžitý e-mail. Ak by Supabase cesta robila problémy, prepni `BOOKING_URL` na
+URL Apps Script web appky — **a `Content-Type` na `text/plain;charset=utf-8`**, lebo
+Apps Script neobsluhuje preflight `OPTIONS`.
 
 ### Kapacita (`CONFIG.OFFER`) — musí zostať pravdivá
 
