@@ -19,7 +19,11 @@ const CONFIG = {
   // Prepnúť na `true` AŽ keď je funkcia nasadená a otestovaná jednou rezerváciou.
   // Kým je `false`, formulár sa nevykreslí a ponuka vedie na Cal.com — radšej
   // trenie než sľúbený hovor, na ktorý nie je kam volať.
-  BOOKING_ENABLED: false,
+  // ZAPNUTÉ 30. 7. 2026: migrácia `003_quiz_calls.sql` spustená, funkcia nasadená
+  // a otestovaná ostrým POSTom (odpoveď `kind:'call'`, riadok v `quiz_calls`
+  // skontrolovaný a testovací záznam zmazaný). Dôvod zapnutia: odskok na Cal.com
+  // je posledné veľké trenie — za celý čas 7 klikov na ponuku a 0 rezervácií.
+  BOOKING_ENABLED: true,
   // Valyra = nástroj počas platenej spolupráce; z výsledku už len sekundárny odkaz.
   VALYRA_URL: 'https://valyra.sk/Onboarding',
   // Pixel ad účtu. Signály o záujme o hovor musia ísť explicitne naň (trackSingle),
