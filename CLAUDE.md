@@ -24,6 +24,10 @@ poradí. Obsahuje aj príkazy na **overenie nasadenia** — na tomto projekte pl
 magnetu robiť **objednávky hovorov** namiesto e-mailov. Aktuálne čísla z ad účtu,
 5 krokov v poradí dopadu, rozhodovacie prahy a rozdelenie práce.
 
+**[`docs/PLAN-7DNI.md`](docs/PLAN-7DNI.md)** — návrh **úplne nového lead magnetu**
+„7 dní bez diéty": výzva namiesto testu, ponuka hovoru na dni 4, spustenie najprv na
+teplé publikum bez eura. Stav: návrh, nezačaté.
+
 **[`docs/VYSLEDOK-A-PONUKA.md`](docs/VYSLEDOK-A-PONUKA.md)** — ako lievik funguje
 **dnes**: tri kvalifikačné otázky a čo každá riadi, diagnóza (`gapDiagnosis`),
 tiering HOT/WARM/COLD, `noPressure`, ponuka hovoru, meranie, payload a

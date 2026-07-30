@@ -8,6 +8,8 @@ konzultáciu.
 > Tento dokument je vstupný bod — **kde sme skončili**.
 > [`PLAN-HOVORY.md`](PLAN-HOVORY.md) je **plán ďalšej etapy**: ako z lead magnetu robiť
 > objednávky hovorov (aktuálne čísla z ad účtu, 5 krokov, rozhodovacie prahy).
+> [`PLAN-7DNI.md`](PLAN-7DNI.md) je **návrh úplne nového lead magnetu** („7 dní bez
+> diéty") — výzva namiesto testu, ponuka hovoru na dni 4.
 > [`VYSLEDOK-A-PONUKA.md`](VYSLEDOK-A-PONUKA.md) vysvetľuje, **ako** veci fungujú;
 > [`PLAN-LIEVIKA.md`](PLAN-LIEVIKA.md) má čísla z 23. 7. a je čiastočne prekonaný.
 
