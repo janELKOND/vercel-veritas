@@ -217,7 +217,7 @@ const app = document.getElementById('app');
 const progressTrack = document.getElementById('progressTrack');
 const progressFill = document.getElementById('progressFill');
 
-const TOTAL_STEPS = QUESTIONS.length + 3; // + segment, termín a pripravenosť
+const TOTAL_STEPS = QUESTIONS.length + 3; // + brzda, história návratov a pripravenosť
 
 // ---------- OBRAZOVKY ----------
 function showIntro() {
