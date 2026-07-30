@@ -1,0 +1,643 @@
+/* ============================================================
+   Osobná analýza chudnutia — druhý lead magnet (A/B proti kvízu)
+   ============================================================
+   Prečo existuje: kvíz „Pravda o chudnutí" kupuje pozornosť veľmi lacno
+   (CTR 11–17 %, lead 0,29 €), ale sľubuje TEST — a test priláka zvedavosť,
+   nie kúpny zámer. 163 leadov, 0 klientov. Kalkulačka (formio) mala pritom
+   72 % dokončení z načítania oproti 15 % pri kvíze: nástroj, ktorý POČÍTA,
+   poráža nástroj, ktorý SKÚŠA.
+
+   Táto stránka BEŽÍ VEDĽA KVÍZU, nenahrádza ho — inak by sa nedalo zistiť,
+   či prípadná zmena čísel bola o magnete alebo o reklame.
+
+   Zdieľa s kvízom celý backend: `quizLead` (lead + notifikácia + e-mailová
+   séria), tiering podľa histórie návratov, formulár na telefón, Cal.com.
+   Preto sa aj hodnoty segmentu a histórie MUSIA zhodovať s kvízom.
+   ============================================================ */
+
+const CONFIG = {
+  WEBHOOK_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
+  BOOKING_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
+  BOOKING_ENABLED: true,
+  CAL_URL: 'https://cal.com/jan-karas-kdm2il/15min',
+  CONTACT_EMAIL: 'karas.jan2@gmail.com',
+  PIXEL_AD: '2221207801987418',
+  SOURCE: 'osobna-analyza',
+  OFFER: { NAME: 'Reštart plán', LENGTH: '15 minút', SPOTS_PER_MONTH: 5 },
+};
+
+// ---------- OTÁZKY ----------
+// Osem ťukov, z toho tri číselné. Poradie: najprv neutrálne údaje (nízka bariéra),
+// citlivá cieľová váha až keď je človek rozbehnutý, kvalifikácia na koniec.
+const NUM_LIMITS = {
+  age: { min: 16, max: 90, label: 'vek' },
+  height: { min: 130, max: 220, label: 'výšku' },
+  weight: { min: 40, max: 250, label: 'váhu' },
+  goalWeight: { min: 40, max: 250, label: 'cieľovú váhu' },
+};
+
+const ACTIVITY_Q = {
+  q: 'Koľko pohybu máš bežne?',
+  note: 'Bez toho by odhad kalórií mohol byť mimo aj o 400 kcal.',
+  options: [
+    { label: 'Sedavé zamestnanie, takmer necvičím', value: 'sedava', factor: 1.2 },
+    { label: 'Občas sa hýbem (1–2× týždenne)', value: 'obcas', factor: 1.375 },
+    { label: 'Cvičím pravidelne (3–5× týždenne)', value: 'pravidelne', factor: 1.55 },
+    { label: 'Veľmi aktívny životný štýl', value: 'velmi-aktivny', factor: 1.725 },
+  ],
+};
+
+// Hodnoty MUSIA sedieť s kvízom (SEGMENT_Q v /app.js) — na nich stojí personalizácia
+// e-mailov, popisky v notifikácii aj segmentová štatistika. Menia sa len texty.
+const PROBLEM_Q = {
+  q: 'Čo ti to dnes kazí najviac?',
+  options: [
+    { label: 'Neviem, čo a koľko mám jesť', value: 'co-jest' },
+    { label: 'Večer sa neudržím — chute a sladké', value: 'vecerne-chute' },
+    { label: 'Vždy začnem, ale po pár dňoch prestanem', value: 'nevydrzim' },
+    { label: 'Nemám čas plánovať jedlo a variť', value: 'nemam-cas' },
+    { label: 'Viem, čo mám robiť, ale potrebujem podporu', value: 'potrebujem-podporu' },
+  ],
+};
+
+// Najcennejšia kvalifikačná otázka — nie kvôli výpočtu, kvôli biznisu.
+// Kto priznal opakované návraty, ten už dokázal, že samoobsluha mu nestačí.
+const HISTORY_Q = {
+  q: 'Koľkokrát sa ti už zhodené kilá vrátili?',
+  options: [
+    { label: 'Ešte nikdy — toto by bol môj prvý poriadny pokus', value: 'prvykrat' },
+    { label: 'Raz alebo dvakrát', value: 'raz-dva' },
+    { label: 'Trikrát a viac — vždy sa to vrátilo', value: 'viackrat' },
+    { label: 'Váha ide stále dokola, hore-dole', value: 'jojo' },
+  ],
+};
+
+// Prvý krok na dnes podľa toho, čo človek označil ako svoj problém.
+const FIRST_STEP = {
+  'co-jest': 'K obedu aj večeri pridaj dlaň bielkovín (mäso, ryba, tvaroh, vajcia, strukoviny). Nič nerátaj — len nech tam sú.',
+  'vecerne-chute': 'Zjedz poriadne raňajky s bielkovinami. Večerná chuť je najčastejšie účet za deň, v ktorom si zjedla primálo.',
+  'nevydrzim': 'Vyber si jednu vec, ktorú udržíš aj v najhorší deň tohto týždňa. Jednu. Dôslednosť porazí dokonalosť.',
+  'nemam-cas': 'Priprav si dnes dve porcie navyše z toho, čo aj tak varíš. Zajtrajšok tým máš vyriešený.',
+  'potrebujem-podporu': 'Napíš si do kalendára jeden deň v týždni, kedy si spravíš kontrolu. Zodpovednosť drží vtedy, keď motivácia klesne.',
+};
+
+const SEGMENT_CALL_PROMISE = {
+  'co-jest': 'ukážem ti, čo a koľko jesť — bez hádania pri každom jedle',
+  'vecerne-chute': 'nájdeme, čím ti večerné chute začínajú už cez deň, a čo s tým',
+  'nevydrzim': 'postavíme to tak, aby ťa jeden slabší deň nezhodil na začiatok',
+  'nemam-cas': 'zmestíme to do tvojho dňa — bez varenia navyše a hodín v posilňovni',
+  'potrebujem-podporu': 'vieš už, čo robiť — povieme si, ako to udržať, keď motivácia klesne',
+};
+
+const CALL_WINDOWS = ['Dnes večer', 'Zajtra doobeda', 'Zajtra večer', 'Kedykoľvek mi to zavolaj'];
+
+// ---------- STAV ----------
+const state = {
+  step: 0,
+  gender: null,       // 'zena' | 'muz'
+  age: null,
+  height: null,
+  weight: null,
+  goalWeight: null,
+  activity: null,
+  problem: null,
+  history: null,
+  name: '',
+  email: '',
+  started: false,
+  gateTracked: false,
+  stepsTracked: new Set(),
+  callbackSent: false,
+};
+
+const app = document.getElementById('app');
+const progressTrack = document.getElementById('progressTrack');
+const progressFill = document.getElementById('progressFill');
+
+const TOTAL_STEPS = 9; // 8 otázok + formulár
+
+// ---------- MERANIE ----------
+// Konverzie musia ísť adresne na pixel ad účtu — druhý pixel (Valyra) ad účet
+// nevidí, takže by sa signál stratil. Rovnaké pravidlo ako na kvíze.
+function trackAd(event, params = {}) {
+  if (typeof fbq !== 'function') return;
+  const std = ['Lead', 'CompleteRegistration', 'ViewContent', 'Contact'];
+  const method = std.includes(event) ? 'trackSingle' : 'trackSingleCustom';
+  fbq(method, CONFIG.PIXEL_AD, event, params);
+}
+
+function trackStep(step, screen) {
+  if (state.stepsTracked.has(step)) return;
+  state.stepsTracked.add(step);
+  trackAd('AnalysisStep', { step, screen, total: TOTAL_STEPS });
+}
+
+function updateProgress(step) {
+  if (step <= 0) { progressTrack.hidden = true; return; }
+  progressTrack.hidden = false;
+  progressFill.style.width = `${Math.round((step / TOTAL_STEPS) * 100)}%`;
+}
+
+// ---------- VÝPOČET ----------
+// Mifflin-St Jeor — dnes najpoužívanejší odhad bazálneho výdaja.
+// Slovenské skloňovanie po číslovke: 1 týždeň · 2–4 týždne · 5+ týždňov.
+// Pri rozsahu rozhoduje horné číslo („4–5 mesiacov").
+function plural(n, one, few, many) {
+  if (n === 1) return one;
+  return n >= 2 && n <= 4 ? few : many;
+}
+
+function bmr({ gender, weight, height, age }) {
+  const base = 10 * weight + 6.25 * height - 5 * age;
+  return gender === 'muz' ? base + 5 : base - 161;
+}
+
+function activityFactor(value) {
+  return (ACTIVITY_Q.options.find(o => o.value === value) || ACTIVITY_Q.options[0]).factor;
+}
+
+// Deficit 500 kcal = bežné a udržateľné tempo (~0,5 kg/týždeň). Dve poistky:
+// absolútne dno 1 200 / 1 500 kcal a strop deficitu na 28 % výdaja, aby drobným
+// ľuďom s nízkym výdajom nevyšlo niečo, čo sa nedá dlhodobo jesť.
+// (Dno na úrovni bazálneho výdaja by pri sedavom režime blokovalo AKÝKOĽVEK
+// rozumný deficit — TDEE je vtedy len 1,2× BMR.)
+function calcPlan(s) {
+  const b = bmr(s);
+  const tdee = Math.round(b * activityFactor(s.activity));
+  const floor = s.gender === 'muz' ? 1500 : 1200;
+  const target = Math.round(Math.max(tdee - 500, floor, tdee * 0.72) / 10) * 10;
+  const deficit = Math.max(tdee - target, 0);
+
+  const toLose = Math.max(s.weight - s.goalWeight, 0);
+  // 1 kg tuku ≈ 7 700 kcal. Zaokrúhľujeme na desatinu, viac presnosti by klamalo.
+  const perWeek = Math.round((deficit * 7 / 7700) * 10) / 10;
+  const weeks = perWeek > 0 ? toLose / perWeek : 0;
+  // Rozsah, nie jedno číslo: niekto schudne rýchlejšie, niekto ochorie, niekto sa zastaví.
+  const weeksFrom = Math.max(Math.round(weeks), 1);
+  const weeksTo = Math.max(Math.round(weeks * 1.25), weeksFrom + 1);
+  const monthsFrom = Math.max(Math.round(weeksFrom / 4.3), 1);
+  const monthsTo = Math.max(Math.round(weeksTo / 4.3), monthsFrom + 1);
+
+  // Bielkoviny počítame z CIEĽOVEJ váhy — pri vyššej nadváhe by výpočet
+  // z aktuálnej váhy dal nereálne veľa a človek by to vzdal na prvom jedle.
+  const protein = Math.round((1.8 * Math.max(s.goalWeight, 45)) / 5) * 5;
+
+  const bmiGoal = s.goalWeight / Math.pow(s.height / 100, 2);
+
+  // Pri veľmi nízkom výdaji (drobná, staršia, sedavá) zostane po dne 1 200 kcal
+  // deficit taký malý, že by výsledok tvrdil „schudneš 0 kg za týždeň, cieľ za
+  // 2 týždne". Radšej to priznáme: jedlom sa to samo nedá, treba pridať pohyb.
+  const tooLow = perWeek < 0.2;
+
+  return { bmr: Math.round(b), tdee, target, deficit, toLose, perWeek, weeksFrom, weeksTo, monthsFrom, monthsTo, protein, bmiGoal, tooLow };
+}
+
+// ---------- OBRAZOVKY ----------
+const SCREENS = [
+  { key: 'gender', render: renderGender },
+  { key: 'age', render: () => renderNumber('age', 'Koľko máš rokov?', 'napr. 42', 'rokov') },
+  { key: 'height', render: () => renderNumber('height', 'Aká si vysoká?', 'napr. 167', 'cm') },
+  { key: 'weight', render: () => renderNumber('weight', 'Koľko dnes vážiš?', 'napr. 84', 'kg') },
+  { key: 'goalWeight', render: () => renderNumber('goalWeight', 'Kam sa chceš dostať?', 'napr. 73', 'kg', 'Nemusí to byť sen na päť rokov — stačí číslo, ktoré by ťa potešilo.') },
+  { key: 'activity', render: () => renderChoice(ACTIVITY_Q, 'activity') },
+  { key: 'problem', render: () => renderChoice(PROBLEM_Q, 'problem') },
+  { key: 'history', render: () => renderChoice(HISTORY_Q, 'history') },
+];
+
+function hookHtml() {
+  return `
+      <div class="q-hook">
+        <div class="eyebrow">Osobná analýza chudnutia · 2 minúty</div>
+        <h1>Zisti, koľko máš jesť, aby si <span class="flip">schudla bez hladovania</span></h1>
+        <p class="lead">Spočítam ti tvoje kalórie, bielkoviny aj to, ako dlho by ti cesta k cieľu reálne trvala. Začni tým, komu to počítam:</p>
+      </div>`;
+}
+
+function footHtml() {
+  return `
+      <p class="intro-note">Na konci ťa poprosím o e-mail — pošlem ti na neho tvoju analýzu, aby si ju mala po ruke. Svoje čísla uvidíš aj tu na stránke.</p>
+      <p class="footnote">Počíta Ján — tréner a výživový poradca, ktorý sám schudol 45 kg a drží si to už 8 rokov.</p>`;
+}
+
+function show(step) {
+  state.step = step;
+  if (step >= SCREENS.length) return showGate();
+  updateProgress(step === 0 ? 0 : step);
+  trackStep(step + 1, SCREENS[step].key);
+  SCREENS[step].render();
+  if (step > 0) window.scrollTo(0, 0);
+}
+
+function next() {
+  if (!state.started) {
+    state.started = true;
+    trackAd('AnalysisStart');
+  }
+  show(state.step + 1);
+}
+
+function backLink(step) {
+  return step === 0 ? '' : `<p class="retry-line"><button class="link-btn" id="backBtn">← Späť</button></p>`;
+}
+
+function wireBack() {
+  const b = document.getElementById('backBtn');
+  if (b) b.addEventListener('click', () => show(Math.max(state.step - 1, 0)));
+}
+
+function renderGender() {
+  app.innerHTML = `
+    <section class="question-screen first">
+      ${hookHtml()}
+      <div class="options">
+        <button class="option" data-g="zena">Počítaj to pre ženu</button>
+        <button class="option" data-g="muz">Počítaj to pre muža</button>
+      </div>
+      ${footHtml()}
+    </section>
+  `;
+  document.querySelectorAll('.option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.gender = btn.dataset.g;
+      next();
+    });
+  });
+}
+
+function renderNumber(key, question, placeholder, unit, note = '') {
+  const lim = NUM_LIMITS[key];
+  app.innerHTML = `
+    <section class="question-screen">
+      <div class="step-label">Krok ${state.step + 1} z ${TOTAL_STEPS}</div>
+      <h2>${question}</h2>
+      ${note ? `<p class="step-note">${note}</p>` : ''}
+      <div class="num-row">
+        <input type="number" inputmode="numeric" id="numInput" placeholder="${placeholder}" value="${state[key] ?? ''}" aria-label="${question}">
+        <span class="num-unit">${unit}</span>
+      </div>
+      <div class="error-msg" id="errMsg"></div>
+      <button class="btn" id="nextBtn">Pokračovať</button>
+      ${backLink(state.step)}
+    </section>
+  `;
+  const input = document.getElementById('numInput');
+  const err = document.getElementById('errMsg');
+  input.focus();
+
+  const submit = () => {
+    const val = parseFloat(String(input.value).replace(',', '.'));
+    if (!Number.isFinite(val) || val < lim.min || val > lim.max) {
+      err.textContent = `Zadaj, prosím, ${lim.label} (${lim.min}–${lim.max}).`;
+      err.classList.add('show');
+      input.focus();
+      return;
+    }
+    // Cieľová váha vyššia než súčasná = človek si to pomýlil alebo nechce chudnúť;
+    // tak či tak nemá zmysel počítať deficit a tváriť sa, že je všetko v poriadku.
+    if (key === 'goalWeight' && state.weight && val >= state.weight) {
+      err.textContent = 'Cieľová váha má byť nižšia než súčasná — inak nie je čo počítať.';
+      err.classList.add('show');
+      return;
+    }
+    err.classList.remove('show');
+    state[key] = Math.round(val);
+    next();
+  };
+
+  document.getElementById('nextBtn').addEventListener('click', submit);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  wireBack();
+}
+
+function renderChoice(q, key) {
+  app.innerHTML = `
+    <section class="question-screen">
+      <div class="step-label">Krok ${state.step + 1} z ${TOTAL_STEPS}</div>
+      <h2>${q.q}</h2>
+      ${q.note ? `<p class="step-note">${q.note}</p>` : ''}
+      <div class="options">
+        ${q.options.map((o, i) => `<button class="option" data-idx="${i}">${o.label}</button>`).join('')}
+      </div>
+      ${backLink(state.step)}
+    </section>
+  `;
+  document.querySelectorAll('.option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state[key] = q.options[parseInt(btn.dataset.idx, 10)].value;
+      next();
+    });
+  });
+  wireBack();
+}
+
+// ---------- E-MAILOVÁ STENA ----------
+// Ukážka hodnoty PRED stenou: udržovacie kalórie dostane zadarmo. Za e-mail je
+// zvyšok (cieľové kalórie, bielkoviny, tempo, čas do cieľa, prvé kroky).
+// Rovnaké pravidlo ako na kvíze — pýtať adresu za mačku vo vreci stálo 58 % ľudí.
+function showGate() {
+  updateProgress(TOTAL_STEPS);
+  const plan = calcPlan(state);
+  if (!state.gateTracked) {
+    state.gateTracked = true;
+    trackAd('AnalysisComplete', { problem: state.problem, history: state.history });
+  }
+
+  app.innerHTML = `
+    <section class="gate">
+      <div class="step-label">Hotovo ✓ Spočítané</div>
+      <div class="teaser-card">
+        <div class="teaser-eyebrow">Tvoj odhadovaný denný výdaj</div>
+        <div class="teaser-num">${plan.tdee} <small>kcal</small></div>
+        <p>Toľko spáliš pri svojej výške, váhe, veku a pohybe. Koľko z toho máš jesť, aby si ${state.gender === 'muz' ? 'schudol' : 'schudla'} — a ako dlho by to trvalo — ti ukážem hneď.</p>
+      </div>
+      <h2>Kam ti mám poslať celú analýzu?</h2>
+      <p class="sub">Po zadaní adresy uvidíš svoje čísla hneď tu. Na e-mail ti ich pošlem, aby si ich nemusela hľadať.</p>
+      <div class="field">
+        <label for="name">Krstné meno</label>
+        <input type="text" id="name" autocomplete="given-name" placeholder="${state.gender === 'muz' ? 'Napr. Peter' : 'Napr. Zuzana'}">
+      </div>
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input type="email" id="email" autocomplete="email" placeholder="tvoj@email.sk">
+      </div>
+      <label class="consent">
+        <input type="checkbox" id="gdpr">
+        <span>Súhlasím so spracovaním údajov na zaslanie analýzy a tipov k zdravému chudnutiu a s občasnými informáciami o službách a spolupráci. Odhlásiť sa dá kedykoľvek jedným klikom.</span>
+      </label>
+      <div class="error-msg" id="errMsg"></div>
+      <button class="btn" id="submitBtn">Ukáž mi moju analýzu</button>
+    </section>
+  `;
+  document.getElementById('submitBtn').addEventListener('click', submitLead);
+}
+
+async function submitLead() {
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const gdpr = document.getElementById('gdpr').checked;
+  const err = document.getElementById('errMsg');
+  const btn = document.getElementById('submitBtn');
+
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+  if (!name || !emailOk || !gdpr) {
+    err.textContent = !name ? 'Doplň, prosím, meno.'
+      : !emailOk ? 'Skontroluj, prosím, e-mail — nevyzerá kompletný.'
+      : 'Bez súhlasu ti analýzu nemôžem poslať.';
+    err.classList.add('show');
+    return;
+  }
+  err.classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = 'Počítam…';
+
+  state.name = name;
+  state.email = email;
+  const plan = calcPlan(state);
+
+  const payload = {
+    name,
+    email,
+    gender: state.gender,
+    // Zložený segment v rovnakom tvare ako kvíz: problém|história|(pripravenosť).
+    // Analýza sa na pripravenosť nepýta, takže tretí diel ostáva prázdny —
+    // tiering aj tak funguje, lebo stojí na histórii návratov.
+    segment: [state.problem, state.history].filter(Boolean).join('|'),
+    baseSegment: state.problem,
+    history: state.history,
+    // Analýza nemá skóre. Výsledok posielame cez `bandName`, ktorý backend ukladá
+    // aj vypisuje v notifikácii — Ján tak v maili rovno vidí, s akými číslami
+    // človek odišiel, bez zmeny schémy DB kvôli testu.
+    band: 'analyza',
+    bandName: `${plan.target} kcal · ${plan.protein} g bielkovín · do cieľa −${plan.toLose} kg`,
+    analysis: {
+      age: state.age, height: state.height, weight: state.weight, goalWeight: state.goalWeight,
+      activity: state.activity, tdee: plan.tdee, target: plan.target, protein: plan.protein,
+    },
+    ts: new Date().toISOString(),
+    source: CONFIG.SOURCE,
+    quizVersion: 3,
+  };
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    const res = await fetch(CONFIG.WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error(`Lead API: ${res.status}`);
+    // CompleteRegistration = ten istý konverzný event ako kvíz, aby sa dali
+    // porovnávať ceny za lead medzi oboma magnetmi v jednom účte.
+    if (typeof fbq === 'function') fbq('track', 'CompleteRegistration');
+    showResult(plan);
+  } catch (e) {
+    err.innerHTML = `Odoslanie sa nepodarilo. Skús to ešte raz — alebo mi napíš na <a href="mailto:${CONFIG.CONTACT_EMAIL}">${CONFIG.CONTACT_EMAIL}</a> a pošlem ti analýzu ručne.`;
+    err.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'Skúsiť znova';
+  }
+}
+
+// ---------- VÝSLEDOK ----------
+function showResult(plan) {
+  progressTrack.hidden = true;
+  const g = (z, m) => (state.gender === 'muz' ? m : z);
+  const repeatedRelapse = state.history === 'viackrat' || state.history === 'jojo';
+  const wantsGuidance = state.problem === 'potrebujem-podporu';
+  const hot = repeatedRelapse || wantsGuidance;
+  const tier = hot ? 'hot' : 'warm';
+
+  const firstStep = FIRST_STEP[state.problem] || FIRST_STEP['co-jest'];
+  const callPromise = SEGMENT_CALL_PROMISE[state.problem] || SEGMENT_CALL_PROMISE['co-jest'];
+
+  // Zámerne rozsah, nie jedno číslo. „Potrebuješ 18 týždňov" znie presne, ale
+  // realita presná nebude — a nepresný sľub sa vráti ako námietka.
+  const timeLine = plan.perWeek > 0
+    ? `Ak sa plánu budeš dlhodobo držať, cieľ môžeš dosiahnuť <strong>približne za ${plan.weeksFrom}–${plan.weeksTo} ${plural(plan.weeksTo, 'týždeň', 'týždne', 'týždňov')}</strong> (asi ${plan.monthsFrom}–${plan.monthsTo} ${plural(plan.monthsTo, 'mesiac', 'mesiace', 'mesiacov')}).`
+    : 'Tvoj cieľ je od súčasnej váhy veľmi blízko — tu už nejde o chudnutie, ale o udržanie.';
+
+  const bmiWarn = plan.bmiGoal < 18.5
+    ? `<p class="warn-note">Tvoja cieľová váha je pod hranicou zdravého rozpätia. Číslo nižšie ti spočítam, ale úprimne: takto nízko by som ${g('ťa neposielal', 'ťa neposielal')} bez dohľadu lekára.</p>`
+    : '';
+
+  const relapseLine = repeatedRelapse
+    ? `<p class="relapse-line">A ešte jedna vec, ktorú si ${g('označila', 'označil')}: kilá sa ti už vrátili. To nie je o vôli — je to o tom, že plán na papieri a plán, ktorý prežije zlý týždeň, sú dve rôzne veci.</p>`
+    : '';
+
+  app.innerHTML = `
+    <section class="result">
+      <div class="plan-head">
+        <div class="step-label">Tvoja osobná analýza</div>
+        <h2>${state.name}, tu sú tvoje čísla</h2>
+      </div>
+
+      <div class="plan-card">
+        <div class="plan-row"><span>Odhad udržovacích kalórií</span><strong>${plan.tdee} kcal</strong></div>
+        <div class="plan-row highlight"><span>Pre chudnutie začni na</span><strong>${plan.target} kcal</strong></div>
+        <div class="plan-row"><span>Bielkoviny</span><strong>${plan.protein} g denne</strong></div>
+        <div class="plan-row"><span>Do cieľa ti zostáva</span><strong>${plan.toLose} kg</strong></div>
+      </div>
+
+      <div class="pace-card">
+        ${plan.tooLow
+          ? `<p><strong>Tu ti musím povedať pravdu:</strong> tvoj odhadovaný výdaj je nízky, takže samotným jedlom sa rozumný deficit spraviť nedá — pod ${plan.target} kcal ťa posielať nebudem, to už je hladovanie.</p>
+             <p>Riešenie nie je jesť menej, ale <strong>zdvihnúť výdaj</strong>: každodenná chôdza a silový tréning. Presne toto je prípad, kde má zmysel prejsť si to spolu — na papieri sa to nedá vyriešiť.</p>`
+          : `<p>Pri tomto tempe chudneš <strong>približne ${String(plan.perWeek).replace('.', ',')} kg za týždeň</strong>.</p>
+             <p>${timeLine}</p>
+             ${plan.weeksTo > 30 ? '<p>Áno, je to dlhá cesta. O to viac rozhoduje, či ju máš s kým prejsť — samota je najčastejší dôvod, prečo sa to nedotiahne.</p>' : ''}`}
+      </div>
+      ${bmiWarn}
+
+      <div class="personal-insight"><strong>Prvý krok — sprav ho ešte dnes</strong>${firstStep}</div>
+      <div class="steps-card">
+        <div class="steps-title">A tieto tri veci drž celý prvý týždeň</div>
+        <div>✅ Raňajky s bielkovinami</div>
+        <div>✅ Vypi 2 litre vody denne</div>
+        <div>✅ Prejdi sa 30 minút</div>
+      </div>
+
+      <p class="email-note">📬 Analýzu ti posielam aj na e-mail. Ak nepríde do pár minút, pozri si priečinok Hromadné/Spam.</p>
+
+      <div class="coach-card">
+        <div class="proof-pair">
+          <figure>
+            <img src="/img/jan-pred-133.jpg" width="500" height="760" alt="Ján pred chudnutím" loading="lazy" decoding="async">
+            <figcaption><span>Pred</span><strong>133 kg</strong></figcaption>
+          </figure>
+          <figure class="after">
+            <img src="/img/jan-dnes-88.jpg" width="500" height="760" alt="Ján dnes" loading="lazy" decoding="async">
+            <figcaption><span>Dnes</span><strong>88 kg</strong></figcaption>
+          </figure>
+        </div>
+        <p class="proof-note">Toto som ja — vľavo pred ôsmimi rokmi, vpravo dnes. Nie je to fotka klienta: je to cesta, ktorou som prešiel sám a ktorú dnes stavím ľuďom, ktorých vediem.</p>
+        <p><strong>Toto je matematicky správny plán.</strong> Najťažšie nie je vypočítať kalórie. Najťažšie je dodržať ich v pondelok po práci, v piatok večer alebo cez víkend. Presne s tým pomáham klientom.</p>
+        ${relapseLine}
+      </div>
+
+      <div class="offer" id="offerCard">
+        <div class="offer-eyebrow">Tvoj ďalší krok</div>
+        <h3 class="offer-title">${CONFIG.OFFER.NAME}</h3>
+        <div class="offer-meta">${CONFIG.OFFER.LENGTH} po telefóne · zadarmo · bez karty</div>
+        <p class="offer-lead">S čím z toho hovoru odídeš:</p>
+        <div class="offer-stack">
+          <div>✓ <strong>Prejdeme si tvoje čísla</strong> — ${callPromise}.</div>
+          <div>✓ <strong>Ako to dostať do bežného dňa</strong> — nie teória, ale tvoj pondelok a tvoj piatok večer.</div>
+          <div>✓ <strong>Jasno v tom, čo ďalej</strong> — ak budeš chcieť, aby som ťa viedol, poviem ti presne ako to vyzerá. Ak nie, rozlúčime sa v pohode.</div>
+        </div>
+        <p class="offer-scarcity">Beriem maximálne <strong>${CONFIG.OFFER.SPOTS_PER_MONTH} nových ľudí mesačne</strong>, lebo pri každom som osobne.</p>
+      </div>
+
+      <button class="btn" id="consultBtn">📞 Chcem svoj ${CONFIG.OFFER.NAME}</button>
+
+      <div class="callback" id="callbackForm" hidden>
+        <h4>Kam ti mám zavolať?</h4>
+        <p class="callback-lead">Meno aj e-mail už mám — potrebujem len číslo. <strong>Ozvem sa ti ja</strong>, nemusíš nič hľadať ani plánovať.</p>
+        <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="+421 900 123 456" aria-label="Telefónne číslo">
+        <div class="when-label">Kedy sa ti to hodí? <span>(nepovinné)</span></div>
+        <div class="when-row" id="whenRow">
+          ${CALL_WINDOWS.map(w => `<button type="button" class="when-chip" data-when="${w}">${w}</button>`).join('')}
+        </div>
+        <div class="error-msg" id="cbErr"></div>
+        <button class="btn" id="cbSubmit">Ozvi sa mi</button>
+        <p class="callback-alt">Radšej si vyberieš termín ${g('sama', 'sám')}? <a href="${CONFIG.CAL_URL}" target="_blank" rel="noopener" id="calLink">Otvor kalendár</a>.</p>
+      </div>
+
+      <p class="disclaimer">Výpočet je odhad podľa rovnice Mifflin–St Jeor. Nenahrádza lekára — ak si tehotná, dojčíš alebo sa liečiš, over si to najprv u neho.</p>
+    </section>
+  `;
+
+  const meta = { segment: state.problem, history: state.history, tier, source: CONFIG.SOURCE };
+  trackAd('ConsultView', meta);
+
+  let chosenWindow = '';
+  const consultBtn = document.getElementById('consultBtn');
+  const form = document.getElementById('callbackForm');
+  consultBtn.addEventListener('click', () => {
+    form.hidden = false;
+    trackAd('ConsultClick', meta);
+    document.getElementById('phone').focus();
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  document.querySelectorAll('.when-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chosenWindow = chip.dataset.when;
+      document.querySelectorAll('.when-chip').forEach(c => c.classList.toggle('active', c === chip));
+    });
+  });
+
+  document.getElementById('calLink').addEventListener('click', () => trackAd('CalendarClick', meta));
+  document.getElementById('cbSubmit').addEventListener('click', () => submitCallback(meta, () => chosenWindow));
+}
+
+async function submitCallback(meta, getWindow) {
+  if (state.callbackSent) return;
+  const input = document.getElementById('phone');
+  const err = document.getElementById('cbErr');
+  const btn = document.getElementById('cbSubmit');
+  const phone = input.value.trim();
+
+  if (phone.replace(/\D/g, '').length < 9) {
+    err.textContent = 'Skontroluj, prosím, číslo — nevyzerá kompletné.';
+    err.classList.add('show');
+    input.focus();
+    return;
+  }
+  err.classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = 'Posielam…';
+
+  const plan = calcPlan(state);
+  const payload = {
+    typ: 'konzultacia',
+    name: state.name,
+    email: state.email,
+    phone,
+    preferredTime: getWindow() || '',
+    segment: state.problem,
+    history: state.history,
+    tier: meta.tier,
+    source: CONFIG.SOURCE,
+    band: `${plan.target} kcal / ${plan.protein} g B`,
+    ts: new Date().toISOString(),
+    quizVersion: 3,
+  };
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    const res = await fetch(CONFIG.BOOKING_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!res.ok) throw new Error(`Booking API: ${res.status}`);
+    // Samotné 200 nestačí: funkcia, ktorá o rezervácii nevie, by request prijala
+    // a telefón ticho zahodila — sľúbili by sme hovor, na ktorý nie je kam volať.
+    const out = await res.json().catch(() => null);
+    if (!out || out.kind !== 'call') throw new Error('zápis telefónu nepotvrdený');
+
+    state.callbackSent = true;
+    trackAd('Lead', { ...meta, value: 25.00, currency: 'EUR' });
+    document.getElementById('callbackForm').innerHTML = `
+      <div class="callback-done">
+        <h4>✓ Mám to, ${state.name}</h4>
+        <p>Ozvem sa ti na <strong>${phone}</strong>${payload.preferredTime ? ` — <strong>${payload.preferredTime.toLowerCase()}</strong>` : ' čo najskôr'}. Ak by ti to nevyhovovalo, napíš mi na <a href="mailto:${CONFIG.CONTACT_EMAIL}">${CONFIG.CONTACT_EMAIL}</a>.</p>
+      </div>`;
+  } catch (e) {
+    err.innerHTML = `Odoslanie sa nepodarilo. Skús to ešte raz, alebo si <a href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">vyber termín v kalendári</a>.`;
+    err.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'Skúsiť znova';
+  }
+}
+
+// ---------- ŠTART ----------
+show(0);

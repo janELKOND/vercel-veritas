@@ -1,0 +1,142 @@
+/* Osobná analýza chudnutia — doplnok k /style.css (ten nesie základ, farby,
+   tlačidlá, .question-screen, .gate, .offer, .callback, .proof-pair aj .coach-card).
+   Tu je len to, čo kvíz nemá: číselné vstupy a karta s číslami. */
+
+/* ---------- číselný vstup ---------- */
+.num-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.num-row input {
+  flex: 1;
+  min-width: 0;
+  font-size: 28px;
+  font-weight: 700;
+  padding: 14px 16px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  font-family: inherit;
+}
+.num-row input:focus {
+  outline: none;
+  border-color: var(--berry);
+}
+/* Šípky pri number inpute na mobile len zaberajú miesto a zvádzajú na klikanie. */
+.num-row input::-webkit-outer-spin-button,
+.num-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.num-row input[type=number] { -moz-appearance: textfield; }
+.num-unit {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  min-width: 3.2rem;
+}
+.question-screen .btn { margin-top: 14px; }
+
+/* ---------- ukážka pred e-mailovou stenou ---------- */
+.teaser-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--berry);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 0 0 22px;
+}
+.teaser-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--berry);
+  margin-bottom: 4px;
+}
+.teaser-num {
+  font-size: clamp(30px, 8vw, 40px);
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+.teaser-num small { font-size: 0.45em; font-weight: 700; color: var(--ink-soft); }
+.teaser-card p { font-size: 14.5px; color: var(--ink-soft); margin: 0; }
+
+/* ---------- výsledok: karta s číslami ---------- */
+.plan-head { margin-bottom: 16px; }
+.plan-head h2 { font-size: clamp(24px, 6.5vw, 30px); }
+
+.plan-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.plan-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line);
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+.plan-row:last-child { border-bottom: 0; }
+.plan-row strong {
+  font-size: clamp(18px, 5vw, 22px);
+  font-weight: 800;
+  color: var(--ink);
+  white-space: nowrap;
+}
+/* Cieľové kalórie sú to jediné číslo, podľa ktorého sa má človek zajtra riadiť. */
+.plan-row.highlight { background: var(--berry-tint); }
+.plan-row.highlight strong { color: var(--berry-deep); }
+
+.pace-card {
+  background: var(--berry-tint);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.pace-card p { margin: 0 0 8px; }
+.pace-card p:last-child { margin-bottom: 0; }
+
+.steps-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  line-height: 2;
+}
+.steps-title { font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+
+.relapse-line { margin-top: 12px; }
+
+.warn-note {
+  font-size: 14px;
+  line-height: 1.6;
+  background: #fff6ed;
+  border-left: 3px solid #d97706;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+/* Odhad nie je diagnóza — a musí to byť napísané, nie len myslené. */
+.disclaimer {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  opacity: .8;
+  margin-top: 26px;
+  text-align: center;
+}
+.callback-alt { font-size: 13.5px; color: var(--ink-soft); margin-top: 12px; text-align: center; }

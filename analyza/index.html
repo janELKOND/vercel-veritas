@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Osobná analýza chudnutia – koľko máš jesť, aby si chudol bez hladovania</title>
+  <meta name="description" content="Za 2 minúty zistíš, koľko máš jesť, aby si chudol bez hladovania — tvoje kalórie, bielkoviny a reálny čas do cieľa.">
+  <meta name="theme-color" content="#7C2B4E">
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Osobná analýza chudnutia">
+  <meta property="og:description" content="Za 2 minúty zisti, koľko máš jesť, aby si chudol bez hladovania.">
+  <meta property="og:type" content="website">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Karla:wght@400;500;700&display=swap&subset=latin-ext" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=11">
+  <link rel="stylesheet" href="analyza.css?v=1">
+
+  <!-- Meta Pixel — rovnaké poradie ako na kvíze: prvý je pixel ad účtu (learning
+       history kampane), druhý Valyra. Konverzie páľ adresne cez trackAd(). -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '2221207801987418');
+    fbq('init', '1529505581872759');
+    fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=2221207801987418&ev=PageView&noscript=1"/></noscript>
+
+  <!-- Microsoft Clarity -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "x6v4tcfaa7");
+  </script>
+</head>
+<body>
+  <div class="progress-track" id="progressTrack" hidden>
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <main id="app" class="app"></main>
+
+  <script src="app.js?v=1"></script>
+</body>
+</html>
