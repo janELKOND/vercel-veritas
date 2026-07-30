@@ -252,6 +252,86 @@ h1, h2, .display {
   text-align: left;
 }
 
+/* ---------- ponuka hovoru ---------- */
+/* Karta ponuky je jediný vizuálny ťah na stránke — orámovaná berry, aby oko
+   po prečítaní výsledku spadlo priamo na ňu a odtiaľ na tlačidlo. */
+.offer {
+  background: var(--card);
+  border: 2px solid var(--berry);
+  border-radius: var(--radius);
+  padding: 20px 20px 18px;
+  margin: 0 0 4px;
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+.offer-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--berry);
+  margin-bottom: 6px;
+}
+.offer-title {
+  font-family: 'Fraunces', serif;
+  font-size: 27px;
+  font-weight: 650;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.offer-meta {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.offer-lead {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 14px 0 10px;
+}
+/* Vnútri karty nechceme rámik v rámiku — zoznam splýva s kartou. */
+.offer .offer-stack {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  gap: 10px;
+  color: var(--ink-soft);
+}
+.offer .offer-stack strong { color: var(--ink); }
+.offer-guarantee {
+  background: var(--sage-tint);
+  border-left: 4px solid var(--sage);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.offer-guarantee strong { color: var(--ink); }
+.offer-scarcity {
+  margin-top: 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.offer-scarcity strong { color: var(--berry-deep); }
+.cta-urgency {
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--berry-deep);
+  margin: 10px auto 0;
+}
+.coach-proof {
+  margin-top: 10px;
+  font-size: 14.5px;
+}
+
 .email-note {
   background: var(--sage-tint);
   border: 2px solid var(--sage);

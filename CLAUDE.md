@@ -31,8 +31,18 @@ ukazuje zámer, kód ukazuje realitu.
 
 **Dva pixely.** Stránka inicializuje `2221207801987418` (patrí ad účtu) aj
 `1529505581872759` (veritas). **Ad účet k druhému NEMÁ prístup** — konverzie
-poslané naň sú pre reklamu neviditeľné. Konverzné eventy páľ explicitne cez
-`fbq('trackSingle', '2221207801987418', ...)`.
+poslané naň sú pre reklamu neviditeľné. Na adresné odoslanie je v `app.js`
+helper `trackAd()`; vlastné eventy musia ísť cez `trackSingleCustom`, štandardné
+cez `trackSingle` (zámena = pixel event zahodí).
+
+**Kapacita v ponuke musí zostať pravdivá.** `CONFIG.OFFER.SPOTS_PER_MONTH` a
+`SPOTS_LEFT` sa píšu na výsledkovú stránku ako voľné miesta. Keď čísla prestanú
+sedieť, nastav `SPOTS_LEFT` na `null` — veta o miestach sa prestane zobrazovať.
+Vymyslené miesta, ktoré sa nikdy nemenia, ľudia odhalia a stoja dôveru.
+
+**`ConsultClick` nie je rezervácia**, je to len klik na Cal.com. Skutočný počet
+hovorov z reklamy sa dá merať až eventom `Lead` z Cal.com webhooku — do vtedy je
+konverzia hovoru odhad. Pomer `ConsultView` → `ConsultClick` hovorí o copy ponuky.
 
 **Zápis do Sheetu je `no-cors`**, teda naslepo bez potvrdenia. Nefunguje na ňom
 žiadna kontrola chýb. Oprava je popísaná v sekcii 7 plánu — podstata je poslať
