@@ -15,6 +15,11 @@ segmentu a vypýta e-mail. Slúži ako vstup do lievika smerom na aplikáciu.
 
 ## Čítaj pred zmenami
 
+**[`docs/STAV.md`](docs/STAV.md)** — ⭐ **začni tu.** Kde sme skončili: čo je
+nasadené, čo je zmergované a ešte nebeží, čo je zámerne uspané a čo treba v akom
+poradí. Obsahuje aj príkazy na **overenie nasadenia** — na tomto projekte platí, že
+**zmergované ≠ nasadené** (kód býva v `main`, ale Supabase funkcia beží stará).
+
 **[`docs/VYSLEDOK-A-PONUKA.md`](docs/VYSLEDOK-A-PONUKA.md)** — ako lievik funguje
 **dnes**: tri kvalifikačné otázky a čo každá riadi, diagnóza (`gapDiagnosis`),
 tiering HOT/WARM/COLD, `noPressure`, ponuka hovoru, meranie, payload a
@@ -27,10 +32,14 @@ v sekcii 9 dokumentu vyššie. Nečítaj ho ako popis súčasného stavu.
 
 ## Kde sme skončili
 
-Napíš **„kukni do githubu"** (alebo `/stav`) a spustí sa skill
-[`.claude/skills/stav`](.claude/skills/stav/SKILL.md): načíta plán, pozrie
-otvorené PR a **overí priamo v kóde**, čo je reálne hotové — checklist v pláne
-ukazuje zámer, kód ukazuje realitu.
+Napíš **„skontroluj si a pokračuj"** (alebo `/stav`, „kukni do githubu") a spustí sa
+skill [`.claude/skills/stav`](.claude/skills/stav/SKILL.md): načíta
+[`docs/STAV.md`](docs/STAV.md), **overí volaním**, čo je reálne nasadené (stránka aj
+Supabase funkcia), pozrie otvorené PR v oboch repách a povie ďalší krok.
+
+**Projekt je v dvoch repách:** `vercel-veritas` (kvíz, verejné) a `valyra` vetva
+`supabase-migration` (funkcia `quizLead` — príjem leadu, e-maily, notifikácie).
+Ján pracuje na dvoch počítačoch, takže najprv `git pull`.
 
 ## Na čo si dať pozor
 

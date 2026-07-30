@@ -1,77 +1,79 @@
 ---
 name: stav
-description: Zisti, kde sme skončili na projekte veritas kvíz — načíta plán opráv lievika, pozrie stav na GitHube a overí priamo v kóde, čo je reálne hotové. Použi, keď používateľ napíše „kukni do githubu", „aký je stav", „čo mám robiť", „kde sme skončili", „stav projektu", „pokračujeme" alebo sa po prestávke vracia k práci a chce vedieť, čo ďalej.
+description: Zisti, kde sme skončili na projekte veritas kvíz — načíta handoff dokument, overí čo je REÁLNE nasadené (stránka + Supabase funkcia) a povie ďalší krok. Použi, keď používateľ napíše „skontroluj si a pokračuj", „kukni do githubu", „aký je stav", „čo mám robiť", „kde sme skončili", „stav projektu", „pokračujeme", alebo sa po prestávke či z druhého počítača vracia k práci.
 ---
 
 # Stav projektu veritas kvíz
 
-Cieľ: za jednu odpoveď povedať **čo je hotové, čo je rozrobené a čo je ďalší krok**.
-Nehádaj — over to v kóde a na GitHube.
+Cieľ: za jednu odpoveď povedať **čo je nasadené, čo čaká a čo je ďalší krok**.
 
-## 1. Načítaj plán
+**Zmergované ≠ nasadené.** Toto je na tomto projekte hlavný zdroj omylov: kód býva
+v `main`, ale Supabase funkcia beží stará. Preto sa nasadenie **vždy overuje
+volaním**, nikdy z gitu.
 
-Prečítaj `docs/PLAN-LIEVIKA.md`. Kľúčové sú:
+## 1. Načítaj handoff
 
-- **sekcia 2** — poradie opráv (odtiaľ berieš „ďalší krok")
-- **sekcia 10** — checklist „Hotovo, keď"
-- **sekcia 11** — otvorené otázky
+Prečítaj **`docs/STAV.md`** — je to vstupný bod: čo je naživo, čo je zmergované
+a nenasadené, čo je zámerne uspané a čo treba v akom poradí.
 
-Checklistu never naslovo. Odškrtnutie v dokumente nie je dôkaz, že je vec spravená.
+Doplňujúce, len keď treba detail:
+- `docs/VYSLEDOK-A-PONUKA.md` — **ako** veci fungujú (mechanika, meranie, pravidlá)
+- `docs/SUPABASE-REZERVACIA.md` — ako zapnúť uspaný formulár na telefón
+- `docs/PLAN-LIEVIKA.md` — čísla z reklamy z 23. 7., **čiastočne prekonaný**;
+  nečítaj ho ako popis súčasného stavu
 
-## 2. Pozri stav na GitHube
+## 2. Over, čo je reálne nasadené
+
+Toto je jadro skillu. Spusti a porovnaj s očakávaním v `STAV.md`:
+
+```bash
+curl -s https://kviz.valyra.sk/sw.js | head -1
+curl -s https://kviz.valyra.sk/app.js | grep -n "BOOKING_ENABLED\|SPOTS_PER_MONTH:"
+```
+
+Verzia Supabase funkcie — bezpečná sonda, nič nezapíše ani neodošle (chýba meno
+aj e-mail, takže obe verzie končia na `400`):
+
+```bash
+curl -s -X POST "https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead" \
+  -H "Content-Type: application/json" -d '{"typ":"konzultacia","phone":"123"}'
+```
+
+- `Chýba meno alebo platný e-mail` → **stará** verzia, nenasadené
+- `Chýba platné telefónne číslo` → **nová** verzia, nasadené
+
+**Nikdy neposielaj sondu s platným menom a e-mailom** — vyrobil by si falošný lead
+a spustil e-mail cudzej adrese.
+
+## 3. Pozri rozrobené veci v OBOCH repách
 
 ```bash
 gh pr list --state open
-git log --oneline -10
+git log --oneline -5
 git status -sb
+gh pr list --state open --repo janELKOND/valyra
 ```
 
-Ak je otvorený PR, povedz čoho sa týka a či čaká na merge.
-Ak je lokálna vetva pozadu za `origin/main`, upozorni na to skôr, než sa začne robiť.
-
-## 3. Over v kóde, čo je naozaj hotové
-
-Toto je jadro — checklist v dokumente ukazuje zámer, kód ukazuje realitu.
-
-**Chýbajúce pixel eventy (sekcia 4.1 plánu):**
-
-```bash
-grep -n "trackCustom\|quiz_step\|quiz_start\|quiz_email_shown\|PageView" app.js index.html
-```
-
-**Oprava `no-cors` zápisu (sekcia 7):**
-
-```bash
-grep -n "no-cors\|text/plain\|ok: true" app.js apps-script.gs
-```
-
-Ak `no-cors` v `app.js` stále je, oprava spravená nie je — bez ohľadu na checklist.
-
-**Rezervácia konzultácie (sekcie 5–6):**
-
-```bash
-grep -n "konzultacia\|cal.com\|trackSingle" app.js index.html
-```
-
-**Timestamp a stĺpec `typ` v Sheete (sekcia 4.2, 6):**
-
-```bash
-grep -n "appendRow\|new Date()" apps-script.gs
-```
+Projekt je v dvoch repách: `vercel-veritas` (kvíz) a `valyra` vetva
+`supabase-migration` (funkcia `quizLead`). Ján pracuje na dvoch počítačoch — ak je
+lokálna vetva pozadu, povedz to skôr, než sa začne robiť.
 
 ## 4. Ohlás to takto
 
-Stručne, v tomto poradí:
+1. **Nasadené a funguje** — čo si potvrdil volaním, nie čo tvrdí git
+2. **Čaká na nasadenie** — čo je zmergované, ale naživo nebeží, a kto to musí spustiť
+3. **Ďalší krok** — prvá nesplnená položka z poradia v `STAV.md` sekcii 5
+4. **Rozpor** — ak sa `STAV.md` a realita rozchádzajú, povedz to naplno a **oprav
+   `STAV.md`**; zastaralý handoff je horší než žiadny
 
-1. **Hotové** — čo si potvrdil v kóde, nie čo tvrdí checklist
-2. **Rozrobené** — otvorené PR, necommitnuté zmeny
-3. **Ďalší krok** — prvá nesplnená položka z poradia v sekcii 2 plánu, aj s odhadom, koľko to zaberie
-4. **Blokujúce otázky** — ak niektorá z otvorených otázok v sekcii 11 bráni ďalšiemu kroku, povedz ktorá
-
-Ak sa checklist a kód rozchádzajú, povedz to naplno — je to dôležitejšie než samotný stav.
+Ak je ďalší krok mimo kódu (Ads Manager, telefonáty leadom, referencia), povedz to
+priamo — nehľadaj v kóde prácu, ktorá tam nie je.
 
 ## Čo nerobiť
 
-- Needškrtávaj položky v checkliste sám od seba. Odškrtne ich až ten, kto vec spraví a otestuje.
-- Nepúšťaj sa rovno do implementácie. Toto je prehľad; na prácu čakaj na pokyn.
-- Nemeň kampaň ani optimalizáciu — to sa robí v Ads Manageri, nie v tomto repe.
+- **Nehádaj nasadenie z gitu.** Vždy sonda.
+- **Nepúšťaj sa rovno do implementácie.** Toto je prehľad; na prácu čakaj na pokyn.
+- **Nemeň kampaň ani optimalizáciu** — to sa robí v Ads Manageri, nie v repe.
+- **Neprepínaj `BOOKING_ENABLED` na `true`**, kým sonda nepotvrdí novú verziu
+  funkcie — inak ľudia z reklamy nechajú číslo a dostanú chybu.
+- **Neodškrtávaj** položky sám od seba. Odškrtne ich ten, kto vec spraví a otestuje.
