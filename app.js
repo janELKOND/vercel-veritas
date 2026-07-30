@@ -208,7 +208,7 @@ function showIntro() {
   progressTrack.hidden = true;
   app.innerHTML = `
     <section class="intro">
-      <div class="eyebrow">Kvíz · 8 otázok · približne 3 minúty</div>
+      <div class="eyebrow">Kvíz · 8 otázok o mýtoch + 3 krátke o tebe · asi 5 minút</div>
       <h1>Pravda o chudnutí: si v obraze, alebo veríš <span class="flip">mýtom?</span></h1>
       <p class="lead">Po každej odpovedi sa hneď dozvieš, ako to je naozaj — takže z kvízu odchádzaš s novými vedomosťami, nech dopadneš akokoľvek.</p>
       <div class="intro-facts">
@@ -217,6 +217,7 @@ function showIntro() {
         <span>🎯 3 tipy k tvojmu výsledku</span>
       </div>
       <button class="btn" id="startBtn">Poďme na to</button>
+      <p class="intro-note">Na konci ťa poprosím o e-mail — pošlem ti naň vyhodnotenie a 3 tipy. Skóre a výsledok uvidíš hneď po zadaní adresy.</p>
       <p class="footnote">Vytvoril Ján — tréner a výživový poradca, ktorý sám schudol 45 kg a drží si to už 8 rokov.</p>
     </section>
   `;
@@ -305,8 +306,9 @@ function showSegment() {
   updateProgress(QUESTIONS.length);
   app.innerHTML = `
     <section class="question-screen">
-      <div class="step-label">Posledná otázka — táto sa neboduje</div>
+      <div class="step-label">Ešte 3 krátke otázky — nebodované</div>
       <h2>${SEGMENT_Q.q}</h2>
+      <p class="step-note">Podľa nich ti na konci odporučím ďalší krok. Na skóre nemajú vplyv.</p>
       <div class="options">
         ${SEGMENT_Q.options.map((o, idx) => `<button class="option" data-idx="${idx}">${o.label}</button>`).join('')}
       </div>
@@ -326,6 +328,7 @@ function showUrgency() {
     <section class="question-screen">
       <div class="step-label">Ešte 2 krátke otázky — bez bodovania</div>
       <h2>${URGENCY_Q.q}</h2>
+      <p class="step-note">Aby som ti neodporúčal niečo, na čo teraz nemáš chuť ani čas.</p>
       <div class="options">
         ${URGENCY_Q.options.map((o, idx) => `<button class="option" data-idx="${idx}">${o.label}</button>`).join('')}
       </div>
@@ -345,6 +348,7 @@ function showReadiness() {
     <section class="question-screen">
       <div class="step-label">Posledná otázka — bez bodovania</div>
       <h2>${READINESS_Q.q}</h2>
+      <p class="step-note">Podľa toho ti odporučím buď samostatný plán, alebo vedenie so mnou.</p>
       <div class="options">
         ${READINESS_Q.options.map((o, idx) => `<button class="option" data-idx="${idx}">${o.label}</button>`).join('')}
       </div>
@@ -391,7 +395,7 @@ function showGate() {
       </div>
       <label class="consent">
         <input type="checkbox" id="gdpr">
-        <span>Súhlasím so spracovaním údajov na zaslanie vyhodnotenia a tipov k zdravému chudnutiu. Odhlásiť sa dá kedykoľvek jedným klikom.</span>
+        <span>Súhlasím so spracovaním údajov na zaslanie vyhodnotenia a tipov k zdravému chudnutiu a s občasnými informáciami o mojich službách a spolupráci. Odhlásiť sa dá kedykoľvek jedným klikom.</span>
       </label>
       <div class="error-msg" id="errMsg"></div>
       <button class="btn" id="submitBtn">Získať moje osobné vyhodnotenie</button>
@@ -534,13 +538,13 @@ function showResult(name) {
 
   let nextStep;
   if (wantsGuidance) {
-    nextStep = `Nechceš na to byť sám/sama — a to je najrozumnejšie rozhodnutie. Za ${offer.LENGTH} spolu pomenujeme tvoju hlavnú brzdu a odídeš s napísaným prvým týždňom.`;
+    nextStep = `Nechceš na to byť sám/sama — a to je najrozumnejšie rozhodnutie. Za ${offer.LENGTH} spolu pomenujeme tvoju hlavnú brzdu a odídeš s prvým konkrétnym krokom.`;
   } else if (decidedNow) {
-    nextStep = `Si rozhodnutá začať hneď — tak nezačínaj zbieraním ďalších informácií. Za ${offer.LENGTH} dostaneš svoj prvý týždeň napísaný na papieri.`;
+    nextStep = `Si rozhodnutá začať hneď — tak nezačínaj zbieraním ďalších informácií. Za ${offer.LENGTH} budeš vedieť, čím začať.`;
   } else if (cold) {
     nextStep = 'Pokojne si to nechaj uležať. Vyhodnotenie a tipy ti chodia na e-mail — a keď budeš chcieť ísť do toho naozaj, termín si vyberieš kedykoľvek.';
   } else {
-    nextStep = `Máš k tomu vážny vzťah, len ti chýba jasný plán. Za ${offer.LENGTH} ho spolu postavíme tak, aby sadol tvojmu reálnemu životu.`;
+    nextStep = `Máš k tomu vážny vzťah, len ti chýba jasný plán. Za ${offer.LENGTH} si prejdeme, ako má vyzerať a čím začať, aby sadol tvojmu reálnemu životu.`;
   }
 
   // Prvý bod ponuky hovorí o TEJ brzde, ktorú človek sám označil — nie o chudnutí vo všeobecnosti.
@@ -566,7 +570,7 @@ function showResult(name) {
         <p class="offer-lead">S čím z toho hovoru odídeš:</p>
         <div class="offer-stack">
           <div>✓ <strong>Tvoju hlavnú brzdu pomenovanú nahlas</strong> — ${callPromise}.</div>
-          <div>✓ <strong>Napísaný prvý týždeň</strong> — konkrétne kroky na tvoj bežný týždeň. Ten plán je tvoj, aj keby sme spolu viac nehovorili.</div>
+          <div>✓ <strong>Prvý konkrétny krok</strong> — jedna vec, ktorou začneš najbližší týždeň, nastavená na tvoj bežný deň. Ten krok je tvoj, aj keby sme spolu viac nehovorili.</div>
           <div>✓ <strong>Jasno v tom, čo ďalej</strong> — ak budeš chcieť, aby som ťa viedol, poviem ti presne ako to vyzerá. Ak nie, rozlúčime sa v pohode.</div>
         </div>
         <p class="offer-guarantee"><strong>Ako pracujem:</strong> keď sa do toho spolu pustíme, ostávam s tebou, kým sa to nepohne. Neplatíš za počet stretnutí, ale za to, že to konečne zaberie.</p>
