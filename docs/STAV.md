@@ -133,7 +133,10 @@ novší stav).
 **2. Overiť** sondou zo sekcie 1 a jedným kvízom naostro — mail musí prísť
 s novým predmetom.
 
-*Claude nemá: Supabase CLI, access token, ani CI v repe. Overené, nie odhadnuté.*
+*Oprava 30. 7. (overené volaním `npx supabase projects list`): Claude **prístup má** —
+CLI aj access token sú na tomto PC prihlásené, projekt `ztuudcgmzbkkbldnkqay` je
+`linked`. Deploy teda vie spustiť aj Claude, ale **len na výslovný pokyn** — je to
+zásah do živého príjmu leadov z platenej reklamy. CI v repe naďalej nie je.*
 
 > **Poradie ďalšej etapy je v [`PLAN-HOVORY.md`](PLAN-HOVORY.md).** Zhrnutie: kvíz
 > dnes vyrába leady za 0,33 € (151 za 14 dní), ale **nula rezervovaných hovorov** —
