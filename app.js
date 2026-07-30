@@ -10,10 +10,12 @@ const CONFIG = {
   // dátum, čas a znova písať meno aj e-mail, je najväčšie trenie na celom výsledku.
   // Zostáva ako sekundárna možnosť pre tých, čo si radšej vyberú termín sami.
   CAL_URL: 'https://cal.com/jan-karas-kdm2il/15min',
-  // Rezervácia hovoru sa zapisuje tam, kam aj lead. Ak by Supabase funkcia `quizLead`
-  // odmietala `typ: 'konzultacia'`, prepni to na URL Apps Script web appky —
-  // tá už rovnaký formát (meno/telefón/kedy volať) obsluhuje pre kalkulačku.
-  BOOKING_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
+  // ⚠️ DOPLNIŤ: URL Apps Script web appky (končí na `/exec`).
+  // Kým je prázdna, formulár na rezerváciu sa NEZOBRAZÍ a ponuka vedie na Cal.com —
+  // radšej trenie než sľúbený hovor, na ktorý nie je kam volať.
+  // Prečo nie Supabase `quizLead`: telefón neukladá a list `Leady` naň nemá stĺpec.
+  // Apps Script má vetvu `typ: 'konzultacia'` → list „Hovory z kvízu" + okamžitý e-mail.
+  BOOKING_URL: '',
   // Valyra = nástroj počas platenej spolupráce; z výsledku už len sekundárny odkaz.
   VALYRA_URL: 'https://valyra.sk/Onboarding',
   // Pixel ad účtu. Signály o záujme o hovor musia ísť explicitne naň (trackSingle),
@@ -578,7 +580,11 @@ async function submitCallback(consultMeta, getWindow) {
     const response = await fetch(CONFIG.BOOKING_URL, {
       method: 'POST',
       mode: 'cors',
-      headers: { 'Content-Type': 'application/json' },
+      // POZOR: `text/plain` je zámerné, nie omyl. Apps Script web app NEOBSLUHUJE
+      // preflight `OPTIONS`, ktorý by `application/json` vyvolal — request by zlyhal
+      // ešte pred odoslaním. `text/plain` je „simple request", preflight nespustí
+      // a `e.postData.contents` v Apps Scripte aj tak obsahuje JSON string.
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
@@ -728,14 +734,21 @@ function showResult(name) {
         ${spotsHtml}
       </div>`;
 
+  // Formulár na číslo funguje len ak je kam zapisovať. Bez BOOKING_URL by človek
+  // nechal číslo, dostal „ozvem sa ti" a nikto by mu nezavolal — to je horšie než
+  // trenie Cal.comu. Preto sa v tom prípade vracia pôvodná cesta na kalendár.
+  const bookingReady = !!CONFIG.BOOKING_URL;
+
   // Tlačidlo NEODCHÁDZA zo stránky — rozbalí formulár priamo pod ponukou.
   // Predtým to bol odkaz na Cal.com: cudzia stránka, výber dátumu a času a opätovné
   // písanie mena aj e-mailu. To je na človeka, ktorý práve dokončil kvíz, priveľa.
-  const bookBtnHtml = `<button class="btn${cold ? ' secondary' : ''}" id="consultBtn">${cold ? 'Nechať číslo — bez záväzku' : `📞 Chcem svoj ${offer.NAME}`}</button>`;
+  const bookBtnHtml = bookingReady
+    ? `<button class="btn${cold ? ' secondary' : ''}" id="consultBtn">${cold ? 'Nechať číslo — bez záväzku' : `📞 Chcem svoj ${offer.NAME}`}</button>`
+    : `<a class="btn${cold ? ' secondary' : ''}" id="consultBtn" href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">${cold ? `Pozrieť voľné termíny (${offer.LENGTH})` : `📞 Chcem svoj ${offer.NAME}`}</a>`;
 
   // Formulár žiada JEDINÚ vec: telefónne číslo. Meno a e-mail už máme z kvízu,
   // takže sa nepýtajú druhýkrát. Termín je voliteľný — klik namiesto kalendára.
-  const callbackHtml = `
+  const callbackHtml = !bookingReady ? '' : `
       <div class="callback" id="callbackForm" hidden>
         <h4>Kam ti mám zavolať?</h4>
         <p class="callback-lead">Meno aj e-mail už mám — potrebujem len číslo. <strong>Ozvem sa ti ja</strong>, nemusíš nič hľadať ani plánovať.</p>
@@ -807,34 +820,36 @@ function showResult(name) {
   trackAd('ConsultView', consultMeta);
 
   const consultBtn = document.getElementById('consultBtn');
-  const callbackForm = document.getElementById('callbackForm');
-  // Klik = záujem o hovor, nie rezervácia. Rezerváciou je až potvrdený zápis nižšie.
-  consultBtn.addEventListener('click', () => {
-    trackAd('ConsultClick', consultMeta);
-    consultBtn.hidden = true;
-    callbackForm.hidden = false;
-    const phone = document.getElementById('phone');
-    phone.focus({ preventScroll: true });
-    callbackForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
+  // Klik = záujem o hovor, nie rezervácia. Rezerváciou je až potvrdený zápis.
+  consultBtn.addEventListener('click', () => trackAd('ConsultClick', consultMeta));
 
-  // Kto si radšej vyberie termín sám, ide na Cal.com. Meriame to zvlášť —
-  // ak túto cestu volí väčšina, formulár im neprekáža a dá sa uprednostniť kalendár.
-  document.getElementById('calLink').addEventListener('click', () => {
-    trackAd('ConsultCalendar', consultMeta);
-  });
-
-  let chosenWindow = '';
-  document.querySelectorAll('.when-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      chosenWindow = chip.dataset.when;
-      document.querySelectorAll('.when-chip').forEach(c => c.classList.toggle('active', c === chip));
+  if (bookingReady) {
+    const callbackForm = document.getElementById('callbackForm');
+    consultBtn.addEventListener('click', () => {
+      consultBtn.hidden = true;
+      callbackForm.hidden = false;
+      document.getElementById('phone').focus({ preventScroll: true });
+      callbackForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
-  });
 
-  document.getElementById('cbSubmit').addEventListener('click', () => {
-    submitCallback(consultMeta, () => chosenWindow);
-  });
+    // Kto si radšej vyberie termín sám, ide na Cal.com. Meriame to zvlášť —
+    // ak túto cestu volí väčšina, formulár im neprekáža a dá sa uprednostniť kalendár.
+    document.getElementById('calLink').addEventListener('click', () => {
+      trackAd('ConsultCalendar', consultMeta);
+    });
+
+    let chosenWindow = '';
+    document.querySelectorAll('.when-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        chosenWindow = chip.dataset.when;
+        document.querySelectorAll('.when-chip').forEach(c => c.classList.toggle('active', c === chip));
+      });
+    });
+
+    document.getElementById('cbSubmit').addEventListener('click', () => {
+      submitCallback(consultMeta, () => chosenWindow);
+    });
+  }
 
   document.getElementById('igLink').addEventListener('click', () => {
     if (typeof fbq === 'function') fbq('trackCustom', 'InstagramClick');

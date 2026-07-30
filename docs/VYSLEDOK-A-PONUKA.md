@@ -160,15 +160,43 @@ Formát (`name`, `phone`, `preferredTime`) je zámerne rovnaký ako ten, ktorý 
 Vďaka tomu sa skutočná rezervácia meria **bez Cal.com webhooku** — čo bola dosiaľ
 najväčšia slepá škvrna. Pri zlyhaní zápisu sa `Lead` **nepáli**.
 
+#### Kam číslo dorazí — `CONFIG.BOOKING_URL`
+
+**Nie na Supabase.** Funkcia `quizLead` telefón neukladá a list `Leady` naň nemá ani
+stĺpec — číslo by sa stratilo, `response.ok` by aj tak vrátilo úspech a človeku by sa
+zobrazilo „ozvem sa ti". Sľúbený hovor, na ktorý nie je kam volať, je horší než trenie.
+
+Rezervácia preto ide na **Apps Script web app** (`…/exec`), kde má v `apps-script.gs`
+vlastnú vetvu `typ === 'konzultacia'` → `handleHovorZKvizu_()`:
+
+- zápis do listu **„Hovory z kvízu"**: `Čas · Meno · Telefón · Kedy volať · E-mail ·
+  Skóre · Segment · História · Pripravenosť · Tier · Zavolané?`
+- **okamžitý e-mail Jánovi** s predmetom „📞 Rezervácia hovoru z kvízu" — v tele je
+  všetko, čo treba vedieť pred vytočením čísla (brzda, história, čo chce), aby nemusel
+  nič dohľadávať
+
+Vlastný list, nie `Leady` — rezervácia je iná vec než dokončený kvíz.
+
+#### Prečo `text/plain` a nie `application/json`
+
+Apps Script web app **neobsluhuje preflight `OPTIONS`**, ktorý by `application/json`
+vyvolal — request by zlyhal ešte pred odoslaním. `text/plain` je *simple request*,
+preflight nespustí, a `e.postData.contents` v Apps Scripte aj tak obsahuje JSON string.
+**Nemeniť na `application/json`**, aj keď to vyzerá „správnejšie".
+
+#### Poistka, kým URL nie je doplnená
+
+Ak je `BOOKING_URL` prázdna, **formulár sa vôbec nevykreslí** a ponuka vedie na Cal.com
+ako predtým. Radšej trenie než stratené číslo.
+
 #### Keď zápis zlyhá
 
-Do Supabase funkcie `quizLead` nie je z tohto repa vidno, takže **nie je overené, že
-prijme `typ: 'konzultacia'` a `phone`**. Preto má formulár záchytnú sieť: pri chybe zobrazí
-odkaz na Cal.com **aj** mailto, číslo zostane vyplnené a tlačidlo sa prepne na
-„Skúsiť znova". Lead sa nestratí ani vtedy, keď backend odmietne.
+Pri chybe sa zobrazí odkaz na Cal.com **aj** mailto, číslo zostane vyplnené, tlačidlo
+sa prepne na „Skúsiť znova" a `Lead` sa **nepáli**.
 
-**Prvá reálna rezervácia sa musí otestovať naostro** a overiť, že dorazila. Ak
-`quizLead` payload odmieta, prepni `CONFIG.BOOKING_URL` na URL Apps Script web appky.
+**Prvá reálna rezervácia sa musí otestovať naostro** — nechať prejsť jednu a overiť,
+že prišiel e-mail a pribudol riadok v liste. Apps Script po zmene skriptu treba
+**znovu nasadiť** (Deploy → Manage deployments → New version), inak beží stará verzia.
 
 ### Kapacita (`CONFIG.OFFER`) — musí zostať pravdivá
 
