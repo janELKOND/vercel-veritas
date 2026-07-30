@@ -422,6 +422,36 @@ h1, h2, .display {
   font-weight: 650;
   margin-top: 10px;
 }
+/* Diagnóza stojí hneď pod skóre a je vizuálne najvýraznejší text na stránke.
+   Skóre je uzavretie, toto je otvorená otázka — preto dostáva amber, nie berry:
+   nie je to pochvala ani chyba, je to zistenie, pri ktorom sa treba zastaviť. */
+.diagnosis {
+  background: var(--amber-tint);
+  border: 2px solid var(--amber);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin: 0 0 22px;
+  text-align: left;
+}
+.diagnosis-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--amber);
+  margin-bottom: 6px;
+}
+.diagnosis h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 21px;
+  font-weight: 650;
+  line-height: 1.2;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.diagnosis p { font-size: 15px; color: var(--ink-soft); }
+.diagnosis strong { color: var(--ink); }
+
 .result .verdict-text { font-size: 16px; color: var(--ink-soft); margin-bottom: 24px; }
 .result .verdict-text strong { color: var(--ink); }
 

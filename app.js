@@ -108,12 +108,18 @@ const SEGMENT_Q = {
   ],
 };
 
-const URGENCY_Q = {
-  q: 'Nakoľko vážne to teraz myslíš?',
+// Nahradzuje pôvodnú otázku „Nakoľko vážne to teraz myslíš?". Tá bola sebadeklarácia —
+// vážne to myslí každý, kto dokliká kvíz, takže signál bol takmer nulový. História
+// návratov je SPRÁVANIE: kto priznal opakované návraty, ten už dokázal, že samoobsluha
+// mu nestačí. Zároveň je to druhé číslo (vedľa skóre), z ktorého sa skladá diagnóza.
+// Text je bez rodových prípon — pohlavie sa vyberá až vo formulári na konci.
+const HISTORY_Q = {
+  q: 'Koľkokrát sa ti už zhodené kilá vrátili?',
   options: [
-    { label: 'Som rozhodnutá to konečne vyriešiť — čím skôr, tým lepšie', value: 'hned' },
-    { label: 'Chcem začať do mesiaca, keď si to zariadim', value: 'do-30-dni' },
-    { label: 'Ešte len zvažujem, či do toho pôjdem', value: 'zistujem' },
+    { label: 'Ešte nikdy — toto by bol môj prvý poriadny pokus', value: 'prvykrat' },
+    { label: 'Raz alebo dvakrát', value: 'raz-dva' },
+    { label: 'Trikrát a viac — vždy sa to vrátilo', value: 'viackrat' },
+    { label: 'Váha ide stále dokola, hore-dole', value: 'jojo' },
   ],
 };
 
@@ -145,12 +151,22 @@ const SEGMENT_CALL_PROMISE = {
   'potrebujem-podporu': 'vieš už, čo robiť — povieme si, ako to udržať, keď motivácia klesne',
 };
 
-// Mikro-veta pod tlačidlom, napojená na to, čo človek povedal o svojom termíne.
-// Urgencia z jeho vlastnej odpovede je vierohodnejšia než akýkoľvek odpočet.
-const URGENCY_NUDGE = {
-  'hned': 'Rozhodnutie máš spravené dnes — nenechaj ho vychladnúť.',
-  'do-30-dni': 'Termín si môžeš vybrať aj o dva týždne. Miesto si držíš už dnes.',
-  'zistujem': '',
+// Mikro-veta pod tlačidlom, napojená na jeho vlastnú históriu. Urgencia z faktu,
+// ktorý sám priznal, je vierohodnejšia než akýkoľvek odpočet alebo výzva k akcii.
+const HISTORY_NUDGE = {
+  'prvykrat': 'Začni rovno správne — druhý pokus je vždy ťažší ako prvý.',
+  'raz-dva': '',
+  'viackrat': 'Nech toto nie je ďalší pokus v tom istom kruhu.',
+  'jojo': 'Ten kruh sa dá prerušiť — ale nie tým istým spôsobom ako doteraz.',
+};
+
+// Ako o histórii hovoríme v diagnóze. Formulácie sú vecné, nie vyčítavé —
+// človek nám práve priznal svoju najcitlivejšiu vec, tak ju nepoužijeme proti nemu.
+const HISTORY_CLAUSE = {
+  'prvykrat': null,
+  'raz-dva': 'kilá sa ti už raz-dvakrát vrátili',
+  'viackrat': 'kilá sa ti vrátili trikrát a viac',
+  'jojo': 'váha ti ide stále dokola',
 };
 
 // Vyhodnotenie podľa pásma skóre
@@ -160,8 +176,8 @@ const BANDS = [
     name: { zena: 'Mýty ťa vodia za nos', muz: 'Mýty ťa vodia za nos' },
     slug: 'zaciatocnicka',
     text: {
-      zena: 'A nie je to tvoja chyba — protichodné rady počúvaš zo všetkých strán. Dobrá správa? Práve si si ujasnila niekoľko dôležitých základov. S dobrými informáciami a podporou sa rozhoduje jednoduchšie.',
-      muz: 'A nie je to tvoja chyba — protichodné rady počúvaš zo všetkých strán. Dobrá správa? Práve si si ujasnil niekoľko dôležitých základov. S dobrými informáciami a podporou sa rozhoduje jednoduchšie.',
+      zena: 'A nie je to tvoja chyba — protichodné rady počúvaš zo všetkých strán. Dobrá správa? Práve si si ujasnila niekoľko dôležitých základov. Samotné informácie však ešte nikoho neschudli — rozhoduje, čo s nimi urobíš zajtra.',
+      muz: 'A nie je to tvoja chyba — protichodné rady počúvaš zo všetkých strán. Dobrá správa? Práve si si ujasnil niekoľko dôležitých základov. Samotné informácie však ešte nikoho neschudli — rozhoduje, čo s nimi urobíš zajtra.',
     },
   },
   {
@@ -178,8 +194,8 @@ const BANDS = [
     name: { zena: 'Teóriu máš v malíčku', muz: 'Teóriu máš v malíčku' },
     slug: 'expertka',
     text: {
-      zena: 'Vieš, ako to funguje — a ak výsledky napriek tomu neprichádzajú, problém nie je vo vedomostiach. Je v <strong>systéme, dôslednosti a podpore</strong>. Presne tam sa láme rozdiel medzi „viem, čo mám robiť" a „naozaj to robím".',
-      muz: 'Vieš, ako to funguje — a ak výsledky napriek tomu neprichádzajú, problém nie je vo vedomostiach. Je v <strong>systéme, dôslednosti a podpore</strong>. Presne tam sa láme rozdiel medzi „viem, čo mám robiť" a „naozaj to robím".',
+      zena: 'Vieš, ako to funguje — takže ďalší článok o chudnutí ti už nič nepridá. Rozdiel spraví <strong>systém, dôslednosť a podpora</strong>. Presne tam sa láme hranica medzi „viem, čo mám robiť" a „naozaj to robím".',
+      muz: 'Vieš, ako to funguje — takže ďalší článok o chudnutí ti už nič nepridá. Rozdiel spraví <strong>systém, dôslednosť a podpora</strong>. Presne tam sa láme hranica medzi „viem, čo mám robiť" a „naozaj to robím".',
     },
   },
 ];
@@ -190,7 +206,7 @@ const state = {
   score: 0,
   answers: [],   // { q, chosen, correct }
   segment: null,
-  urgency: null,
+  history: null,
   readiness: null,
   gender: 'zena', // 'zena' | 'muz'
   quizStarted: false,
@@ -317,26 +333,26 @@ function showSegment() {
   document.querySelectorAll('.option').forEach(btn => {
     btn.addEventListener('click', () => {
       state.segment = SEGMENT_Q.options[parseInt(btn.dataset.idx, 10)].value;
-      showUrgency();
+      showHistory();
     });
   });
 }
 
-function showUrgency() {
+function showHistory() {
   updateProgress(QUESTIONS.length + 1);
   app.innerHTML = `
     <section class="question-screen">
       <div class="step-label">Ešte 2 krátke otázky — bez bodovania</div>
-      <h2>${URGENCY_Q.q}</h2>
-      <p class="step-note">Aby som ti neodporúčal niečo, na čo teraz nemáš chuť ani čas.</p>
+      <h2>${HISTORY_Q.q}</h2>
+      <p class="step-note">Toto je pre vyhodnotenie najdôležitejšia odpoveď — bez nej sa nedá povedať, či ti chýbajú informácie, alebo niečo úplne iné.</p>
       <div class="options">
-        ${URGENCY_Q.options.map((o, idx) => `<button class="option" data-idx="${idx}">${o.label}</button>`).join('')}
+        ${HISTORY_Q.options.map((o, idx) => `<button class="option" data-idx="${idx}">${o.label}</button>`).join('')}
       </div>
     </section>
   `;
   document.querySelectorAll('.option').forEach(btn => {
     btn.addEventListener('click', () => {
-      state.urgency = URGENCY_Q.options[parseInt(btn.dataset.idx, 10)].value;
+      state.history = HISTORY_Q.options[parseInt(btn.dataset.idx, 10)].value;
       showReadiness();
     });
   });
@@ -368,7 +384,7 @@ function showGate() {
     fbq('trackCustom', 'QuizComplete', {
       score: state.score,
       segment: state.segment,
-      urgency: state.urgency,
+      history: state.history,
       readiness: state.readiness,
     });
     state.gateTracked = true;
@@ -446,13 +462,17 @@ async function submitLead() {
     gender: state.gender,
     // Kvalifikáciu ukladáme aj do existujúceho segmentu, takže je okamžite
     // viditeľná v Supabase, Google Sheete aj admin e-maile bez zmeny backendu.
-    segment: [state.segment, state.urgency, state.readiness].filter(Boolean).join('|'),
+    // POZOR: prostredný diel je od v3 história návratov, predtým tam bola urgencia.
+    // Staré a nové riadky sa preto nesmú porovnávať naslepo — rozlišuje ich quizVersion.
+    segment: [state.segment, state.history, state.readiness].filter(Boolean).join('|'),
     baseSegment: state.segment,
-    urgency: state.urgency,
+    history: state.history,
     readiness: state.readiness,
     wrong: wrongAnswers.map(a => a.q),
     ts: new Date().toISOString(),
     source: 'pravda-o-chudnuti',
+    // v1 = len segment · v2 = segment|urgencia|pripravenost · v3 = segment|historia|pripravenost
+    quizVersion: 3,
   };
 
   try {
@@ -474,7 +494,7 @@ async function submitLead() {
         value: 5.00,
         currency: 'EUR',
         segment: state.segment,
-        urgency: state.urgency,
+        history: state.history,
         readiness: state.readiness,
       });
     }
@@ -489,6 +509,39 @@ async function submitLead() {
 
 function bandFor(score) {
   return BANDS.find(b => score >= b.min && score <= b.max);
+}
+
+// Jadro kvízu. Samotné skóre je UZAVRETIE („poučil som sa, hotovo") a uspokojený človek
+// nemá dôvod nič meniť. Diagnóza namiesto toho postaví vedľa seba dve čísla, ktoré človek
+// sám dal — čo VIE a čo DOSIAHOL — a nechá hovoriť rozdiel medzi nimi.
+// Nič sa nedomýšľa ani nepodsúva: obe hodnoty sú jeho vlastné odpovede.
+function gapDiagnosis(score, max, history) {
+  const knows = score >= 6;                 // horné pásmo = vedomosti nie sú brzda
+  const clause = HISTORY_CLAUSE[history];   // null = ešte to poriadne neskúšal
+  const missed = max - score;
+
+  if (clause && knows) {
+    return {
+      title: 'Vieš to — a aj tak sa to vracia',
+      text: `Máš <strong>${score} z ${max}</strong> správne a ${clause}. To nie je nedostatok informácií — tie preukázateľne máš. Toto je presne rozdiel medzi <strong>vedieť</strong> a <strong>robiť</strong>, a ten sa sám od seba nezatvorí.`,
+    };
+  }
+  if (clause && !knows) {
+    return {
+      title: 'Časť odpovede je v tých mýtoch',
+      text: `Máš <strong>${score} z ${max}</strong> a ${clause}. Časť dôvodu môže byť práve v tých ${missed} otázkach, ktoré ťa prekvapili — a časť v tom, že v tom nikto nebol s tebou.`,
+    };
+  }
+  if (knows) {
+    return {
+      title: 'Teória nie je tvoja brzda',
+      text: `Máš <strong>${score} z ${max}</strong> správne. Vedomosti teda máš — jediná otázka je, či to, čo vieš, aj naozaj denne robíš. Presne tam sa láme väčšina pokusov.`,
+    };
+  }
+  return {
+    title: 'Začínaš so správnymi informáciami',
+    text: `Máš <strong>${score} z ${max}</strong>. ${missed} vecí ťa prekvapilo — a to je dobrá správa: teraz ich už vieš, takže ťa nebudú brzdiť tak, ako brzdia väčšinu ľudí.`,
+  };
 }
 
 // Slovenské skloňovanie miest: 1 miesto · 2–4 miesta · 5 a viac miest.
@@ -520,27 +573,33 @@ function showResult(name) {
 
   const segmentResult = SEGMENT_RESULTS[state.segment] || SEGMENT_RESULTS['co-jest'];
 
-  // NOVÁ STRATÉGIA: výsledok vedie na HOVOR s Jánom (nie na appku). Valyra = nástroj počas platenej spolupráce.
-  // Vysoký zámer (chce začať hneď/do 30 dní, alebo chce plán/podporu) → primárne CTA = rezervácia hovoru.
-  // „Len zisťuje" (COLD) → rezervácia zostáva, ale nenápadne (sekundárny štýl); hlavný ťah drží e-mailová séria.
-  // ÚROVEŇ ZÁUJMU (tri pásma). Cieľ: na hovor tlačiť tých, čo chcú vedenie alebo sú
-  // rozhodnutí; zvedavcov (len info + len zvažujú) nechať na e-mailovú sériu.
-  //   HOT  = chce vedenie (podpora) ALEBO je rozhodnutá hneď
-  //   COLD = len si dopĺňa info A zároveň len zvažuje  → tlačidlo na hovor nenápadné
-  //   WARM = zvyšok (chce plán, čoskoro)               → hovor tiež primárne
+  // Výsledok vedie na HOVOR s Jánom (nie na appku). Valyra = nástroj počas platenej spolupráce.
+  // ÚROVEŇ ZÁUJMU (tri pásma). Tierujeme podľa toho, čo človek chce, a podľa toho,
+  // čo sa mu už reálne stalo — nie podľa toho, ako vážne to o sebe tvrdí.
+  //   HOT  = chce vedenie ALEBO sa mu to opakovane vrátilo (dôkaz, že sám na to nemá systém)
+  //   COLD = chce len informácie a opakované návraty nemá  → tlačidlo nenápadné
+  //   WARM = zvyšok (chce plán)                            → hovor tiež primárne
   const wantsGuidance = state.readiness === 'podpora';
-  const decidedNow = state.urgency === 'hned';
-  const hot = wantsGuidance || decidedNow;
-  const cold = !hot && (state.readiness === 'informacie' || state.urgency === 'zistujem');
+  const repeatedRelapse = state.history === 'viackrat' || state.history === 'jojo';
+  const hot = wantsGuidance || repeatedRelapse;
+  const cold = !hot && state.readiness === 'informacie';
   const tier = hot ? 'hot' : (cold ? 'cold' : 'warm');
+
+  // Kto výslovne povedal, že si chce len dopĺňať informácie, nedostane nátlakové prvky
+  // (voľné miesta, výzva k akcii) — a to ani vtedy, keď ho história zaradí do HOT.
+  // Ponuku a diagnózu vidí v plnej sile; potlačí sa len tlak. Vyslovené prianie
+  // preváži nad tým, čo si o jeho potrebe myslíme my.
+  const noPressure = cold || state.readiness === 'informacie';
+
+  const diagnosis = gapDiagnosis(correctCount, QUESTIONS.length, state.history);
 
   const offer = CONFIG.OFFER;
 
   let nextStep;
   if (wantsGuidance) {
     nextStep = `Nechceš na to byť sám/sama — a to je najrozumnejšie rozhodnutie. Za ${offer.LENGTH} spolu pomenujeme tvoju hlavnú brzdu a odídeš s prvým konkrétnym krokom.`;
-  } else if (decidedNow) {
-    nextStep = `Si rozhodnutá začať hneď — tak nezačínaj zbieraním ďalších informácií. Za ${offer.LENGTH} budeš vedieť, čím začať.`;
+  } else if (repeatedRelapse) {
+    nextStep = `Skúšala si to už viackrát a vrátilo sa to. To nie je o vôli — ďalší pokus tým istým spôsobom skončí rovnako. Za ${offer.LENGTH} si povieme, čo treba spraviť inak.`;
   } else if (cold) {
     nextStep = 'Pokojne si to nechaj uležať. Vyhodnotenie a tipy ti chodia na e-mail — a keď budeš chcieť ísť do toho naozaj, termín si vyberieš kedykoľvek.';
   } else {
@@ -558,7 +617,7 @@ function showResult(name) {
   const spotsLeftSentence = (typeof offer.SPOTS_LEFT === 'number' && offer.SPOTS_LEFT > 0)
     ? ` Tento mesiac ${spotsPhrase(offer.SPOTS_LEFT)}.`
     : '';
-  const spotsHtml = (!cold && offer.SPOTS_PER_MONTH)
+  const spotsHtml = (!noPressure && offer.SPOTS_PER_MONTH)
     ? `<p class="offer-scarcity">Beriem maximálne <strong>${offer.SPOTS_PER_MONTH} nových ľudí mesačne</strong>, lebo pri každom som osobne.${spotsLeftSentence}</p>`
     : '';
 
@@ -578,8 +637,8 @@ function showResult(name) {
       </div>`;
 
   const bookBtnHtml = `<a class="btn${cold ? ' secondary' : ''}" id="consultBtn" href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">${cold ? `Pozrieť voľné termíny (${offer.LENGTH})` : `📞 Chcem svoj ${offer.NAME}`}</a>`;
-  const nudge = URGENCY_NUDGE[state.urgency];
-  const nudgeHtml = (!cold && nudge) ? `<p class="cta-urgency">${nudge}</p>` : '';
+  const nudge = HISTORY_NUDGE[state.history];
+  const nudgeHtml = (!noPressure && nudge) ? `<p class="cta-urgency">${nudge}</p>` : '';
   const valyraNoteHtml = `<p class="valyra-note">Valyra nie je appka na stiahnutie zadarmo — je to nástroj, cez ktorý ťa vediem. Ak si na hovore povieme, že ti moje vedenie pomôže, dostaneš ju ako súčasť spolupráce: svoj plán, úlohy, výsledky a kontakt so mnou.</p>`;
   const ctaButtons = `${offerCardHtml}\n      ${bookBtnHtml}\n      ${nudgeHtml}\n      ${valyraNoteHtml}`;
   const qualificationResult = nextStep;
@@ -606,6 +665,11 @@ function showResult(name) {
         </div>
         <div class="typology">${band.name[state.gender]}</div>
       </div>
+      <div class="diagnosis">
+        <div class="diagnosis-label">Diagnóza</div>
+        <h3>${diagnosis.title}</h3>
+        <p>${diagnosis.text}</p>
+      </div>
       <p class="verdict-text">${name}, ${band.text[state.gender]}</p>
       <div class="personal-insight"><strong>Čo z toho pre teba vyplýva</strong>${segmentResult}</div>
       <div class="personal-insight"><strong>Tvoj najlepší ďalší krok</strong>${qualificationResult}</div>
@@ -622,7 +686,7 @@ function showResult(name) {
   `;
 
   const consultMeta = {
-    segment: state.segment, band: band.slug, urgency: state.urgency, readiness: state.readiness, tier,
+    segment: state.segment, band: band.slug, history: state.history, readiness: state.readiness, tier,
   };
 
   // Zobrazenie ponuky meriame zvlášť od kliku — inak sa nedá zistiť, či ponuku ľudia
@@ -642,7 +706,7 @@ function showResult(name) {
 
   document.getElementById('againBtn').addEventListener('click', () => {
     state.index = 0; state.score = 0; state.answers = []; state.segment = null;
-    state.urgency = null; state.readiness = null; state.gateTracked = false;
+    state.history = null; state.readiness = null; state.gateTracked = false;
     showIntro();
     window.scrollTo(0, 0);
   });
