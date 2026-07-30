@@ -19,9 +19,13 @@ const CONFIG = {
     NAME: 'Reštart plán',
     LENGTH: '15 minút',
     // Kapacita. DRŽ TO PRAVDIVÉ — scarcity funguje len dokým je skutočná.
-    // Ak čísla prestanú sedieť, nastav SPOTS_LEFT na null a veta o miestach zmizne.
-    SPOTS_PER_MONTH: 4,
-    SPOTS_LEFT: 2,
+    // SPOTS_PER_MONTH = koľko ľudí za mesiac naozaj vezmeš (trvalý limit, mení sa zriedka).
+    SPOTS_PER_MONTH: 10,
+    // SPOTS_LEFT = koľko miest je voľných PRÁVE TERAZ. Zobrazí sa len ak je to číslo,
+    // takže `null` znamená „počet voľných miest neuvádzaj". Vypĺňaj len vtedy, keď to
+    // budeš reálne každý mesiac prepisovať — odpočet, ktorý mesiace stojí na tom istom
+    // čísle, ľudia odhalia a stojí to dôveru viac, než by scarcity priniesla.
+    SPOTS_LEFT: null,
   },
   UTM: {
     utm_source: 'kviz',
@@ -483,6 +487,13 @@ function bandFor(score) {
   return BANDS.find(b => score >= b.min && score <= b.max);
 }
 
+// Slovenské skloňovanie miest: 1 miesto · 2–4 miesta · 5 a viac miest.
+function spotsPhrase(n) {
+  if (n === 1) return 'je voľné posledné miesto';
+  if (n < 5) return `sú voľné ${n} miesta`;
+  return `je voľných ${n} miest`;
+}
+
 // Štandardné eventy Meta pixela (majú vlastné `trackSingle`); všetko ostatné je vlastný
 // event a musí ísť cez `trackSingleCustom`, inak ho pixel zahodí.
 const FB_STANDARD_EVENTS = ['Lead', 'CompleteRegistration', 'Contact', 'Schedule', 'ViewContent', 'PageView'];
@@ -537,8 +548,14 @@ function showResult(name) {
 
   // Scarcity je pravdivá (sólo kouč = reálne limitované miesta), preto ju ukazujeme.
   // Zvedavcom ju nepodsúvame — na nerozhodnutého tlak nepatrí, tých drží e-mailová séria.
-  const spotsHtml = (!cold && offer.SPOTS_LEFT)
-    ? `<p class="offer-scarcity">Beriem <strong>${offer.SPOTS_PER_MONTH} nových ľudí mesačne</strong>, lebo pri každom som osobne. Tento mesiac ${offer.SPOTS_LEFT === 1 ? 'je voľné posledné miesto' : `sú voľné ${offer.SPOTS_LEFT} miesta`}.</p>`
+  // Mesačná kapacita je trvalý fakt, počet voľných miest sa mení. Preto sa kapacita
+  // zobrazuje vždy a odpočet miest len vtedy, keď je SPOTS_LEFT reálne udržiavané číslo —
+  // nepravdivý odpočet je horší než žiadny.
+  const spotsLeftSentence = (typeof offer.SPOTS_LEFT === 'number' && offer.SPOTS_LEFT > 0)
+    ? ` Tento mesiac ${spotsPhrase(offer.SPOTS_LEFT)}.`
+    : '';
+  const spotsHtml = (!cold && offer.SPOTS_PER_MONTH)
+    ? `<p class="offer-scarcity">Beriem maximálne <strong>${offer.SPOTS_PER_MONTH} nových ľudí mesačne</strong>, lebo pri každom som osobne.${spotsLeftSentence}</p>`
     : '';
 
   const offerCardHtml = `
