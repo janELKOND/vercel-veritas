@@ -5,9 +5,11 @@
 nasadenie Supabase funkcie `quizLead`**, aby mail o leade hovoril, či človek chce
 konzultáciu.
 
-> Tento dokument je vstupný bod. [`VYSLEDOK-A-PONUKA.md`](VYSLEDOK-A-PONUKA.md)
-> vysvetľuje, **ako** veci fungujú; [`PLAN-LIEVIKA.md`](PLAN-LIEVIKA.md) má čísla
-> z reklamy z 23. 7. a je čiastočne prekonaný.
+> Tento dokument je vstupný bod — **kde sme skončili**.
+> [`PLAN-HOVORY.md`](PLAN-HOVORY.md) je **plán ďalšej etapy**: ako z lead magnetu robiť
+> objednávky hovorov (aktuálne čísla z ad účtu, 5 krokov, rozhodovacie prahy).
+> [`VYSLEDOK-A-PONUKA.md`](VYSLEDOK-A-PONUKA.md) vysvetľuje, **ako** veci fungujú;
+> [`PLAN-LIEVIKA.md`](PLAN-LIEVIKA.md) má čísla z 23. 7. a je čiastočne prekonaný.
 
 **Projekt je v dvoch repách:**
 
@@ -130,6 +132,10 @@ novší stav).
 s novým predmetom.
 
 *Claude nemá: Supabase CLI, access token, ani CI v repe. Overené, nie odhadnuté.*
+
+> **Poradie ďalšej etapy je v [`PLAN-HOVORY.md`](PLAN-HOVORY.md).** Zhrnutie: kvíz
+> dnes vyrába leady za 0,33 € (151 za 14 dní), ale **nula rezervovaných hovorov** —
+> obmedzenie už nie je v kóde. Prvý krok je retargeting na ľudí, ktorí kvíz dokončili.
 
 ### Mimo kódu — najväčší dopad na peniaze
 

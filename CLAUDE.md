@@ -20,6 +20,10 @@ nasadené, čo je zmergované a ešte nebeží, čo je zámerne uspané a čo tr
 poradí. Obsahuje aj príkazy na **overenie nasadenia** — na tomto projekte platí, že
 **zmergované ≠ nasadené** (kód býva v `main`, ale Supabase funkcia beží stará).
 
+**[`docs/PLAN-HOVORY.md`](docs/PLAN-HOVORY.md)** — plán ďalšej etapy: ako z lead
+magnetu robiť **objednávky hovorov** namiesto e-mailov. Aktuálne čísla z ad účtu,
+5 krokov v poradí dopadu, rozhodovacie prahy a rozdelenie práce.
+
 **[`docs/VYSLEDOK-A-PONUKA.md`](docs/VYSLEDOK-A-PONUKA.md)** — ako lievik funguje
 **dnes**: tri kvalifikačné otázky a čo každá riadi, diagnóza (`gapDiagnosis`),
 tiering HOT/WARM/COLD, `noPressure`, ponuka hovoru, meranie, payload a
