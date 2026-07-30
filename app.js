@@ -6,8 +6,14 @@
 const CONFIG = {
   WEBHOOK_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
   CONTACT_EMAIL: 'karas.jan2@gmail.com',
-  // Rezervácia 15-min hovoru s Jánom (Cal.com) — primárny cieľ výsledku.
+  // Cal.com už NIE je primárna cesta. Odskok na cudziu stránku, kde treba vyberať
+  // dátum, čas a znova písať meno aj e-mail, je najväčšie trenie na celom výsledku.
+  // Zostáva ako sekundárna možnosť pre tých, čo si radšej vyberú termín sami.
   CAL_URL: 'https://cal.com/jan-karas-kdm2il/15min',
+  // Rezervácia hovoru sa zapisuje tam, kam aj lead. Ak by Supabase funkcia `quizLead`
+  // odmietala `typ: 'konzultacia'`, prepni to na URL Apps Script web appky —
+  // tá už rovnaký formát (meno/telefón/kedy volať) obsluhuje pre kalkulačku.
+  BOOKING_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
   // Valyra = nástroj počas platenej spolupráce; z výsledku už len sekundárny odkaz.
   VALYRA_URL: 'https://valyra.sk/Onboarding',
   // Pixel ad účtu. Signály o záujme o hovor musia ísť explicitne naň (trackSingle),
@@ -160,6 +166,11 @@ const HISTORY_NUDGE = {
   'jojo': 'Ten kruh sa dá prerušiť — ale nie tým istým spôsobom ako doteraz.',
 };
 
+// Kedy zavolať. Predvyplnené okná znižujú bariéru — človek nemusí otvárať kalendár
+// a hľadať termín, len klikne, kedy sa mu to hodí. Prevzaté z formio kalkulačky,
+// kde sa tento formát (meno/telefón/kedy volať) už osvedčil.
+const CALL_WINDOWS = ['Dnes večer', 'Zajtra doobeda', 'Zajtra večer', 'Kedykoľvek mi to zavolaj'];
+
 // Ako o histórii hovoríme v diagnóze. Formulácie sú vecné, nie vyčítavé —
 // človek nám práve priznal svoju najcitlivejšiu vec, tak ju nepoužijeme proti nemu.
 const HISTORY_CLAUSE = {
@@ -211,6 +222,10 @@ const state = {
   gender: 'zena', // 'zena' | 'muz'
   quizStarted: false,
   gateTracked: false,
+  // Meno a e-mail z formulára si držíme, aby ich rezervácia hovoru nemusela pýtať znova.
+  name: null,
+  email: null,
+  callbackSent: false,
 };
 
 const app = document.getElementById('app');
@@ -449,6 +464,9 @@ async function submitLead() {
   submitBtn.disabled = true;
   submitBtn.textContent = 'Odosielam vyhodnotenie…';
 
+  state.name = name;
+  state.email = email;
+
   const correctCount = state.answers.filter(a => a.correct).length;
   const wrongAnswers = state.answers.filter(a => !a.correct);
   const band = bandFor(correctCount);
@@ -509,6 +527,80 @@ async function submitLead() {
 
 function bandFor(score) {
   return BANDS.find(b => score >= b.min && score <= b.max);
+}
+
+// Rezervácia hovoru: človek nechá číslo, Ján zavolá. Zámerne sa NEODCHÁDZA na Cal.com.
+// `Lead` sa páli až po POTVRDENOM zápise — nie pri kliku na tlačidlo. Tým sa konečne
+// meria skutočná rezervácia, na ktorú inak treba Cal.com webhook.
+async function submitCallback(consultMeta, getWindow) {
+  if (state.callbackSent) return;
+
+  const input = document.getElementById('phone');
+  const err = document.getElementById('cbErr');
+  const btn = document.getElementById('cbSubmit');
+  const phone = input.value.trim();
+
+  // Voľná validácia: aspoň 9 číslic. Prísnejšia by odmietala legitímne formáty
+  // (medzery, +421, 0042) a vyhodila by lead pre nič.
+  if (phone.replace(/\D/g, '').length < 9) {
+    err.textContent = 'Skontroluj, prosím, číslo — nevyzerá kompletné.';
+    err.classList.add('show');
+    input.focus();
+    return;
+  }
+
+  err.classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = 'Posielam…';
+
+  const payload = {
+    typ: 'konzultacia',
+    name: state.name || '',
+    email: state.email || '',
+    phone,
+    preferredTime: getWindow() || '',
+    segment: state.segment,
+    history: state.history,
+    readiness: state.readiness,
+    band: consultMeta.band,
+    tier: consultMeta.tier,
+    // Skóre odvodíme z odpovedí, nie z state.score — rovnaké pravidlo ako pri leade,
+    // aby sa číslo v rezervácii nemohlo rozísť s tým, čo vidí človek na výsledku.
+    score: state.answers.filter(a => a.correct).length,
+    ts: new Date().toISOString(),
+    source: 'pravda-o-chudnuti-hovor',
+    quizVersion: 3,
+  };
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    const response = await fetch(CONFIG.BOOKING_URL, {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!response.ok) throw new Error(`Booking API: ${response.status}`);
+
+    state.callbackSent = true;
+    // Až teraz je to rezervácia. `Lead` = štandardný event → ide na pixel ad účtu.
+    trackAd('Lead', { ...consultMeta, value: 25.00, currency: 'EUR' });
+
+    document.getElementById('callbackForm').innerHTML = `
+      <div class="callback-done">
+        <h4>✓ Mám to${state.name ? `, ${state.name}` : ''}</h4>
+        <p>Ozvem sa ti na <strong>${phone}</strong>${payload.preferredTime ? ` — <strong>${payload.preferredTime.toLowerCase()}</strong>` : ' čo najskôr'}. Ak by ti to nevyhovovalo, napíš mi na <a href="mailto:${CONFIG.CONTACT_EMAIL}">${CONFIG.CONTACT_EMAIL}</a>.</p>
+      </div>`;
+  } catch (error) {
+    // Lead sa nesmie stratiť len preto, že zápis zlyhal — ponúkneme obe záložné cesty.
+    err.innerHTML = `Odoslanie sa nepodarilo. Skús to ešte raz, alebo si <a href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">vyber termín v kalendári</a>, prípadne mi napíš na <a href="mailto:${CONFIG.CONTACT_EMAIL}?subject=Restart%20plan">${CONFIG.CONTACT_EMAIL}</a>.`;
+    err.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'Skúsiť znova';
+  }
 }
 
 // Jadro kvízu. Samotné skóre je UZAVRETIE („poučil som sa, hotovo") a uspokojený človek
@@ -636,11 +728,31 @@ function showResult(name) {
         ${spotsHtml}
       </div>`;
 
-  const bookBtnHtml = `<a class="btn${cold ? ' secondary' : ''}" id="consultBtn" href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">${cold ? `Pozrieť voľné termíny (${offer.LENGTH})` : `📞 Chcem svoj ${offer.NAME}`}</a>`;
+  // Tlačidlo NEODCHÁDZA zo stránky — rozbalí formulár priamo pod ponukou.
+  // Predtým to bol odkaz na Cal.com: cudzia stránka, výber dátumu a času a opätovné
+  // písanie mena aj e-mailu. To je na človeka, ktorý práve dokončil kvíz, priveľa.
+  const bookBtnHtml = `<button class="btn${cold ? ' secondary' : ''}" id="consultBtn">${cold ? 'Nechať číslo — bez záväzku' : `📞 Chcem svoj ${offer.NAME}`}</button>`;
+
+  // Formulár žiada JEDINÚ vec: telefónne číslo. Meno a e-mail už máme z kvízu,
+  // takže sa nepýtajú druhýkrát. Termín je voliteľný — klik namiesto kalendára.
+  const callbackHtml = `
+      <div class="callback" id="callbackForm" hidden>
+        <h4>Kam ti mám zavolať?</h4>
+        <p class="callback-lead">Meno aj e-mail už mám — potrebujem len číslo. <strong>Ozvem sa ti ja</strong>, nemusíš nič hľadať ani plánovať.</p>
+        <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="+421 900 123 456" aria-label="Telefónne číslo">
+        <div class="when-label">Kedy sa ti to hodí? <span>(nepovinné)</span></div>
+        <div class="when-row" id="whenRow">
+          ${CALL_WINDOWS.map(w => `<button type="button" class="when-chip" data-when="${w}">${w}</button>`).join('')}
+        </div>
+        <div class="error-msg" id="cbErr"></div>
+        <button class="btn" id="cbSubmit">Ozvi sa mi</button>
+        <p class="callback-note">Číslo použijem len na tento jeden hovor. Nikde ho nezverejňujem a neposielam naň reklamu.</p>
+        <p class="alt-link"><a href="${CONFIG.CAL_URL}" id="calLink" target="_blank" rel="noopener">Radšej si termín vyberiem sám v kalendári →</a></p>
+      </div>`;
   const nudge = HISTORY_NUDGE[state.history];
   const nudgeHtml = (!noPressure && nudge) ? `<p class="cta-urgency">${nudge}</p>` : '';
   const valyraNoteHtml = `<p class="valyra-note">Valyra nie je appka na stiahnutie zadarmo — je to nástroj, cez ktorý ťa vediem. Ak si na hovore povieme, že ti moje vedenie pomôže, dostaneš ju ako súčasť spolupráce: svoj plán, úlohy, výsledky a kontakt so mnou.</p>`;
-  const ctaButtons = `${offerCardHtml}\n      ${bookBtnHtml}\n      ${nudgeHtml}\n      ${valyraNoteHtml}`;
+  const ctaButtons = `${offerCardHtml}\n      ${bookBtnHtml}\n      ${callbackHtml}\n      ${nudgeHtml}\n      ${valyraNoteHtml}`;
   const qualificationResult = nextStep;
 
   const recapHtml = missed.length
@@ -695,10 +807,34 @@ function showResult(name) {
   trackAd('ConsultView', consultMeta);
 
   const consultBtn = document.getElementById('consultBtn');
-  // Odkaz smeruje priamo na Cal.com (rezervácia hovoru). Klik = signál záujmu o hovor.
-  // POZOR: klik nie je rezervácia. Skutočnú rezerváciu treba páliť z Cal.com webhooku
-  // ako event `Lead` — bez toho sa počet reálnych hovorov z reklamy nedá vyhodnotiť.
-  consultBtn.addEventListener('click', () => trackAd('ConsultClick', consultMeta));
+  const callbackForm = document.getElementById('callbackForm');
+  // Klik = záujem o hovor, nie rezervácia. Rezerváciou je až potvrdený zápis nižšie.
+  consultBtn.addEventListener('click', () => {
+    trackAd('ConsultClick', consultMeta);
+    consultBtn.hidden = true;
+    callbackForm.hidden = false;
+    const phone = document.getElementById('phone');
+    phone.focus({ preventScroll: true });
+    callbackForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  // Kto si radšej vyberie termín sám, ide na Cal.com. Meriame to zvlášť —
+  // ak túto cestu volí väčšina, formulár im neprekáža a dá sa uprednostniť kalendár.
+  document.getElementById('calLink').addEventListener('click', () => {
+    trackAd('ConsultCalendar', consultMeta);
+  });
+
+  let chosenWindow = '';
+  document.querySelectorAll('.when-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chosenWindow = chip.dataset.when;
+      document.querySelectorAll('.when-chip').forEach(c => c.classList.toggle('active', c === chip));
+    });
+  });
+
+  document.getElementById('cbSubmit').addEventListener('click', () => {
+    submitCallback(consultMeta, () => chosenWindow);
+  });
 
   document.getElementById('igLink').addEventListener('click', () => {
     if (typeof fbq === 'function') fbq('trackCustom', 'InstagramClick');

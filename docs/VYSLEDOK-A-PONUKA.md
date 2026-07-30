@@ -16,7 +16,7 @@ jeho zámerov je už prekonaná (viď [Čo v pláne už neplatí](#čo-v-pláne-
 ```
 FB reklama → kvíz (8 otázok o mýtoch) → 3 otázky o človeku
            → e-mail (gate) → VÝSLEDOK: diagnóza + ponuka hovoru
-           → Cal.com rezervácia → platené vedenie
+           → nechá telefónne číslo → Ján zavolá → platené vedenie
 ```
 
 Predáva sa **hovor**, nie koučing. Ponuka koučingu sa hovorí až na hovore. Valyra je
@@ -95,7 +95,7 @@ toho, ako vážne to o sebe tvrdí.
 |---|---|---|---|
 | HOT | primárne „📞 Chcem svoj Reštart plán" | áno* | podľa toho, či chce vedenie alebo má návraty |
 | WARM | primárne | áno* | „chýba ti jasný plán" |
-| COLD | sekundárne „Pozrieť voľné termíny" | nie | „pokojne si to nechaj uležať" |
+| COLD | sekundárne „Nechať číslo — bez záväzku" | nie | „pokojne si to nechaj uležať" |
 
 ### `noPressure` — vyslovené prianie prevažuje nad našim úsudkom
 
@@ -135,6 +135,41 @@ stretnutí, ale za to, že to konečne zaberie."*
 - **Nesľubuje sa nič, čo 15 minút nezvládne.** Pôvodne tam bol „napísaný prvý týždeň" —
   to sa v 15 minútach napísať nedá, tak sa to zmenšilo na pravdu.
 
+### Ako sa hovor rezervuje — formulár, nie odskok na Cal.com
+
+Pôvodne bolo CTA odkaz na **Cal.com**. To je najväčšie trenie na celom výsledku:
+cudzia stránka s iným vzhľadom, výber dátumu, výber času a **opätovné písanie mena
+a e-mailu**, ktoré už kvíz má. Človeka, ktorý práve dokončil kvíz, to vystraší.
+
+Dnes tlačidlo **neodchádza zo stránky** — rozbalí formulár priamo pod ponukou:
+
+- **jediné pole: telefónne číslo.** Meno a e-mail sa berú zo `state` (uložené pri
+  odoslaní leadu), takže sa nepýtajú druhýkrát.
+- **termín je nepovinný** — štyri predvyplnené okná (`CALL_WINDOWS`) namiesto kalendára
+- **„Ozvem sa ti ja"** — bremeno plánovania je na Jánovi, nie na človeku
+- Cal.com zostáva ako **sekundárny odkaz** („Radšej si termín vyberiem sám") pre tých,
+  čo si radšej kliknú slot. Meria sa zvlášť eventom `ConsultCalendar` — ak túto cestu
+  volí väčšina, formulár im neprekáža a dá sa uprednostniť kalendár.
+
+Formát (`name`, `phone`, `preferredTime`) je zámerne rovnaký ako ten, ktorý už
+`apps-script.gs` obsluhuje pre formio kalkulačku — je odskúšaný.
+
+#### Toto zároveň zaplátalo dieru v meraní
+
+`Lead` sa páli **až po potvrdenom zápise** (`response.ok`), nie pri kliku na tlačidlo.
+Vďaka tomu sa skutočná rezervácia meria **bez Cal.com webhooku** — čo bola dosiaľ
+najväčšia slepá škvrna. Pri zlyhaní zápisu sa `Lead` **nepáli**.
+
+#### Keď zápis zlyhá
+
+Do Supabase funkcie `quizLead` nie je z tohto repa vidno, takže **nie je overené, že
+prijme `typ: 'konzultacia'` a `phone`**. Preto má formulár záchytnú sieť: pri chybe zobrazí
+odkaz na Cal.com **aj** mailto, číslo zostane vyplnené a tlačidlo sa prepne na
+„Skúsiť znova". Lead sa nestratí ani vtedy, keď backend odmietne.
+
+**Prvá reálna rezervácia sa musí otestovať naostro** a overiť, že dorazila. Ak
+`quizLead` payload odmieta, prepni `CONFIG.BOOKING_URL` na URL Apps Script web appky.
+
 ### Kapacita (`CONFIG.OFFER`) — musí zostať pravdivá
 
 ```js
@@ -164,7 +199,9 @@ než by scarcity priniesla. `0` sa tiež nezobrazí. Skloňovanie rieši `spotsP
 | `QuizComplete` | zobrazenie e-mailového formulára | `trackCustom` | oba |
 | `CompleteRegistration` | **potvrdený** zápis leadu | `track` | oba |
 | `ConsultView` | zobrazenie ponuky na výsledku | `trackSingleCustom` | **len ad účet** |
-| `ConsultClick` | klik na Cal.com | `trackSingleCustom` | **len ad účet** |
+| `ConsultClick` | klik na CTA (rozbalenie formulára) | `trackSingleCustom` | **len ad účet** |
+| `ConsultCalendar` | klik na „vyberiem si termín sám" (Cal.com) | `trackSingleCustom` | **len ad účet** |
+| `Lead` | **potvrdená** rezervácia hovoru | `trackSingle` | **len ad účet** |
 | `InstagramClick` | klik na IG odkaz | `trackCustom` | oba |
 
 ### Prečo `trackAd()` a `trackSingleCustom`
@@ -186,9 +223,12 @@ nedostanú — to sú dve úplne odlišné opravy. Oba nesú `tier`, `segment`, 
 
 ### Čo meranie zatiaľ NEVIE
 
-**`ConsultClick` nie je rezervácia**, je to len klik na Cal.com. Skutočný počet hovorov
-z reklamy sa dá merať až eventom `Lead` z **Cal.com webhooku**. Do vtedy je konverzia
-na hovor odhad.
+**`ConsultClick` nie je rezervácia** — je to len rozbalenie formulára. Rezerváciou je
+až event **`Lead`**, ktorý sa páli po potvrdenom zápise. Ten už funguje, takže
+konverzia na hovor **prestala byť odhad**.
+
+Čo sa stále nemeria: rezervácie spravené **cez Cal.com** (sekundárna cesta). Tie by
+potrebovali Cal.com webhook — vidno len klik `ConsultCalendar`, nie dokončenú rezerváciu.
 
 ---
 
@@ -289,7 +329,8 @@ Stále platia jeho čísla z reklamy a poradie priorít, ale:
 
 - [ ] Zacielenie **45+ a iba feed** v Ads Manageri (5 minút, polovičná cena za lead)
 - [ ] **E-mailová sekvencia** — najväčšia diera lievika (11 % lead → registrácia)
-- [ ] `Lead` event z **Cal.com webhooku**
+- [ ] `Lead` z **Cal.com webhooku** — už len pre sekundárnu cestu; formulár na stránke
+      pálí `Lead` sám
 - [ ] Kampaň **naďalej** optimalizuje na `CompleteRegistration` — na `Lead` neprepínať,
       kým nebude stabilne 10+ rezervácií týždenne (13. 7. to stálo 28,53 € za dve)
 
@@ -308,5 +349,7 @@ Stále platia jeho čísla z reklamy a poradie priorít, ale:
 6. **Konverzné signály o hovore posielaj cez `trackAd()`**, nie `fbq('trackCustom')`.
 7. **Pri zmene významu polí zvýš `quizVersion`.** Inak sa dáta v Sheete nedajú
    férovo porovnať — a už raz sa to stalo dvakrát.
-8. **Testuj bez odosielania.** Pri klikaní naostro nahraď `fbq` prázdnou funkciou
+8. **`Lead` páľ len po potvrdenom zápise**, nikdy pri kliku na tlačidlo. Inak sa
+   kampaň učí na signále, ktorý neznamená rezerváciu.
+9. **Testuj bez odosielania.** Pri klikaní naostro nahraď `fbq` prázdnou funkciou
    a `fetch` stubom, inak si do Ads Managera a Supabase natlačíš falošné dáta.
