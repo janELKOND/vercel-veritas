@@ -18,6 +18,13 @@ function doPost(e) {
       return handleFormio_(data);
     }
 
+    // Rezervácia hovoru z výsledku kvízu (človek nechal číslo) — vlastná vetva,
+    // zberu leadov sa nedotýka. Musí byť PRED zápisom leadu, inak by rezervácia
+    // spadla do listu Leady, ktorý stĺpec na telefón nemá.
+    if (data.typ === 'konzultacia') {
+      return handleHovorZKvizu_(data);
+    }
+
     // Supabase quizLead → len zápis do sheetu (prehľad pre Jána).
     // E-maily posiela Supabase most (bridge_0..7); stĺpce J-L označíme
     // 'SUPABASE', aby ich followUp() nikdy neposlal druhýkrát.
@@ -131,6 +138,76 @@ function handleFormio_(d) {
       '\nKedy volať: ' + (d.preferredTime || '') +
       '\n\n' + (d.summary || '') +
       '\n\nZdroj: ' + (d.source || ''),
+    name: FROM_NAME,
+  });
+  return ContentService.createTextOutput('ok');
+}
+
+/* ---------- REZERVÁCIA HOVORU Z KVÍZU ---------- */
+// Vlastný list, nie Leady — ten stĺpec na telefón nemá a rezervácia je iná vec
+// než dokončený kvíz. E-mail chodí okamžite, aby sa Ján o čísle dozvedel do minúty
+// a nie až keď si otvorí tabuľku. Človeku bolo sľúbené „ozvem sa ti".
+const HOVORY_SHEET = 'Hovory z kvízu';
+
+const HISTORY_LABELS = {
+  'prvykrat': 'ešte to poriadne neskúšala',
+  'raz-dva': 'kilá sa vrátili raz-dvakrát',
+  'viackrat': 'kilá sa vrátili 3× a viac',
+  'jojo': 'váha ide stále dokola',
+};
+
+const READINESS_LABELS = {
+  'podpora': 'chce, aby ju niekto viedol',
+  'plan': 'chce plán, zvyšok zvládne sama',
+  'informacie': 'chce si len doplniť informácie',
+};
+
+function handleHovorZKvizu_(d) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(HOVORY_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(HOVORY_SHEET);
+    sheet.appendRow([
+      'Čas', 'Meno', 'Telefón', 'Kedy volať', 'E-mail',
+      'Skóre', 'Segment (brzda)', 'História', 'Pripravenosť', 'Tier', 'Zavolané?',
+    ]);
+    sheet.setFrozenRows(1);
+  }
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  sheet.appendRow([
+    d.ts ? new Date(d.ts) : new Date(),
+    d.name || '',
+    d.phone || '',
+    d.preferredTime || '',
+    d.email || '',
+    d.score,
+    d.segment || '',
+    d.history || '',
+    d.readiness || '',
+    d.tier || '',
+    '',
+  ]);
+  lock.releaseLock();
+
+  // V maili je všetko, čo treba vedieť PRED vytočením čísla — brzda, história
+  // a či chce vedenie. Ján tak nemusí nič dohľadávať.
+  MailApp.sendEmail({
+    to: REPLY_TO,
+    subject: '📞 Rezervácia hovoru z kvízu: ' + (d.name || '?') + ' (' + (d.phone || '?') + ')',
+    body:
+      'Meno: ' + (d.name || '') +
+      '\nTelefón: ' + (d.phone || '') +
+      '\nKedy volať: ' + (d.preferredTime || 'neuviedla — zavolaj čo najskôr') +
+      '\nE-mail: ' + (d.email || '') +
+      '\n\n--- Čo o nej vieš z kvízu ---' +
+      '\nSkóre: ' + (d.score != null ? d.score + '/8' : '?') +
+      '\nHlavná brzda: ' + (d.segment || '?') +
+      '\nHistória: ' + (HISTORY_LABELS[d.history] || d.history || '?') +
+      '\nChce: ' + (READINESS_LABELS[d.readiness] || d.readiness || '?') +
+      '\nTier: ' + (d.tier || '?') +
+      '\n\nZapísané v liste „' + HOVORY_SHEET + '".',
     name: FROM_NAME,
   });
   return ContentService.createTextOutput('ok');

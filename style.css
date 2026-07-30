@@ -340,6 +340,80 @@ h1, h2, .display {
   color: var(--ink-soft);
 }
 .offer-scarcity strong { color: var(--berry-deep); }
+/* ---------- rezervácia hovoru (formulár priamo na výsledku) ---------- */
+/* Rozbalí sa pod ponukou namiesto odskoku na Cal.com. Vizuálne pokračuje z karty
+   ponuky, aby to pôsobilo ako ďalší krok toho istého, nie ako nový formulár. */
+.callback {
+  background: var(--card);
+  border: 2px solid var(--berry);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 12px;
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+.callback h4 {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 650;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.callback-lead { font-size: 14.5px; color: var(--ink-soft); margin-bottom: 14px; }
+.callback-lead strong { color: var(--ink); }
+.callback input[type="tel"] {
+  width: 100%;
+  font-family: inherit;
+  font-size: 17px;
+  padding: 14px 16px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.callback input[type="tel"]:focus-visible {
+  outline: none;
+  border-color: var(--berry);
+}
+.when-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 16px 0 8px;
+}
+.when-label span { font-weight: 400; color: var(--ink-soft); }
+.when-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.when-chip {
+  font-family: inherit;
+  font-size: 13.5px;
+  padding: 9px 13px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+.when-chip.active { border-color: var(--berry); background: var(--berry-tint); }
+.when-chip:focus-visible { outline: 3px solid var(--berry); outline-offset: 2px; }
+.callback .btn { margin-top: 16px; }
+.callback-note {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-top: 12px;
+}
+.alt-link { text-align: center; margin-top: 14px; font-size: 13.5px; }
+.alt-link a { color: var(--ink-soft); }
+
+.callback-done h4 {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  color: var(--sage);
+  margin-bottom: 8px;
+}
+.callback-done p { font-size: 15px; color: var(--ink-soft); }
+.callback-done strong { color: var(--ink); }
+
 .cta-urgency {
   text-align: center;
   font-size: 13.5px;
