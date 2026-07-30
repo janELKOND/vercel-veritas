@@ -82,6 +82,16 @@ git log --oneline -5
 - **E-mailová séria existuje a beží:** `bridge_0` (vyhodnotenie + 3 tipy) ide hneď
   po kvíze, cron `quizBridge` posiela deň 1/3/5/7
 
+**Prvé dáta z v3 (kontrola 30. 7. popoludní).** Reklama beží (`delivery: active`,
+účtový limit zrušený 29. 7.). Za 30. 7. je v `quiz_leads` **6 leadov**, z toho **4
+už z novej verzie** (prostredný diel = história: všetci `raz-dva`). Pixel hlási
+9 `CompleteRegistration` — rozdiel oproti DB (6) je bežná atribúcia, ale ak by
+rástol, treba ho preveriť. **Zatiaľ ani jeden lead `viackrat`/`jojo`**, takže
+`qualifyLead` nikoho neoznačil ako „chce konzultáciu" — na 4 leadoch sa z toho
+nedá nič uzatvárať, ale je to prvá vec, ktorú sledovať po ~30 leadoch: ak sa
+opakované návraty nebudú objavovať, tiering nemá z čoho vyberať a treba prehodnotiť
+znenie odpovedí, nie tlačidlá.
+
 ## 3. Zmergované, ale NENASADENÉ 🔴
 
 **Mail o novom leade má hovoriť, či človek chce konzultáciu.**
@@ -144,9 +154,11 @@ zásah do živého príjmu leadov z platenej reklamy. CI v repe naďalej nie je.
 
 ### Mimo kódu — najväčší dopad na peniaze
 
-**3. Zacielenie v Ads Manageri: vek 45+ a iba feed.** 5 minút bez kódu.
-Dáta z 23. 7.: 45–54 dáva lead za 0,20 €, 65+ za 0,14 €, ale 56 % rozpočtu ide na
-25–44 za dvojnásobok. Feed 0,26 € vs. Reels 0,48 €.
+**3. ~~Zacielenie v Ads Manageri: vek 45+ a iba feed.~~ HOTOVÉ** — overené 30. 7.
+priamo na ad sete `Kviz – CompleteRegistration`: `age_min 45`, `age_max 65`, iba
+`facebook: feed` + `instagram: stream`, `advantage_audience: 0`. Nastavené už
+23. 7., handoff to viedol ako nesplnené. Čísla po znovuspustení (30. 7. do obeda):
+**2,13 € → 9 registrácií = 0,24 €**, CTR 17,8 %, CPC 0,03 €.
 
 **4. Ozvať sa leadom, ktorí sa nezaregistrovali.** Kontakty v Sheete/Supabase.
 Desať rozhovorov povie o produkte viac než ďalšia zmena na stránke. Máš **1
