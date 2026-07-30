@@ -1,9 +1,10 @@
 # STAV — kde sme skončili
 
-**Aktualizované:** 30. 7. 2026
-**Jednou vetou:** kvíz aj celá výsledková stránka sú nasadené a fungujú; **čaká len
-nasadenie Supabase funkcie `quizLead`**, aby mail o leade hovoril, či človek chce
-konzultáciu.
+**Aktualizované:** 30. 7. 2026 (večer)
+**Jednou vetou:** všetko z frontu aj backendu je nasadené — kvíz bez úvodnej brány,
+brzda pomenovaná pred e-mailovou stenou, **rezervácia telefónom priamo na výsledku
+zapnutá** a **e-mailová séria prepísaná z trialu na hovor**; čaká už len to, čo Claude
+spraviť nemôže (súhlas s podmienkami pre publiká, webhook z Cal.com, telefonáty leadom).
 
 > Tento dokument je vstupný bod — **kde sme skončili**.
 > [`PLAN-HOVORY.md`](PLAN-HOVORY.md) je **plán ďalšej etapy**: ako z lead magnetu robiť
@@ -92,12 +93,32 @@ nedá nič uzatvárať, ale je to prvá vec, ktorú sledovať po ~30 leadoch: ak
 opakované návraty nebudú objavovať, tiering nemá z čoho vyberať a treba prehodnotiť
 znenie odpovedí, nie tlačidlá.
 
-## 3. Zmergované, ale NENASADENÉ 🔴
+## 2b. Zmeny z 30. 7. večer (všetky NAŽIVO, overené)
 
-**Mail o novom leade má hovoriť, či človek chce konzultáciu.**
-Kód je v `valyra`, vetva `supabase-migration`, zmergovaný (PR #4, #5, #6).
+- **Úvodná brána zrušená** — prvá otázka je rovno vstupná obrazovka, hook z reklamy
+  ostáva nad ňou. Dôvod: 1 063 načítaní → 586 štartov. `QuizStart` sa odteraz páli
+  **pri prvej odpovedi**, nie pri kliku na tlačidlo (prísnejší prah, čísla pred/po
+  nie sú priamo porovnateľné).
+- **Brzda pomenovaná pred e-mailovou stenou** — nad formulárom je „Tvoja hlavná
+  brzda: …" + prvá veta segmentovej správy; e-mail sa pýta až za zvyšok. Dôvod:
+  389 dokončených otázok → 163 e-mailov.
+- **Rezervácia telefónom zapnutá** (`BOOKING_ENABLED: true`, cache v20). Migrácia
+  `003_quiz_calls.sql` spustená, endpoint otestovaný ostrým POSTom (`kind:'call'`,
+  riadok overený a testovací zmazaný). Cal.com ostáva ako záloha pri chybe zápisu.
+  `Lead` sa páli až po potvrdenom zápise.
+- **E-mailová séria prepísaná z trialu na hovor** (repo `valyra`, nasadené).
+  Všetkých 5 CTA vedie na Cal.com, sľuby zosúladené s ponukou na stránke (15 minút,
+  zadarmo, bez karty, 5 ľudí mesačne). Zmizlo „7 dní zadarmo", „max 10 klientov"
+  a „30-dňová garancia" — to patrilo starej ponuke CORE 49 €.
+  **Fix pri tom:** `quizBridge` vôbec neposielal `segment` do šablón, takže e-maily
+  deň 1–7 nevedeli, koho oslovujú.
+- **Mail o novom leade** (`quizLead`) nasadený — viď nižšie.
 
-Po nasadení bude predmet mailu:
+## 3. ~~Zmergované, ale NENASADENÉ~~ NASADENÉ 30. 7. ✅
+
+**Mail o novom leade hovorí, či človek chce konzultáciu.**
+Kód bol v `valyra`, vetva `supabase-migration` (PR #4, #5, #6); **nasadené 30. 7.**,
+sonda vracia `Chýba platné telefónne číslo` = nová verzia. Predmet mailu:
 
 ```
 🔥 CHCE KONZULTÁCIU — nový lead: Zuzana
@@ -109,44 +130,37 @@ Po nasadení bude predmet mailu:
 nefunguje"), kontakt a kvalifikácia v ľudskej reči. Funguje pri **každom** kvíze,
 aj bez telefónneho čísla.
 
-**Dnes chodí starý mail** so strojovým `vecerne-chute|viackrat|podpora`.
+## 4. ~~Uspané~~ ZAPNUTÉ 30. 7. ✅
 
-## 4. Uspané — zámerne, nechať tak
-
-Formulár na telefónne číslo priamo na výsledku. Napísaný a otestovaný, ale
-**vypnutý** (`BOOKING_ENABLED: false`), v HTML vôbec nie je. Migrácia
-`003_quiz_calls.sql` **nie je spustená**. Nič nekomplikuje.
-
-Zapnutie = migrácia + nasadiť funkciu + prepnúť prepínač. Postup:
+Formulár na telefónne číslo priamo na výsledku **beží** (`BOOKING_ENABLED: true`).
+Migrácia `003_quiz_calls.sql` spustená (tabuľka `quiz_calls`, RLS bez policies =
+prístup len service role, telefón sa nedá vytiahnuť z prehliadača). Rezervácie
+chodia Jánovi mailom `📞 Rezervácia hovoru: …` a do Sheetu. Postup a detaily:
 [`SUPABASE-REZERVACIA.md`](SUPABASE-REZERVACIA.md).
 
-Rozhodnutie z 30. 7.: **necháme tak**, prevádzkovo stačí mail o leade.
+Pôvodné rozhodnutie „necháme tak" padlo, keď sa ukázalo, že odskok na Cal.com je
+posledné veľké trenie: 7 klikov na ponuku a 0 rezervácií za celý čas.
+
+**Čo sledovať:** prvá reálna rezervácia. Kým nepríde, nevieme, či problém bol
+v trení alebo v ponuke. Tabuľka: `select * from quiz_calls where called = false`.
 
 ---
 
 ## 5. Čo treba — v poradí
 
-### Blokujúce (musí spraviť Ján, Claude na to nemá prístup)
+### Blokujúce (musí spraviť Ján — Claude na to nemá prístup)
 
-**1. Nasadiť Supabase funkciu.** Bez toho je celá zmena mailu neviditeľná.
+**1. Odsúhlasiť podmienky pre vlastné publiká.** Bez toho sa nedá vytvoriť
+retargetingové publikum (API vráti `Terms of service has not been accepted`):
 
-```bash
-supabase functions deploy quizLead --project-ref ztuudcgmzbkkbldnkqay
-```
+https://www.facebook.com/customaudiences/app/tos/?act=1183460279376761
 
-Migráciu netreba — mení sa iba obsah notifikácie, nič v DB.
+Je to súhlas s podmienkami, teda vec majiteľa účtu — Claude ho odklikať nesmie.
+Keď to Ján potvrdí, publiká vytvorí Claude (dokončili kvíz / navštívili a nedokončili).
 
-⚠️ Deploy pustí stav vetvy `supabase-migration`. Najprv `git pull` a mrkni do
-`MIGRATION.md`, či je tam len to, čo chceš v produkcii (na druhom PC môže byť
-novší stav).
-
-**2. Overiť** sondou zo sekcie 1 a jedným kvízom naostro — mail musí prísť
-s novým predmetom.
-
-*Oprava 30. 7. (overené volaním `npx supabase projects list`): Claude **prístup má** —
-CLI aj access token sú na tomto PC prihlásené, projekt `ztuudcgmzbkkbldnkqay` je
-`linked`. Deploy teda vie spustiť aj Claude, ale **len na výslovný pokyn** — je to
-zásah do živého príjmu leadov z platenej reklamy. CI v repe naďalej nie je.*
+**2. Webhook z Cal.com → event `Lead`.** Dnes sa nevie, koľko klikov na kalendár
+skončí termínom. Rezervácie cez formulár na telefón sa už merajú (`Lead` po
+potvrdenom zápise), cesta cez Cal.com nie. Potrebný prístup do nastavení Cal.com.
 
 > **Poradie ďalšej etapy je v [`PLAN-HOVORY.md`](PLAN-HOVORY.md).** Zhrnutie: kvíz
 > dnes vyrába leady za 0,33 € (151 za 14 dní), ale **nula rezervovaných hovorov** —
@@ -170,13 +184,15 @@ príbehu (45 kg, 8 rokov).
 
 ### Ďalšie v poradí
 
-**6. Skontrolovať `bridgeTemplates.ts`** (repo `valyra`) — či e-maily série ešte
-netlačia Valyra appku namiesto hovoru. Séria bola písaná pre starý lievik; ak áno,
-je to nesúlad medzi tým, čo hovorí stránka, a čo hovoria e-maily. **Neoverené.**
+**6. ~~Skontrolovať `bridgeTemplates.ts`~~ OVERENÉ A OPRAVENÉ 30. 7.** — séria
+naozaj tlačila „Vyskúšať Valyru — 7 dní zadarmo" vo všetkých piatich e-mailoch,
+kým stránka predávala hovor. Prepísané a nasadené (viď sekcia 2b). Prvý beh cronu
+`quizBridge` s novými textami: nasledujúce ráno 7:30 UTC.
 
-**7. `Lead` z Cal.com webhooku** — dnes sa nevie, koľko klikov skončí rezervovaným
-termínom. Prevádzkovo to slepé nie je (mail o leade), chýba len číslo do Ads
-Managera.
+**7. Sledovať prvé rezervácie.** Po zapnutí formulára a prepísaní e-mailov je toto
+jediné číslo, ktoré rozhodne. Ak po ~100 leadoch cez novú verziu nepríde ani jedna
+rezervácia, problém nie je v trení ani v kóde — vtedy má zmysel meniť ponuku alebo
+lead magnet ([`PLAN-7DNI.md`](PLAN-7DNI.md)), nie skôr.
 
 ---
 
