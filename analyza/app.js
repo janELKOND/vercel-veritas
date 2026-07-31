@@ -93,8 +93,7 @@ const CALL_WINDOWS = ['Dnes večer', 'Zajtra doobeda', 'Zajtra večer', 'Kedyko�
 
 // ---------- STAV ----------
 const state = {
-  step: 0,
-  gender: null,       // 'zena' | 'muz'
+  gender: 'zena',      // 'zena' | 'muz' — predvolené, prepína sa pilulkami vo formulári
   age: null,
   height: null,
   weight: null,
@@ -106,15 +105,12 @@ const state = {
   email: '',
   started: false,
   gateTracked: false,
-  stepsTracked: new Set(),
   callbackSent: false,
 };
 
 const app = document.getElementById('app');
 const progressTrack = document.getElementById('progressTrack');
-const progressFill = document.getElementById('progressFill');
-
-const TOTAL_STEPS = 9; // 8 otázok + formulár
+progressTrack.hidden = true; // jedna obrazovka na vstup — ukazovateľ postupu tu nemá čo ukazovať
 
 // ---------- MERANIE ----------
 // Konverzie musia ísť adresne na pixel ad účtu — druhý pixel (Valyra) ad účet
@@ -124,18 +120,6 @@ function trackAd(event, params = {}) {
   const std = ['Lead', 'CompleteRegistration', 'ViewContent', 'Contact'];
   const method = std.includes(event) ? 'trackSingle' : 'trackSingleCustom';
   fbq(method, CONFIG.PIXEL_AD, event, params);
-}
-
-function trackStep(step, screen) {
-  if (state.stepsTracked.has(step)) return;
-  state.stepsTracked.add(step);
-  trackAd('AnalysisStep', { step, screen, total: TOTAL_STEPS });
-}
-
-function updateProgress(step) {
-  if (step <= 0) { progressTrack.hidden = true; return; }
-  progressTrack.hidden = false;
-  progressFill.style.width = `${Math.round((step / TOTAL_STEPS) * 100)}%`;
 }
 
 // ---------- VÝPOČET ----------
@@ -192,142 +176,124 @@ function calcPlan(s) {
   return { bmr: Math.round(b), tdee, target, deficit, toLose, perWeek, weeksFrom, weeksTo, monthsFrom, monthsTo, protein, bmiGoal, tooLow };
 }
 
-// ---------- OBRAZOVKY ----------
-const SCREENS = [
-  { key: 'gender', render: renderGender },
-  { key: 'age', render: () => renderNumber('age', 'Koľko máš rokov?', 'napr. 42', 'rokov') },
-  { key: 'height', render: () => renderNumber('height', 'Aká si vysoká?', 'napr. 167', 'cm') },
-  { key: 'weight', render: () => renderNumber('weight', 'Koľko dnes vážiš?', 'napr. 84', 'kg') },
-  { key: 'goalWeight', render: () => renderNumber('goalWeight', 'Kam sa chceš dostať?', 'napr. 73', 'kg', 'Nemusí to byť sen na päť rokov — stačí číslo, ktoré by ťa potešilo.') },
-  { key: 'activity', render: () => renderChoice(ACTIVITY_Q, 'activity') },
-  { key: 'problem', render: () => renderChoice(PROBLEM_Q, 'problem') },
-  { key: 'history', render: () => renderChoice(HISTORY_Q, 'history') },
-];
-
-function hookHtml() {
+// ---------- OBRAZOVKA — VŠETKY ÚDAJE NARAZ ----------
+// Pôvodne osem obrazoviek po jednej otázke. Zmenené na Jánovo želanie na jeden
+// formulár — rýchlejšie vyplnenie pre niekoho, kto už vie, čo chce zadať, aj keď
+// to znamená viac na jednej obrazovke naraz. Validácia beží pri odoslaní.
+function selectHtml(id, label, options, note = '') {
   return `
-      <div class="q-hook">
-        <div class="eyebrow">Osobná analýza chudnutia · 2 minúty</div>
-        <h1>Zisti, koľko máš jesť, aby si <span class="flip">schudla bez hladovania</span></h1>
-        <p class="lead">Spočítam ti tvoje kalórie, bielkoviny aj to, ako dlho by ti cesta k cieľu reálne trvala. Začni tým, komu to počítam:</p>
+      <div class="field">
+        <label for="${id}">${label}</label>
+        ${note ? `<p class="field-note">${note}</p>` : ''}
+        <select id="${id}">
+          <option value="" disabled selected>Vyber…</option>
+          ${options.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}
+        </select>
       </div>`;
 }
 
-function footHtml() {
-  return `
+function renderForm() {
+  app.innerHTML = `
+    <section class="question-screen first">
+      <div class="q-hook">
+        <div class="eyebrow">Osobná analýza chudnutia · 2 minúty</div>
+        <h1>Zisti, koľko máš jesť, aby si <span class="flip">schudla bez hladovania</span></h1>
+        <p class="lead">Vyplň o sebe pár údajov — spočítam ti tvoje kalórie, bielkoviny aj to, ako dlho by ti cesta k cieľu reálne trvala.</p>
+      </div>
+
+      <div class="field">
+        <label>Píšem ti ako…</label>
+        <div class="gender-row" id="genderRow">
+          <button type="button" class="gender-pill active" data-g="zena">Žena</button>
+          <button type="button" class="gender-pill" data-g="muz">Muž</button>
+        </div>
+      </div>
+
+      <div class="num-grid">
+        <div class="field">
+          <label for="numAge">Vek</label>
+          <input type="number" inputmode="numeric" id="numAge" placeholder="napr. 42">
+        </div>
+        <div class="field">
+          <label for="numHeight">Výška (cm)</label>
+          <input type="number" inputmode="numeric" id="numHeight" placeholder="napr. 167">
+        </div>
+        <div class="field">
+          <label for="numWeight">Váha dnes (kg)</label>
+          <input type="number" inputmode="numeric" id="numWeight" placeholder="napr. 84">
+        </div>
+        <div class="field">
+          <label for="numGoal">Cieľová váha (kg)</label>
+          <input type="number" inputmode="numeric" id="numGoal" placeholder="napr. 73">
+        </div>
+      </div>
+
+      ${selectHtml('selActivity', ACTIVITY_Q.q, ACTIVITY_Q.options, ACTIVITY_Q.note)}
+      ${selectHtml('selProblem', PROBLEM_Q.q, PROBLEM_Q.options)}
+      ${selectHtml('selHistory', HISTORY_Q.q, HISTORY_Q.options)}
+
+      <div class="error-msg" id="errMsg"></div>
+      <button class="btn" id="submitFormBtn">Spočítaj mi to</button>
+
       <p class="intro-note">Na konci ťa poprosím o e-mail — pošlem ti na neho tvoju analýzu, aby si ju mala po ruke. Svoje čísla uvidíš aj tu na stránke.</p>
-      <p class="footnote">Počíta Ján — tréner a výživový poradca, ktorý sám schudol 45 kg a drží si to už 8 rokov.</p>`;
+      <p class="footnote">Počíta Ján — tréner a výživový poradca, ktorý sám schudol 45 kg a drží si to už 8 rokov.</p>
+    </section>
+  `;
+
+  document.querySelectorAll('.gender-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.gender = btn.dataset.g;
+      document.querySelectorAll('.gender-pill').forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
+
+  document.getElementById('submitFormBtn').addEventListener('click', submitForm);
 }
 
-function show(step) {
-  state.step = step;
-  if (step >= SCREENS.length) return showGate();
-  updateProgress(step === 0 ? 0 : step);
-  trackStep(step + 1, SCREENS[step].key);
-  SCREENS[step].render();
-  if (step > 0) window.scrollTo(0, 0);
-}
-
-function next() {
+function submitForm() {
   if (!state.started) {
     state.started = true;
     trackAd('AnalysisStart');
   }
-  show(state.step + 1);
-}
 
-function backLink(step) {
-  return step === 0 ? '' : `<p class="retry-line"><button class="link-btn" id="backBtn">← Späť</button></p>`;
-}
-
-function wireBack() {
-  const b = document.getElementById('backBtn');
-  if (b) b.addEventListener('click', () => show(Math.max(state.step - 1, 0)));
-}
-
-function renderGender() {
-  app.innerHTML = `
-    <section class="question-screen first">
-      ${hookHtml()}
-      <div class="options">
-        <button class="option" data-g="zena">Počítaj to pre ženu</button>
-        <button class="option" data-g="muz">Počítaj to pre muža</button>
-      </div>
-      ${footHtml()}
-    </section>
-  `;
-  document.querySelectorAll('.option').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.gender = btn.dataset.g;
-      next();
-    });
-  });
-}
-
-function renderNumber(key, question, placeholder, unit, note = '') {
-  const lim = NUM_LIMITS[key];
-  app.innerHTML = `
-    <section class="question-screen">
-      <div class="step-label">Krok ${state.step + 1} z ${TOTAL_STEPS}</div>
-      <h2>${question}</h2>
-      ${note ? `<p class="step-note">${note}</p>` : ''}
-      <div class="num-row">
-        <input type="number" inputmode="numeric" id="numInput" placeholder="${placeholder}" value="${state[key] ?? ''}" aria-label="${question}">
-        <span class="num-unit">${unit}</span>
-      </div>
-      <div class="error-msg" id="errMsg"></div>
-      <button class="btn" id="nextBtn">Pokračovať</button>
-      ${backLink(state.step)}
-    </section>
-  `;
-  const input = document.getElementById('numInput');
   const err = document.getElementById('errMsg');
-  input.focus();
+  const showErr = (msg) => { err.textContent = msg; err.classList.add('show'); err.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
 
-  const submit = () => {
-    const val = parseFloat(String(input.value).replace(',', '.'));
-    if (!Number.isFinite(val) || val < lim.min || val > lim.max) {
-      err.textContent = `Zadaj, prosím, ${lim.label} (${lim.min}–${lim.max}).`;
-      err.classList.add('show');
-      input.focus();
-      return;
-    }
-    // Cieľová váha vyššia než súčasná = človek si to pomýlil alebo nechce chudnúť;
-    // tak či tak nemá zmysel počítať deficit a tváriť sa, že je všetko v poriadku.
-    if (key === 'goalWeight' && state.weight && val >= state.weight) {
-      err.textContent = 'Cieľová váha má byť nižšia než súčasná — inak nie je čo počítať.';
-      err.classList.add('show');
-      return;
-    }
-    err.classList.remove('show');
-    state[key] = Math.round(val);
-    next();
+  const readNum = (id, key) => {
+    const raw = document.getElementById(id).value;
+    return parseFloat(String(raw).replace(',', '.'));
   };
+  const age = readNum('numAge', 'age');
+  const height = readNum('numHeight', 'height');
+  const weight = readNum('numWeight', 'weight');
+  const goalWeight = readNum('numGoal', 'goalWeight');
 
-  document.getElementById('nextBtn').addEventListener('click', submit);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
-  wireBack();
-}
+  for (const [key, val] of [['age', age], ['height', height], ['weight', weight], ['goalWeight', goalWeight]]) {
+    const lim = NUM_LIMITS[key];
+    if (!Number.isFinite(val) || val < lim.min || val > lim.max) {
+      return showErr(`Skontroluj, prosím, ${lim.label} (${lim.min}–${lim.max}).`);
+    }
+  }
+  // Cieľová váha vyššia než súčasná = človek si to pomýlil alebo nechce chudnúť;
+  // tak či tak nemá zmysel počítať deficit a tváriť sa, že je všetko v poriadku.
+  if (goalWeight >= weight) {
+    return showErr('Cieľová váha má byť nižšia než súčasná — inak nie je čo počítať.');
+  }
 
-function renderChoice(q, key) {
-  app.innerHTML = `
-    <section class="question-screen">
-      <div class="step-label">Krok ${state.step + 1} z ${TOTAL_STEPS}</div>
-      <h2>${q.q}</h2>
-      ${q.note ? `<p class="step-note">${q.note}</p>` : ''}
-      <div class="options">
-        ${q.options.map((o, i) => `<button class="option" data-idx="${i}">${o.label}</button>`).join('')}
-      </div>
-      ${backLink(state.step)}
-    </section>
-  `;
-  document.querySelectorAll('.option').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state[key] = q.options[parseInt(btn.dataset.idx, 10)].value;
-      next();
-    });
+  const activity = document.getElementById('selActivity').value;
+  const problem = document.getElementById('selProblem').value;
+  const history = document.getElementById('selHistory').value;
+  if (!activity || !problem || !history) {
+    return showErr('Ešte ti chýba vyplniť jednu z otázok nižšie.');
+  }
+
+  err.classList.remove('show');
+  Object.assign(state, {
+    age: Math.round(age), height: Math.round(height), weight: Math.round(weight), goalWeight: Math.round(goalWeight),
+    activity, problem, history,
   });
-  wireBack();
+  showGate();
+  window.scrollTo(0, 0);
 }
 
 // ---------- E-MAILOVÁ STENA ----------
@@ -335,7 +301,6 @@ function renderChoice(q, key) {
 // zvyšok (cieľové kalórie, bielkoviny, tempo, čas do cieľa, prvé kroky).
 // Rovnaké pravidlo ako na kvíze — pýtať adresu za mačku vo vreci stálo 58 % ľudí.
 function showGate() {
-  updateProgress(TOTAL_STEPS);
   const plan = calcPlan(state);
   if (!state.gateTracked) {
     state.gateTracked = true;
@@ -444,7 +409,6 @@ async function submitLead() {
 
 // ---------- VÝSLEDOK ----------
 function showResult(plan) {
-  progressTrack.hidden = true;
   const g = (z, m) => (state.gender === 'muz' ? m : z);
   const repeatedRelapse = state.history === 'viackrat' || state.history === 'jojo';
   const wantsGuidance = state.problem === 'potrebujem-podporu';
@@ -640,4 +604,4 @@ async function submitCallback(meta, getWindow) {
 }
 
 // ---------- ŠTART ----------
-show(0);
+renderForm();
