@@ -598,18 +598,28 @@ function bandFor(score) {
 // Rezervácia hovoru: človek nechá číslo, Ján zavolá. Zámerne sa NEODCHÁDZA na Cal.com.
 // `Lead` sa páli až po POTVRDENOM zápise — nie pri kliku na tlačidlo. Tým sa konečne
 // meria skutočná rezervácia, na ktorú inak treba Cal.com webhook.
-async function submitCallback(consultMeta, getWindow) {
+async function submitCallback(consultMeta, getWindow, getMode) {
   if (state.callbackSent) return;
 
-  const input = document.getElementById('phone');
   const err = document.getElementById('cbErr');
   const btn = document.getElementById('cbSubmit');
-  const phone = input.value.trim();
+  const writing = getMode() === 'write';
+  const input = document.getElementById(writing ? 'message' : 'phone');
+  const phone = writing ? '' : document.getElementById('phone').value.trim();
+  const message = writing ? document.getElementById('message').value.trim() : '';
 
   // Voľná validácia: aspoň 9 číslic. Prísnejšia by odmietala legitímne formáty
   // (medzery, +421, 0042) a vyhodila by lead pre nič.
-  if (phone.replace(/\D/g, '').length < 9) {
+  if (!writing && phone.replace(/\D/g, '').length < 9) {
     err.textContent = 'Skontroluj, prosím, číslo — nevyzerá kompletné.';
+    err.classList.add('show');
+    input.focus();
+    return;
+  }
+
+  // Pri správe stačí, aby vôbec niečo napísal — nevypytujeme sa na dĺžku ani tvar.
+  if (writing && message.length < 2) {
+    err.textContent = 'Napíš mi aspoň pár slov — nemusí to byť dlhé.';
     err.classList.add('show');
     input.focus();
     return;
@@ -624,7 +634,9 @@ async function submitCallback(consultMeta, getWindow) {
     name: state.name || '',
     email: state.email || '',
     phone,
-    preferredTime: getWindow() || '',
+    message,
+    // Termín patrí len k hovoru — pri správe by bol mätúci údaj v tabuľke.
+    preferredTime: writing ? '' : (getWindow() || ''),
     segment: state.segment,
     history: state.history,
     readiness: state.readiness,
@@ -656,18 +668,21 @@ async function submitCallback(consultMeta, getWindow) {
     // sľúbili hovor, na ktorý nie je kam volať. Preto musí zápis telefónu výslovne
     // potvrdiť. Kým to nerobí, radšej ukážeme záložné cesty.
     const out = await response.json().catch(() => null);
-    if (!out || (out.kind !== 'call' && out.typ !== 'konzultacia')) {
-      throw new Error('Booking API: zápis telefónu nepotvrdený');
+    if (!out || (out.kind !== 'call' && out.kind !== 'message' && out.typ !== 'konzultacia')) {
+      throw new Error('Booking API: zápis kontaktu nepotvrdený');
     }
 
     state.callbackSent = true;
-    // Až teraz je to rezervácia. `Lead` = štandardný event → ide na pixel ad účtu.
-    trackAd('Lead', { ...consultMeta, value: 25.00, currency: 'EUR' });
+    // Až teraz je to kontakt. `Lead` = štandardný event → ide na pixel ad účtu.
+    // Obe cesty sú rovnako hodnotný lead: v oboch prípadoch má Ján komu odpovedať.
+    trackAd('Lead', { ...consultMeta, way: writing ? 'message' : 'call', value: 25.00, currency: 'EUR' });
 
     document.getElementById('callbackForm').innerHTML = `
       <div class="callback-done">
         <h4>✓ Mám to${state.name ? `, ${state.name}` : ''}</h4>
-        <p>Ozvem sa ti na <strong>${phone}</strong>${payload.preferredTime ? ` — <strong>${payload.preferredTime.toLowerCase()}</strong>` : ' čo najskôr'}. Ak by ti to nevyhovovalo, napíš mi na <a href="mailto:${CONFIG.CONTACT_EMAIL}">${CONFIG.CONTACT_EMAIL}</a>.</p>
+        ${writing
+          ? `<p>Odpíšem ti na <strong>${state.email}</strong>, zvyčajne do jedného dňa. Nemusíš nikam volať ani nič plánovať.</p>`
+          : `<p>Ozvem sa ti na <strong>${phone}</strong>${payload.preferredTime ? ` — <strong>${payload.preferredTime.toLowerCase()}</strong>` : ' čo najskôr'}. Ak by ti to nevyhovovalo, napíš mi na <a href="mailto:${CONFIG.CONTACT_EMAIL}">${CONFIG.CONTACT_EMAIL}</a>.</p>`}
       </div>`;
   } catch (error) {
     // Lead sa nesmie stratiť len preto, že zápis zlyhal — ponúkneme obe záložné cesty.
@@ -815,20 +830,38 @@ function showResult(name) {
     ? `<button class="btn${cold ? ' secondary' : ''}" id="consultBtn">${cold ? 'Nechať číslo — bez záväzku' : `📞 Chcem svoj ${offer.NAME}`}</button>`
     : `<a class="btn${cold ? ' secondary' : ''}" id="consultBtn" href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">${cold ? `Pozrieť voľné termíny (${offer.LENGTH})` : `📞 Chcem svoj ${offer.NAME}`}</a>`;
 
-  // Formulár žiada JEDINÚ vec: telefónne číslo. Meno a e-mail už máme z kvízu,
-  // takže sa nepýtajú druhýkrát. Termín je voliteľný — klik namiesto kalendára.
+  // DVE CESTY, nie jedna (3. 8. 2026). Meranie: 122 ľudí na výsledku, 11 klikov na
+  // ponuku, 0 zadaných čísel — a formulár pritom preukázateľne funguje (overený ostrým
+  // odoslaním). Prekážkou nie je dizajn ani počet polí, ale samotný záväzok: nechať
+  // cudziemu človeku číslo, aby zavolal. Preto je telefón len jedna z ciest a hneď
+  // vedľa nej stojí písomná, ktorá nič nezvoní.
+  //
+  // Prísľub súkromia je NAD poľom, nie pod tlačidlom. Pod ním ho číta len ten,
+  // kto už číslo dal — teda presne ten, koho netreba presviedčať.
   const callbackHtml = !bookingReady ? '' : `
       <div class="callback" id="callbackForm" hidden>
-        <h4>Kam ti mám zavolať?</h4>
-        <p class="callback-lead">Meno aj e-mail už mám — potrebujem len číslo. <strong>Ozvem sa ti ja</strong>, nemusíš nič hľadať ani plánovať.</p>
-        <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="+421 900 123 456" aria-label="Telefónne číslo">
-        <div class="when-label">Kedy sa ti to hodí? <span>(nepovinné)</span></div>
-        <div class="when-row" id="whenRow">
-          ${CALL_WINDOWS.map(w => `<button type="button" class="when-chip" data-when="${w}">${w}</button>`).join('')}
+        <h4>Ako sa ti to hodí?</h4>
+        <div class="way-row" role="tablist">
+          <button type="button" class="way-tab active" id="wayCall" role="tab" aria-selected="true">📞 Zavolaj mi</button>
+          <button type="button" class="way-tab" id="wayWrite" role="tab" aria-selected="false">✍️ Radšej napíšem</button>
         </div>
+
+        <div id="wayCallPane">
+          <p class="callback-note callback-promise">Číslo použijem len na tento jeden hovor. Nikde ho nezverejňujem a neposielam naň reklamu.</p>
+          <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="+421 900 123 456" aria-label="Telefónne číslo">
+          <div class="when-label">Kedy sa ti to hodí? <span>(nepovinné)</span></div>
+          <div class="when-row" id="whenRow">
+            ${CALL_WINDOWS.map(w => `<button type="button" class="when-chip" data-when="${w}">${w}</button>`).join('')}
+          </div>
+        </div>
+
+        <div id="wayWritePane" hidden>
+          <p class="callback-note callback-promise">Žiadny telefonát. Napíš mi jednou vetou, čo ti nejde — odpíšem ti na e-mail, ktorý si ${state.gender === 'muz' ? 'zadal' : 'zadala'} v kvíze.</p>
+          <textarea id="message" rows="4" aria-label="Správa pre Jána" placeholder="Napr.: Cez deň to zvládnem, ale večer sa to vždy rozsype…"></textarea>
+        </div>
+
         <div class="error-msg" id="cbErr"></div>
         <button class="btn" id="cbSubmit">Ozvi sa mi</button>
-        <p class="callback-note">Číslo použijem len na tento jeden hovor. Nikde ho nezverejňujem a neposielam naň reklamu.</p>
         <p class="alt-link"><a href="${CONFIG.CAL_URL}" id="calLink" target="_blank" rel="noopener">Radšej si termín vyberiem sám v kalendári →</a></p>
       </div>`;
   const nudge = HISTORY_NUDGE[state.history];
@@ -926,8 +959,37 @@ function showResult(name) {
       });
     });
 
-    document.getElementById('cbSubmit').addEventListener('click', () => {
-      submitCallback(consultMeta, () => chosenWindow);
+    // Prepínanie ciest. Meria sa zvlášť (`ConsultWayWrite`) — ak si väčšina volí
+    // písanie, vieme, že telefón bol tá prekážka, a nie je to len dojem.
+    const wayCall = document.getElementById('wayCall');
+    const wayWrite = document.getElementById('wayWrite');
+    const callPane = document.getElementById('wayCallPane');
+    const writePane = document.getElementById('wayWritePane');
+    const submitBtn = document.getElementById('cbSubmit');
+    let mode = 'call';
+
+    const setMode = (next) => {
+      mode = next;
+      const writing = next === 'write';
+      callPane.hidden = writing;
+      writePane.hidden = !writing;
+      wayCall.classList.toggle('active', !writing);
+      wayWrite.classList.toggle('active', writing);
+      wayCall.setAttribute('aria-selected', String(!writing));
+      wayWrite.setAttribute('aria-selected', String(writing));
+      submitBtn.textContent = writing ? 'Poslať správu' : 'Ozvi sa mi';
+      document.getElementById('cbErr').classList.remove('show');
+      document.getElementById(writing ? 'message' : 'phone').focus({ preventScroll: true });
+    };
+
+    wayCall.addEventListener('click', () => setMode('call'));
+    wayWrite.addEventListener('click', () => {
+      setMode('write');
+      trackAd('ConsultWayWrite', consultMeta);
+    });
+
+    submitBtn.addEventListener('click', () => {
+      submitCallback(consultMeta, () => chosenWindow, () => mode);
     });
   }
 

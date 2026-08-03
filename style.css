@@ -418,6 +418,51 @@ h1, h2, .display {
   color: var(--ink-soft);
   margin-top: 12px;
 }
+/* Voľba cesty: telefón alebo správa. Obe rovnako veľké a rovnako dostupné —
+   keby bola písomná cesta menšia alebo schovaná ako odkaz, ostala by to znovu
+   ponuka „telefón, alebo nič", a presne na tej sa meranie zastavilo na nule. */
+.way-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.way-tab {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px 10px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.way-tab.active {
+  border-color: var(--berry);
+  background: var(--berry-tint);
+  color: var(--ink);
+}
+.way-tab:focus-visible { outline: 3px solid var(--berry); outline-offset: 2px; }
+/* Prísľub súkromia stojí NAD poľom — pod tlačidlom ho číta len ten, kto už
+   kontakt dal, teda presne ten, koho netreba upokojovať. */
+.callback-promise { margin: 10px 0 12px; }
+.callback textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.6;
+  padding: 14px 16px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  resize: vertical;
+}
+.callback textarea:focus-visible {
+  outline: none;
+  border-color: var(--berry);
+}
 .alt-link { text-align: center; margin-top: 14px; font-size: 13.5px; }
 .alt-link a { color: var(--ink-soft); }
 
