@@ -485,8 +485,8 @@ function showResult(plan) {
       <div class="offer" id="offerCard">
         <div class="offer-eyebrow">Tvoj ďalší krok</div>
         <h3 class="offer-title">${CONFIG.OFFER.NAME}</h3>
-        <div class="offer-meta">${CONFIG.OFFER.LENGTH} po telefóne · zadarmo · bez karty</div>
-        <p class="offer-lead">S čím z toho hovoru odídeš:</p>
+        <div class="offer-meta">${CONFIG.OFFER.LENGTH} po telefóne alebo písomne · zadarmo · bez karty</div>
+        <p class="offer-lead">S čím z toho odídeš:</p>
         <div class="offer-stack">
           <div>✓ <strong>Prejdeme si tvoje čísla</strong> — ${callPromise}.</div>
           <div>✓ <strong>Ako to dostať do bežného dňa</strong> — nie teória, ale tvoj pondelok a tvoj piatok večer.</div>
@@ -495,7 +495,7 @@ function showResult(plan) {
         <p class="offer-scarcity">Beriem maximálne <strong>${CONFIG.OFFER.SPOTS_PER_MONTH} nových ľudí mesačne</strong>, lebo pri každom som osobne.</p>
       </div>
 
-      <button class="btn" id="consultBtn">📞 Chcem svoj ${CONFIG.OFFER.NAME}</button>
+      <button class="btn" id="consultBtn">Chcem svoj ${CONFIG.OFFER.NAME}</button>
 
       <div class="callback" id="callbackForm" hidden>
         <h4>Ako sa ti to hodí?</h4>
@@ -536,7 +536,8 @@ function showResult(plan) {
   consultBtn.addEventListener('click', () => {
     form.hidden = false;
     trackAd('ConsultClick', meta);
-    document.getElementById('phone').focus();
+    // Zámerne bez focusu na telefón (6. 8. 2026) — rovnaká zmena ako v app.js.
+    // Numerická klávesnica hneď po otvorení prekryje voľbu „✍️ Radšej napíšem".
     form.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 

@@ -807,8 +807,8 @@ function showResult(name) {
       <div class="offer" id="offerCard">
         <div class="offer-eyebrow">Tvoj ďalší krok</div>
         <h3 class="offer-title">${offer.NAME}</h3>
-        <div class="offer-meta">${offer.LENGTH} po telefóne · zadarmo · bez karty</div>
-        <p class="offer-lead">S čím z toho hovoru odídeš:</p>
+        <div class="offer-meta">${offer.LENGTH} po telefóne alebo písomne · zadarmo · bez karty</div>
+        <p class="offer-lead">S čím z toho odídeš:</p>
         <div class="offer-stack">
           <div>✓ <strong>Tvoju hlavnú brzdu pomenovanú nahlas</strong> — ${callPromise}.</div>
           <div>✓ <strong>Prvý konkrétny krok</strong> — jedna vec, ktorou začneš najbližší týždeň, nastavená na tvoj bežný deň. Ten krok je tvoj, aj keby sme spolu viac nehovorili.</div>
@@ -826,9 +826,14 @@ function showResult(name) {
   // Tlačidlo NEODCHÁDZA zo stránky — rozbalí formulár priamo pod ponukou.
   // Predtým to bol odkaz na Cal.com: cudzia stránka, výber dátumu a času a opätovné
   // písanie mena aj e-mailu. To je na človeka, ktorý práve dokončil kvíz, priveľa.
+  //
+  // BEZ 📞 (6. 8. 2026). Písomná cesta z 3. 8. dostala 144 ľudí na výsledok, ale len
+  // 7 klikov na ponuku a 1 správu — nedostala teda férový test, lebo sedela ZA
+  // tlačidlom, ktoré vyzeralo ako súhlas s telefonátom. Slúchadlo aj slovo „číslo"
+  // sú preto preč z gate; voľba telefón/správa ostáva až vo formulári.
   const bookBtnHtml = bookingReady
-    ? `<button class="btn${cold ? ' secondary' : ''}" id="consultBtn">${cold ? 'Nechať číslo — bez záväzku' : `📞 Chcem svoj ${offer.NAME}`}</button>`
-    : `<a class="btn${cold ? ' secondary' : ''}" id="consultBtn" href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">${cold ? `Pozrieť voľné termíny (${offer.LENGTH})` : `📞 Chcem svoj ${offer.NAME}`}</a>`;
+    ? `<button class="btn${cold ? ' secondary' : ''}" id="consultBtn">${cold ? 'Nechať kontakt — bez záväzku' : `Chcem svoj ${offer.NAME}`}</button>`
+    : `<a class="btn${cold ? ' secondary' : ''}" id="consultBtn" href="${CONFIG.CAL_URL}" target="_blank" rel="noopener">${cold ? `Pozrieť voľné termíny (${offer.LENGTH})` : `Chcem svoj ${offer.NAME}`}</a>`;
 
   // DVE CESTY, nie jedna (3. 8. 2026). Meranie: 122 ľudí na výsledku, 11 klikov na
   // ponuku, 0 zadaných čísel — a formulár pritom preukázateľne funguje (overený ostrým
@@ -941,7 +946,9 @@ function showResult(name) {
     consultBtn.addEventListener('click', () => {
       consultBtn.hidden = true;
       callbackForm.hidden = false;
-      document.getElementById('phone').focus({ preventScroll: true });
+      // Zámerne NEfokusujeme telefón (6. 8. 2026): na mobile to vytiahne numerickú
+      // klávesnicu skôr, než si človek stihne všimnúť, že existuje aj „napíšem".
+      // Fokus sa nastaví až keď si cestu vyberie (setMode nižšie).
       callbackForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
 

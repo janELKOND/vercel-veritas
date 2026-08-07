@@ -1,11 +1,42 @@
 # STAV — kde sme skončili
 
-**Aktualizované:** 3. 8. 2026
-**Jednou vetou:** rezervácia telefónom bola zapnutá 4 dni a dala **nulu** — preto má
-človek od 3. 8. **druhú cestu: napísať správu namiesto čísla** (kvíz aj analýza).
-Formulár pritom preukázateľne funguje, chyba to nie je; prekážkou je samotný telefón.
+**Aktualizované:** 6. 8. 2026
+**Jednou vetou:** písomná cesta prah nesplnila, ale **nedostala férový test** — sedela
+za tlačidlom `📞 Chcem svoj Reštart plán`, ktoré samo vyzeralo ako súhlas s telefonátom,
+a doklikalo sa k nej len 4,9 % ľudí. Preto je od 6. 8. **gate bez slúchadla**.
 
-## ⚡ Posledné meranie (3. 8. 2026) — toto rozhoduje o ďalšom kroku
+## ⚡⚡ Vyhodnotenie prahu (6. 8. 2026) — prah NESPLNENÝ, ale test nebol férový
+
+Prah zo 3. 8. znel: *„ak z ďalších ~100 leadov prídu aspoň 2–3 správy, hypotéza sedela."*
+Pixel `2221207801987418`, od 3. 8. do 6. 8. (144 leadov, teda za prahom):
+
+| Krok | Počet | Podiel |
+|---|---|---|
+| `ConsultView` / `CompleteRegistration` | 144 | — |
+| `ConsultClick` (klik na ponuku) | **7** | **4,9 %** |
+| `ConsultWayWrite` (zvolili písanie) | **1** | 14 % z klikov |
+| `Lead` | **1** | — |
+
+**Prečo to NEznamená „mení sa ponuka" (ako hovorilo pravidlo zo 3. 8.):**
+pravidlo predpokladalo, že písomnú cestu ľudia aspoň uvidia. Neuvideli.
+`ConsultClick` medzitým **klesol z 9 % na 4,9 %** — úzke miesto sa nepresunulo
+do formulára, ono celý čas sedelo **nad ním**, na tlačidle. Zo 144 ľudí sa
+k voľbe „telefón / správa" vôbec nedostalo 137.
+
+**Zmena zo 6. 8. (jedna vec, obe stránky):** gate prestal sľubovať telefonát.
+- `📞 Chcem svoj Reštart plán` → `Chcem svoj Reštart plán` (COLD vetva: „Nechať
+  číslo" → „Nechať kontakt")
+- `offer-meta`: „15 minút po telefóne" → „**15 minút po telefóne alebo písomne**"
+- `offer-lead`: „S čím z toho **hovoru** odídeš" → „S čím z toho odídeš"
+- po otvorení formulára sa **už nefokusuje `phone`** — na mobile vyťahoval numerickú
+  klávesnicu skôr, než si človek všimol záložku „✍️ Radšej napíšem". Fokus nastaví
+  až `setMode`, keď si cestu vyberie.
+
+**Čo sledovať a ďalší prah:** `ConsultClick` (má sa vrátiť aspoň na 9 %) a potom
+`ConsultWayWrite`. Ak `ConsultClick` stúpne, ale správy aj hovory ostanú na nule,
+**až vtedy** je na rade ponuka — a platí sekcia 5, bod 5 (referencia priamo pri formulári).
+
+## Predošlé meranie (3. 8. 2026) — už vyhodnotené vyššie
 
 Od zapnutia formulára (30. 7. večer) do 3. 8., pixel `2221207801987418`:
 
@@ -68,8 +99,11 @@ curl -s https://kviz.valyra.sk/app.js | grep -c "wayWrite"
 curl -sL https://kviz.valyra.sk/analyza | grep -oE '(analyza/app\.js|style\.css)\?v=[0-9]+'
 ```
 
-Očakávané k 3. 8.: `pravda-kviz-v23`, `wayWrite` **7×** v `app.js` (= písomná cesta
-je vonku), `analyza/app.js?v=4` a `style.css?v=12`.
+Očakávané k 6. 8.: `pravda-kviz-v24`, `wayWrite` **7×** v `app.js` (= písomná cesta
+je vonku), `app.js?v=23`, `analyza/app.js?v=5` a `style.css?v=12`.
+Rýchla kontrola gate zo 6. 8. — obe musia vrátiť `0`:
+`curl -s https://kviz.valyra.sk/app.js | grep -c "📞 Chcem svoj"` a to isté pre
+`/analyza/app.js`.
 Pozn.: `/analyza` bez lomky vracia 308 — použi `curl -L`, inak dostaneš prázdno.
 
 ### Beží nasadená NOVÁ Supabase funkcia?
