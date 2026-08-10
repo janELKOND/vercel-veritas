@@ -2,7 +2,7 @@
 
 ## 🆕 10. 8. 2026 — `/analyza` sa pýta na pripravenosť a rozvetvuje výsledok
 
-**HOTOVÉ V KÓDE, NENASADENÉ.** Necommitnuté, nepushnuté; na `kviz.valyra.sk` beží v3.
+**NASADENÉ 10. 8. 2026** na `kviz.valyra.sk` (overené: `analyza/app.js?v=6`, `sw` v25).
 
 **Prečo:** za týždeň 259 leadov, ~4 žiadosti o kontakt, 3 hovory, **0 predajov**. Lievik
 mal jediné dvere („objednaj si hovor") a tie sú pre väčšinu zavreté. Namiesto hádania,
@@ -46,7 +46,7 @@ vychádza `problem|history|readiness`.
 
 **Cache:** `sw.js` v25, `analyza/app.js?v=6`, `analyza/analyza.css?v=3`.
 
-### Fáza 2a — predvyplnenie Valyry (hotové v kóde, NENASADENÉ)
+### Fáza 2a — predvyplnenie Valyry (NASADENÉ 10. 8. 2026)
 
 **Zistenie, ktoré to celé zmenilo:** `/analyza` od 30. 7. posielala objekt `analysis`
 (vek, výška, váha, cieľ, kalórie) a **`quizLead` ho celý ignoroval** — slovo `analysis`
@@ -60,7 +60,7 @@ Zmeny v repe `valyra` (vetva `supabase-migration`):
 
 | Súbor | Čo |
 |---|---|
-| `migrations/007_quiz_leads_analysis.sql` | 8 stĺpcov `a_*` (vek, výška, váha, cieľ, aktivita, tdee, kcal, bielkoviny). **Nespustená.** |
+| `migrations/007_quiz_leads_analysis.sql` | 8 stĺpcov `a_*` (vek, výška, váha, cieľ, aktivita, tdee, kcal, bielkoviny). **Spustená 10. 8.** |
 | `functions/quizLead/index.ts` | ukladá `analysis` s kontrolou rozsahov; vracia `leadId` (uuid riadku) |
 | `functions/analysisPrefill/index.ts` | **nová** — vymení uuid za čísla |
 | `src/pages/Onboarding.jsx` | prečíta `?a=`, predvyplní formulár |
@@ -76,9 +76,27 @@ ani zdravotný údaj — overené: odkaz obsahuje len uuid a UTM.
 **Prihlásenie sa NEMENÍ.** Žena stále zadá e-mail a kód ako doteraz; ušetrí len
 prepisovanie piatich políčok. Automatické prihlásenie (fáza 2b) spravené nie je.
 
-**Otestované:** `npx vite build` prejde; analýza generuje správny odkaz s uuid a bez
-osobných údajov; payload nesie všetky čísla. **Neotestované naživo** — `analysisPrefill`
-ani migrácia nie sú nasadené, takže reálne predvyplnenie zatiaľ nikto nevidel.
+**Dve pasce, ktoré nás pri nasadzovaní chytili — prečítaj pred ďalším deployom:**
+
+1. **Supabase nemal evidenciu žiadnej migrácie** (všetkých 6 malo `remote` prázdne, hoci
+   dávno bežia — spúšťali sa ručne cez web). `db push` by preto pustil aj
+   `001_initial_schema` s 578 riadkami a `create policy` bez poistky proti duplicite →
+   pád alebo rozbité prihlásenie živým klientom. Riešenie:
+   `supabase migration repair --status applied 001 002 003 004 005 006 --linked`
+   (len opraví evidenciu, nespúšťa SQL), potom `db push` pustí naozaj len 007.
+2. **Brána Supabase vyžaduje `Authorization`, nie len `apikey`.** Prvá verzia
+   `Onboarding.jsx` posielala iba `apikey` → 401 ešte pred spustením funkcie a
+   predvyplnenie by ticho nikdy nefungovalo. Cez `curl` to prešlo, lebo tam boli obe
+   hlavičky. Chytilo sa to až testom na živej stránke.
+
+**Overené naživo:** analýza v6 beží; payload nesie `readiness`, trojdielny segment aj
+čísla; odkaz na Valyru má uuid + UTM a **žiadny osobný ani zdravotný údaj**;
+`analysisPrefill` vracia 200 a `{found:false}` na neznáme aj nezmyselné uuid;
+`quizLead` naďalej správne odmieta neúplné dáta.
+
+**⚠️ NEOVERENÉ — samotné predvyplnenie s reálnym riadkom.** Vyžadovalo by to zapísať
+ostrý lead (a s ním e-mail leadovi, notifikáciu Jánovi a riadok v Sheete). Prvá skutočná
+žena to odskúša za nás — ak sa jej formulár nepredvyplní, hľadaj príčinu tu.
 
 ---
 
