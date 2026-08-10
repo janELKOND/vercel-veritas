@@ -149,3 +149,73 @@
   text-align: center;
 }
 .callback-alt { font-size: 13.5px; color: var(--ink-soft); margin-top: 12px; text-align: center; }
+
+/* ---------- OTÁZKA NA PRIPRAVENOSŤ (v4, 10. 8. 2026) ---------- */
+/* Tri veľké klikateľné karty, nie rozbaľovacie menu: voľba rozhoduje o celom
+   zvyšku lievika, tak musí byť vidieť všetky tri naraz. Nič nie je predvolené —
+   žiadna karta nemá `selected`, kým na ňu človek neklikne. */
+.readiness {
+  border: 0;
+  padding: 0;
+  margin: 0 0 26px;
+}
+.readiness-q {
+  padding: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+.readiness-cards { display: grid; gap: 10px; }
+.readiness-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 15px 16px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  transition: border-color .15s, background .15s;
+}
+.readiness-card:hover { border-color: var(--berry); }
+.readiness-card:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.readiness-card.selected { border-color: var(--berry); background: var(--berry-tint); }
+.readiness-label { display: block; font-weight: 700; font-size: 15.5px; line-height: 1.4; }
+.readiness-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+/* Zaškrtnutie až po výbere — prázdny krúžok pri nevybranej karte by vyzeral
+   ako rozbité rádiové tlačidlo. */
+.readiness-card.selected .readiness-label::after {
+  content: ' ✓';
+  color: var(--berry);
+}
+
+/* Cena vo Valyra ponuke. Zobrazí sa len keď je PRICE_LABEL vyplnený — vo fáze 1
+   je null, lebo checkout za 9 € ešte neexistuje. */
+.offer-price {
+  margin-top: 14px;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--berry-deep);
+}
+
+/* Vetva `informacie`: jemný odkaz, ktorý NESMIE konkurovať výsledku.
+   Preto veľkosť poznámky pod čiarou, nie tlačidlo. */
+.soft-link {
+  margin-top: 28px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  text-align: center;
+}
+.soft-link a { color: var(--ink-soft); }

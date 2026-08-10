@@ -24,6 +24,28 @@ const CONFIG = {
   PIXEL_AD: '2221207801987418',
   SOURCE: 'osobna-analyza',
   OFFER: { NAME: 'Reštart plán', LENGTH: '15 minút', SPOTS_PER_MONTH: 5 },
+
+  // Verzia lievika. v4 = pridaná otázka na pripravenosť (readiness) a routing
+  // výsledku na tri vetvy (10. 8. 2026). Leady v3 a nižšie sa NESMÚ miešať
+  // s v4 — v3 readiness nemá vôbec, takže „koľko % chce plán" by z nich vyšlo
+  // falošne nízke.
+  FUNNEL_VERSION: 4,
+
+  // Ponuka Valyry pre vetvu `plan`. Všetko na jednom mieste zámerne — cena aj
+  // odkaz sa budú meniť a nemajú byť rozsypané po kóde.
+  //
+  // FÁZA 1 (teraz): CTA vedie na existujúci onboarding. Údaje sa NEPRENÁŠAJÚ,
+  // človek si ich vo Valyre zadá znova. Preto tu NIE JE napísané „predvyplnené"
+  // ani cena 9 € — checkout za 9 € neexistuje a tlačidlo, ktoré predstiera
+  // funkčný nákup, by bolo klamstvo.
+  // FÁZA 2: sem príde URL checkoutu a prenos údajov cez podpísaný token.
+  VALYRA: {
+    ENABLED: true,
+    URL: 'https://valyra.sk/Onboarding',
+    CTA: 'Otvoriť môj plán vo Valyre',
+    PRICE_LABEL: null, // fáza 2: napr. '9 € jednorazovo'
+    NOTE: 'Otvorí sa aplikácia Valyra. Svoje čísla z tejto analýzy máš aj v e-maile, ktorý ti o chvíľu príde.',
+  },
 };
 
 // ---------- OTÁZKY ----------
@@ -72,6 +94,45 @@ const HISTORY_Q = {
   ],
 };
 
+// Pripravenosť — jediná otázka, ktorá rozhoduje o tom, čo človek uvidí na konci.
+// Hodnoty MUSIA sedieť s kvízom aj s backendom: `quizLead` ich pozná (READINESS_LABELS,
+// qualifyLead) a vypisuje v notifikácii. Nové hodnoty by tam ticho vypadli ako prázdne.
+//
+// PRAVIDLO: nič nie je predvolené. Predvolená odpoveď by nebola odpoveď, ale
+// náš odhad — a celý zmysel tejto otázky je prestať hádať, čo človek chce.
+const READINESS_Q = {
+  q: 'Čo by ti teraz pomohlo najviac?',
+  options: [
+    {
+      value: 'plan',
+      label: 'Chcem konkrétny plán a zvládnem ho {sama}',
+      note: 'Jedálniček a jasné kroky, podľa ktorých môžem postupovať každý deň.',
+    },
+    {
+      value: 'podpora',
+      label: 'Chcem, aby mi s tým niekto osobne pomohol',
+      note: 'Mám otázku alebo potrebujem podporu, aby som pri tom {vydrzala}.',
+    },
+    {
+      value: 'informacie',
+      label: 'Zatiaľ si chcem len pozrieť výsledok',
+      note: 'Teraz nechcem plán ani osobnú pomoc.',
+    },
+  ],
+};
+
+// Placeholder do textarey podľa toho, čo človek označil ako svoju brzdu. Nie je
+// to ozdoba: prázdne pole s výzvou „napíš mi" väčšina ľudí preskočí, konkrétny
+// príklad im ukáže, aká odpoveď sa čaká a že stačí jedna veta.
+// POZOR: v placeholderi nesmie byť informácia, ktorá inde nie je (prístupnosť).
+const MESSAGE_PLACEHOLDER = {
+  'co-jest': 'Napr.: Najviac neviem, čo si mám dávať na večeru…',
+  'vecerne-chute': 'Napr.: Cez deň to zvládnem, ale večer vyjedám sladké…',
+  'nevydrzim': 'Napr.: Vydržím približne týždeň a potom sa vrátim k starému režimu…',
+  'nemam-cas': 'Napr.: Nestíham si pripravovať obed a potom zjem čokoľvek…',
+  'potrebujem-podporu': 'Napr.: Viem, čo mám robiť, ale {sama} pri tom dlho nevydržím…',
+};
+
 // Prvý krok na dnes podľa toho, čo človek označil ako svoj problém.
 const FIRST_STEP = {
   'co-jest': 'K obedu aj večeri pridaj dlaň bielkovín (mäso, ryba, tvaroh, vajcia, strukoviny). Nič nerátaj — len nech tam sú.',
@@ -101,16 +162,46 @@ const state = {
   activity: null,
   problem: null,
   history: null,
+  readiness: null,   // 'plan' | 'podpora' | 'informacie' — vedomá voľba, nikdy predvolená
+  leadId: null,      // uuid riadku z quizLead → kľúč na predvyplnenie Valyry
   name: '',
   email: '',
   started: false,
   gateTracked: false,
+  readinessTracked: false,
+  offerViewTracked: false,
   callbackSent: false,
 };
 
 const app = document.getElementById('app');
 const progressTrack = document.getElementById('progressTrack');
 progressTrack.hidden = true; // jedna obrazovka na vstup — ukazovateľ postupu tu nemá čo ukazovať
+
+// Odkaz na Valyru aj s kľúčom na predvyplnenie. UTM ostáva, nech sa dá v appke
+// rozlíšiť, že človek prišiel z analýzy a nie z reklamy na valyra.sk.
+function valyraUrl() {
+  const u = new URL(CONFIG.VALYRA.URL);
+  u.searchParams.set('utm_source', 'analyza');
+  u.searchParams.set('utm_medium', 'funnel');
+  u.searchParams.set('utm_campaign', 'analyza-plan');
+  if (state.leadId) u.searchParams.set('a', state.leadId);
+  return u.toString();
+}
+
+// Skloňovanie v textoch mimo showResult (tam má vlastné `g`). Zástupné značky
+// v tvare {sama} sa nahradia podľa pohlavia — texty tak ostávajú čitateľné.
+const GENDER_FORMS = {
+  sama: ['sama', 'sám'],
+  vydrzala: ['vydržala', 'vydržal'],
+  zadala: ['zadala', 'zadal'],
+  napisala: ['napísala', 'napísal'],
+};
+function gg(text) {
+  return String(text).replace(/\{(\w+)\}/g, (m, key) => {
+    const pair = GENDER_FORMS[key];
+    return pair ? pair[state.gender === 'muz' ? 1 : 0] : m;
+  });
+}
 
 // ---------- MERANIE ----------
 // Konverzie musia ísť adresne na pixel ad účtu — druhý pixel (Valyra) ad účet
@@ -315,6 +406,18 @@ function showGate() {
         <div class="teaser-num">${plan.tdee} <small>kcal</small></div>
         <p>Toľko spáliš pri svojej výške, váhe, veku a pohybe. Koľko z toho máš jesť, aby si ${state.gender === 'muz' ? 'schudol' : 'schudla'} — a ako dlho by to trvalo — ti ukážem hneď.</p>
       </div>
+      <fieldset class="readiness" id="readinessGroup">
+        <legend class="readiness-q" id="readinessLegend">${READINESS_Q.q}</legend>
+        <div class="readiness-cards" role="radiogroup" aria-labelledby="readinessLegend">
+          ${READINESS_Q.options.map((o, i) => `
+            <button type="button" class="readiness-card" role="radio" aria-checked="false"
+                    id="rd-${o.value}" data-readiness="${o.value}" tabindex="${i === 0 ? '0' : '-1'}">
+              <span class="readiness-label">${gg(o.label)}</span>
+              <span class="readiness-note">${gg(o.note)}</span>
+            </button>`).join('')}
+        </div>
+      </fieldset>
+
       <h2>Kam ti mám poslať celú analýzu?</h2>
       <p class="sub">Po zadaní adresy uvidíš svoje čísla hneď tu. Na e-mail ti ich pošlem, aby si ich nemusela hľadať.</p>
       <div class="field">
@@ -329,11 +432,42 @@ function showGate() {
         <input type="checkbox" id="gdpr">
         <span>Súhlasím so spracovaním údajov na zaslanie analýzy a tipov k zdravému chudnutiu a s občasnými informáciami o službách a spolupráci. Odhlásiť sa dá kedykoľvek jedným klikom.</span>
       </label>
-      <div class="error-msg" id="errMsg"></div>
+      <div class="error-msg" id="errMsg" role="alert" aria-live="polite"></div>
       <button class="btn" id="submitBtn">Ukáž mi moju analýzu</button>
     </section>
   `;
   document.getElementById('submitBtn').addEventListener('click', submitLead);
+
+  // Karty sa správajú ako prístupná skupina prepínačov: šípky prepínajú, medzerník
+  // aj Enter vyberajú, tabom sa do skupiny vojde raz (roving tabindex).
+  const cards = Array.from(document.querySelectorAll('.readiness-card'));
+  const select = (card) => {
+    state.readiness = card.dataset.readiness;
+    cards.forEach((c) => {
+      const on = c === card;
+      c.classList.toggle('selected', on);
+      c.setAttribute('aria-checked', String(on));
+      c.tabIndex = on ? 0 : -1;
+    });
+    // Jednorazovo — inak by preklikávanie medzi kartami nafúklo štatistiku.
+    if (!state.readinessTracked) {
+      state.readinessTracked = true;
+      trackAd('ReadinessSelected', { readiness: state.readiness });
+    }
+    document.getElementById('errMsg').classList.remove('show');
+  };
+  cards.forEach((card, i) => {
+    card.addEventListener('click', () => select(card));
+    card.addEventListener('keydown', (e) => {
+      const dir = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1
+        : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 0;
+      if (!dir) return;
+      e.preventDefault();
+      const next = cards[(i + dir + cards.length) % cards.length];
+      next.focus();
+      select(next);
+    });
+  });
 }
 
 async function submitLead() {
@@ -344,11 +478,21 @@ async function submitLead() {
   const btn = document.getElementById('submitBtn');
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+  // Pripravenosť sa kontroluje PRVÁ — je hore na obrazovke a chyba má ukázať
+  // na najvyššie nevyplnené miesto, nie poslať človeka hľadať späť hore.
+  if (!state.readiness) {
+    err.textContent = 'Vyber, prosím, čo by ti teraz pomohlo najviac.';
+    err.classList.add('show');
+    document.getElementById('readinessGroup').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.querySelector('.readiness-card').focus();
+    return;
+  }
   if (!name || !emailOk || !gdpr) {
     err.textContent = !name ? 'Doplň, prosím, meno.'
       : !emailOk ? 'Skontroluj, prosím, e-mail — nevyzerá kompletný.'
       : 'Bez súhlasu ti analýzu nemôžem poslať.';
     err.classList.add('show');
+    document.getElementById(!name ? 'name' : !emailOk ? 'email' : 'gdpr').focus();
     return;
   }
   err.classList.remove('show');
@@ -363,12 +507,14 @@ async function submitLead() {
     name,
     email,
     gender: state.gender,
-    // Zložený segment v rovnakom tvare ako kvíz: problém|história|(pripravenosť).
-    // Analýza sa na pripravenosť nepýta, takže tretí diel ostáva prázdny —
-    // tiering aj tak funguje, lebo stojí na histórii návratov.
-    segment: [state.problem, state.history].filter(Boolean).join('|'),
+    // Zložený segment v rovnakom tvare ako kvíz: problém|história|pripravenosť.
+    // Od v4 je tretí diel konečne vyplnený — dovtedy bol pri analýze vždy prázdny.
+    segment: [state.problem, state.history, state.readiness].filter(Boolean).join('|'),
     baseSegment: state.problem,
     history: state.history,
+    // Backend to už vie prijať aj použiť (READINESS_LABELS, qualifyLead) —
+    // analýza mu to doteraz jednoducho neposielala.
+    readiness: state.readiness,
     // Analýza nemá skóre. Výsledok posielame cez `bandName`, ktorý backend ukladá
     // aj vypisuje v notifikácii — Ján tak v maili rovno vidí, s akými číslami
     // človek odišiel, bez zmeny schémy DB kvôli testu.
@@ -380,7 +526,7 @@ async function submitLead() {
     },
     ts: new Date().toISOString(),
     source: CONFIG.SOURCE,
-    quizVersion: 3,
+    quizVersion: CONFIG.FUNNEL_VERSION,
   };
 
   try {
@@ -395,6 +541,11 @@ async function submitLead() {
     });
     clearTimeout(timeout);
     if (!res.ok) throw new Error(`Lead API: ${res.status}`);
+    // uuid riadku → kľúč, ktorým si Valyra vyzdvihne čísla na predvyplnenie.
+    // Do odkazu ide zámerne uuid, nie e-mail ani váha: je náhodné a samo o sebe
+    // nepovie, komu patrí. Keď ho backend nevráti, odkaz funguje ďalej — len
+    // sa nepredvyplní, čo je horší zážitok, nie chyba.
+    state.leadId = await res.json().then((d) => d && d.leadId).catch(() => null);
     // CompleteRegistration = ten istý konverzný event ako kvíz, aby sa dali
     // porovnávať ceny za lead medzi oboma magnetmi v jednom účte.
     if (typeof fbq === 'function') fbq('track', 'CompleteRegistration');
@@ -431,6 +582,68 @@ function showResult(plan) {
   const relapseLine = repeatedRelapse
     ? `<p class="relapse-line">A ešte jedna vec, ktorú si ${g('označila', 'označil')}: kilá sa ti už vrátili. To nie je o vôli — je to o tom, že plán na papieri a plán, ktorý prežije zlý týždeň, sú dve rôzne veci.</p>`
     : '';
+
+  // ---------- ROUTING PODĽA VOĽBY ČLOVEKA ----------
+  // Rozhoduje `readiness`, NIE interný tier. Žena s jojo efektom je interne
+  // „hot", ale ak si vybrala „zatiaľ si chcem len pozrieť výsledok", nedostane
+  // ponuku. Tier ostáva na notifikáciu pre Jána, na UI nemá vplyv.
+  const writePane = (placeholder) => `
+      <div class="callback" id="callbackForm">
+        <label class="callback-note callback-promise" for="message">Bez telefonátu, zadarmo. Odpoviem na e-mail, ktorý si ${g('zadala', 'zadal')} vyššie.</label>
+        <textarea id="message" rows="4" placeholder="${placeholder}"></textarea>
+        <div class="error-msg" id="cbErr" role="alert" aria-live="polite"></div>
+        <button type="button" class="btn" id="cbSubmit">Chcem Jánovu osobnú odpoveď</button>
+      </div>`;
+
+  // Telefón je vždy až druhá možnosť a rozbalí sa len po vedomom kliknutí.
+  // Slovo „rezervácia" tu zámerne nie je — človek nechá číslo, termín si nevyberá.
+  const callPane = `
+      <button type="button" class="btn secondary" id="callToggle">Radšej si to prejdeme spolu? Chcem 15-minútový hovor</button>
+      <div class="callback" id="callFormPane" hidden>
+        <label class="callback-note callback-promise" for="phone">Číslo použijem len na tento jeden hovor. Nikde ho nezverejňujem a neposielam naň reklamu.</label>
+        <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="+421 900 123 456">
+        <div class="when-label" id="whenLabel">Kedy sa ti to hodí? <span>(nepovinné)</span></div>
+        <div class="when-row" id="whenRow" role="group" aria-labelledby="whenLabel">
+          ${CALL_WINDOWS.map(w => `<button type="button" class="when-chip" data-when="${w}">${w}</button>`).join('')}
+        </div>
+        <div class="error-msg" id="callErr" role="alert" aria-live="polite"></div>
+        <button type="button" class="btn" id="callSubmit">Chcem, aby mi Ján zavolal</button>
+        <p class="callback-alt">Radšej si vyberieš termín ${g('sama', 'sám')}? <a href="${CONFIG.CAL_URL}" target="_blank" rel="noopener" id="calLink">Otvor kalendár</a>.</p>
+      </div>`;
+
+  let ctaBlock = '';
+  if (state.readiness === 'plan' && CONFIG.VALYRA.ENABLED) {
+    ctaBlock = `
+      <div class="offer" id="offerCard">
+        <div class="offer-eyebrow">Tvoj ďalší krok</div>
+        <h3 class="offer-title">Tvoje čísla už máš. Teraz z nich sprav plán na každý deň.</h3>
+        <p class="offer-lead">Valyra ti podľa tvojich <strong>${plan.target} kcal</strong> a <strong>${plan.protein} g bielkovín</strong> pripraví jedálniček, nákupný zoznam a jednoduché denné kroky. Nemusíš každý deň premýšľať, čo jesť a či to robíš správne.</p>
+        <div class="offer-stack">
+          <div>✓ Jedálniček podľa tvojich kalórií a výmena jedál podľa chuti</div>
+          <div>✓ Nákupný zoznam a recepty</div>
+          <div>✓ Sledovanie váhy, pokroku a denných návykov</div>
+        </div>
+        ${CONFIG.VALYRA.PRICE_LABEL ? `<p class="offer-price">${CONFIG.VALYRA.PRICE_LABEL}</p>` : ''}
+      </div>
+      <a class="btn" id="valyraBtn" href="${valyraUrl()}" target="_blank" rel="noopener">${CONFIG.VALYRA.CTA}</a>
+      <p class="callback-alt">${CONFIG.VALYRA.NOTE}</p>
+      <button type="button" class="btn secondary" id="askToggle">Mám ešte otázku pre Jána</button>
+      <div id="askPane" hidden>${writePane(gg(MESSAGE_PLACEHOLDER[state.problem] || MESSAGE_PLACEHOLDER['co-jest']))}</div>`;
+  } else if (state.readiness === 'podpora') {
+    ctaBlock = `
+      <div class="offer" id="offerCard">
+        <div class="offer-eyebrow">Tvoj ďalší krok</div>
+        <h3 class="offer-title">Kde sa ti tento plán zvyčajne rozpadne?</h3>
+        <p class="offer-lead">Napíš mi jednou vetou, čo ti pri chudnutí nejde. Pozriem sa na tvoje čísla a osobne ti odpíšem, čo by som na tvojom mieste upravil ako prvé.</p>
+      </div>
+      ${writePane(gg(MESSAGE_PLACEHOLDER[state.problem] || MESSAGE_PLACEHOLDER['co-jest']))}
+      ${callPane}`;
+  } else {
+    // `informacie` — žiadna ponuka, žiadna scarcity, žiadny telefonát.
+    // Jemný odkaz smie existovať, ale nesmie konkurovať výsledku.
+    ctaBlock = `
+      <p class="soft-link">Ak budeš neskôr chcieť plán na každý deň, Valyru nájdeš <a href="${valyraUrl()}" target="_blank" rel="noopener" id="softValyra">tu</a>.</p>`;
+  }
 
   app.innerHTML = `
     <section class="result">
@@ -482,46 +695,7 @@ function showResult(plan) {
         ${relapseLine}
       </div>
 
-      <div class="offer" id="offerCard">
-        <div class="offer-eyebrow">Tvoj ďalší krok</div>
-        <h3 class="offer-title">${CONFIG.OFFER.NAME}</h3>
-        <div class="offer-meta">${CONFIG.OFFER.LENGTH} po telefóne alebo písomne · zadarmo · bez karty</div>
-        <p class="offer-lead">S čím z toho odídeš:</p>
-        <div class="offer-stack">
-          <div>✓ <strong>Prejdeme si tvoje čísla</strong> — ${callPromise}.</div>
-          <div>✓ <strong>Ako to dostať do bežného dňa</strong> — nie teória, ale tvoj pondelok a tvoj piatok večer.</div>
-          <div>✓ <strong>Jasno v tom, čo ďalej</strong> — ak budeš chcieť, aby som ťa viedol, poviem ti presne ako to vyzerá. Ak nie, rozlúčime sa v pohode.</div>
-        </div>
-        <p class="offer-scarcity">Beriem maximálne <strong>${CONFIG.OFFER.SPOTS_PER_MONTH} nových ľudí mesačne</strong>, lebo pri každom som osobne.</p>
-      </div>
-
-      <button class="btn" id="consultBtn">Chcem svoj ${CONFIG.OFFER.NAME}</button>
-
-      <div class="callback" id="callbackForm" hidden>
-        <h4>Ako sa ti to hodí?</h4>
-        <div class="way-row" role="tablist">
-          <button type="button" class="way-tab active" id="wayCall" role="tab" aria-selected="true">📞 Zavolaj mi</button>
-          <button type="button" class="way-tab" id="wayWrite" role="tab" aria-selected="false">✍️ Radšej napíšem</button>
-        </div>
-
-        <div id="wayCallPane">
-          <p class="callback-note callback-promise">Číslo použijem len na tento jeden hovor. Nikde ho nezverejňujem a neposielam naň reklamu.</p>
-          <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="+421 900 123 456" aria-label="Telefónne číslo">
-          <div class="when-label">Kedy sa ti to hodí? <span>(nepovinné)</span></div>
-          <div class="when-row" id="whenRow">
-            ${CALL_WINDOWS.map(w => `<button type="button" class="when-chip" data-when="${w}">${w}</button>`).join('')}
-          </div>
-        </div>
-
-        <div id="wayWritePane" hidden>
-          <p class="callback-note callback-promise">Žiadny telefonát. Napíš mi jednou vetou, čo ti nejde — odpíšem ti na e-mail, ktorý si ${g('zadala', 'zadal')} vyššie.</p>
-          <textarea id="message" rows="4" aria-label="Správa pre Jána" placeholder="Napr.: Cez deň to zvládnem, ale večer sa to vždy rozsype…"></textarea>
-        </div>
-
-        <div class="error-msg" id="cbErr"></div>
-        <button class="btn" id="cbSubmit">Ozvi sa mi</button>
-        <p class="callback-alt">Radšej si vyberieš termín ${g('sama', 'sám')}? <a href="${CONFIG.CAL_URL}" target="_blank" rel="noopener" id="calLink">Otvor kalendár</a>.</p>
-      </div>
+      ${ctaBlock}
 
       <p class="disclaimer">Výpočet je odhad podľa rovnice Mifflin–St Jeor. Nenahrádza lekára — ak si tehotná, dojčíš alebo sa liečiš, over si to najprv u neho.</p>
     </section>
@@ -530,64 +704,80 @@ function showResult(plan) {
   const meta = { segment: state.problem, history: state.history, tier, source: CONFIG.SOURCE };
   trackAd('ConsultView', meta);
 
+  // Ponuka Valyry sa počíta ako videná až keď sa reálne dostane do zorného poľa.
+  // Meranie pri vykreslení by nafúklo ValyraOfferView o ľudí, ktorí k nej nikdy
+  // nedoscrollovali — a práve pomer videných ku klikom je to, čo chceme vedieť.
+  const valyraBtn = document.getElementById('valyraBtn');
+  const offerCard = document.getElementById('offerCard');
+  if (valyraBtn && offerCard && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting) && !state.offerViewTracked) {
+        state.offerViewTracked = true;
+        trackAd('ValyraOfferView', meta);
+        io.disconnect();
+      }
+    }, { threshold: 0.5 });
+    io.observe(offerCard);
+  }
+  if (valyraBtn) {
+    valyraBtn.addEventListener('click', () => trackAd('ValyraCheckoutStart', meta), { once: true });
+  }
+  const softValyra = document.getElementById('softValyra');
+  if (softValyra) softValyra.addEventListener('click', () => trackAd('ValyraOfferClick', meta), { once: true });
+
+  // Vetva `plan`: písomná cesta je schovaná za sekundárnym tlačidlom, lebo
+  // primárna ponuka je Valyra. Vo vetve `podpora` je textarea rovno viditeľná.
+  const askToggle = document.getElementById('askToggle');
+  if (askToggle) {
+    askToggle.addEventListener('click', () => {
+      const pane = document.getElementById('askPane');
+      pane.hidden = false;
+      askToggle.hidden = true;
+      trackAd('MessageStart', meta);
+      pane.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('message').focus({ preventScroll: true });
+    }, { once: true });
+  }
+
   let chosenWindow = '';
-  const consultBtn = document.getElementById('consultBtn');
-  const form = document.getElementById('callbackForm');
-  consultBtn.addEventListener('click', () => {
-    form.hidden = false;
-    trackAd('ConsultClick', meta);
-    // Zámerne bez focusu na telefón (6. 8. 2026) — rovnaká zmena ako v app.js.
-    // Numerická klávesnica hneď po otvorení prekryje voľbu „✍️ Radšej napíšem".
-    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
+  const cbSubmit = document.getElementById('cbSubmit');
+  if (cbSubmit) {
+    if (state.readiness === 'podpora') trackAd('ConversationView', meta);
+    cbSubmit.addEventListener('click', () => submitCallback(meta, () => '', () => 'write'));
+  }
 
-  document.querySelectorAll('.when-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      chosenWindow = chip.dataset.when;
-      document.querySelectorAll('.when-chip').forEach(c => c.classList.toggle('active', c === chip));
+  // Telefón sa rozbalí len na vedomé kliknutie a NEfokusuje sa — numerická
+  // klávesnica by prekryla to, čo je tu primárne, teda písomnú cestu.
+  const callToggle = document.getElementById('callToggle');
+  if (callToggle) {
+    callToggle.addEventListener('click', () => {
+      const pane = document.getElementById('callFormPane');
+      pane.hidden = false;
+      callToggle.hidden = true;
+      trackAd('CallOpen', meta);
+      pane.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, { once: true });
+
+    document.querySelectorAll('.when-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        chosenWindow = chip.dataset.when;
+        document.querySelectorAll('.when-chip').forEach((c) => c.classList.toggle('active', c === chip));
+      });
     });
-  });
-
-  document.getElementById('calLink').addEventListener('click', () => trackAd('CalendarClick', meta));
-
-  // Prepínanie ciest — rovnaká zmena ako na výsledku kvízu (3. 8. 2026).
-  // Dôvod je nameraný: 11 klikov na ponuku a 0 zadaných čísel naprieč oboma
-  // stránkami, hoci formulár funguje. Telefón nesmie byť jediná cesta.
-  const wayCall = document.getElementById('wayCall');
-  const wayWrite = document.getElementById('wayWrite');
-  const callPane = document.getElementById('wayCallPane');
-  const writePane = document.getElementById('wayWritePane');
-  const submitBtn = document.getElementById('cbSubmit');
-  let mode = 'call';
-
-  const setMode = (next) => {
-    mode = next;
-    const writing = next === 'write';
-    callPane.hidden = writing;
-    writePane.hidden = !writing;
-    wayCall.classList.toggle('active', !writing);
-    wayWrite.classList.toggle('active', writing);
-    wayCall.setAttribute('aria-selected', String(!writing));
-    wayWrite.setAttribute('aria-selected', String(writing));
-    submitBtn.textContent = writing ? 'Poslať správu' : 'Ozvi sa mi';
-    document.getElementById('cbErr').classList.remove('show');
-    document.getElementById(writing ? 'message' : 'phone').focus({ preventScroll: true });
-  };
-
-  wayCall.addEventListener('click', () => setMode('call'));
-  wayWrite.addEventListener('click', () => {
-    setMode('write');
-    trackAd('ConsultWayWrite', meta);
-  });
-
-  submitBtn.addEventListener('click', () => submitCallback(meta, () => chosenWindow, () => mode));
+    document.getElementById('callSubmit')
+      .addEventListener('click', () => submitCallback(meta, () => chosenWindow, () => 'call'));
+    document.getElementById('calLink')
+      .addEventListener('click', () => trackAd('CalendarClick', meta), { once: true });
+  }
 }
 
 async function submitCallback(meta, getWindow, getMode) {
   if (state.callbackSent) return;
-  const err = document.getElementById('cbErr');
-  const btn = document.getElementById('cbSubmit');
   const writing = getMode() === 'write';
+  // Každá cesta má vlastné pole na chybu aj vlastné tlačidlo — po novom môžu byť
+  // na obrazovke obe naraz (vetva `podpora`), takže sa nesmú prepisovať navzájom.
+  const err = document.getElementById(writing ? 'cbErr' : 'callErr');
+  const btn = document.getElementById(writing ? 'cbSubmit' : 'callSubmit');
   const input = document.getElementById(writing ? 'message' : 'phone');
   const phone = writing ? '' : document.getElementById('phone').value.trim();
   const message = writing ? document.getElementById('message').value.trim() : '';
@@ -619,11 +809,12 @@ async function submitCallback(meta, getWindow, getMode) {
     preferredTime: writing ? '' : (getWindow() || ''),
     segment: state.problem,
     history: state.history,
+    readiness: state.readiness,
     tier: meta.tier,
     source: CONFIG.SOURCE,
     band: `${plan.target} kcal / ${plan.protein} g B`,
     ts: new Date().toISOString(),
-    quizVersion: 3,
+    quizVersion: CONFIG.FUNNEL_VERSION,
   };
 
   try {
@@ -648,12 +839,19 @@ async function submitCallback(meta, getWindow, getMode) {
     }
 
     state.callbackSent = true;
-    trackAd('Lead', { ...meta, way: writing ? 'message' : 'call', value: 25.00, currency: 'EUR' });
-    document.getElementById('callbackForm').innerHTML = `
+    // Písomná správa NIE JE rezervovaný hovor — preto samostatné eventy popri
+    // spoločnom `Lead`. Inak by sa v Ads Manageri tvárili ako to isté.
+    trackAd('Lead', {
+      ...meta, way: writing ? 'message' : 'call',
+      readiness: state.readiness, funnelVersion: CONFIG.FUNNEL_VERSION,
+      value: 25.00, currency: 'EUR',
+    });
+    trackAd(writing ? 'MessageSent' : 'CallRequested', { ...meta, readiness: state.readiness });
+    document.getElementById(writing ? 'callbackForm' : 'callFormPane').innerHTML = `
       <div class="callback-done">
         <h4>✓ Mám to, ${state.name}</h4>
         ${writing
-          ? `<p>Odpíšem ti na <strong>${state.email}</strong>, zvyčajne do jedného dňa. Nemusíš nikam volať ani nič plánovať.</p>`
+          ? `<p>Pozriem sa na tvoje čísla aj na to, čo si ${gg('{napisala}')}, a odpoviem ti osobne najneskôr zajtra na <strong>${state.email}</strong>. Nemusíš nikam volať ani si vyberať termín.</p>`
           : `<p>Ozvem sa ti na <strong>${phone}</strong>${payload.preferredTime ? ` — <strong>${payload.preferredTime.toLowerCase()}</strong>` : ' čo najskôr'}. Ak by ti to nevyhovovalo, napíš mi na <a href="mailto:${CONFIG.CONTACT_EMAIL}">${CONFIG.CONTACT_EMAIL}</a>.</p>`}
       </div>`;
   } catch (e) {

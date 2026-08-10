@@ -1,5 +1,87 @@
 # STAV — kde sme skončili
 
+## 🆕 10. 8. 2026 — `/analyza` sa pýta na pripravenosť a rozvetvuje výsledok
+
+**HOTOVÉ V KÓDE, NENASADENÉ.** Necommitnuté, nepushnuté; na `kviz.valyra.sk` beží v3.
+
+**Prečo:** za týždeň 259 leadov, ~4 žiadosti o kontakt, 3 hovory, **0 predajov**. Lievik
+mal jediné dvere („objednaj si hovor") a tie sú pre väčšinu zavreté. Namiesto hádania,
+čo ľudia chcú, sa ich na to teraz pýtame.
+
+**Nová otázka** je v e-mailovej bráne — **pod ukážkou vypočítaného výdaja a nad menom
+a e-mailom**. Tri klikacie karty, **nič nie je predvolené**, bez výberu sa nedá odoslať.
+
+| Voľba | Čo uvidí na výsledku |
+|---|---|
+| `plan` | ponuka Valyry (dynamicky jej kcal a bielkoviny), CTA na appku. Písomná cesta schovaná za „Mám ešte otázku pre Jána". **Žiadny telefonát.** |
+| `podpora` | textarea **rovno viditeľná**, placeholder podľa jej brzdy, CTA „Chcem Jánovu osobnú odpoveď". Telefón až po vedomom kliknutí. |
+| `informacie` | celý výsledok, prvý krok, disclaimer — a **nič viac**. Žiadna ponuka, scarcity ani telefón. Len jemný odkaz na Valyru v poznámke pod čiarou. |
+
+**Tier NEPREPISUJE voľbu.** Žena s jojo efektom je interne `hot`, ale ak si vybrala
+„len výsledok", ponuku nedostane. Tier ostáva len pre notifikáciu Jánovi.
+
+**`funnelVersion` (posiela sa ako `quizVersion`) je 4.** Leady v3 a nižšie readiness
+nemajú vôbec — miešať ich s v4 znamená falošne nízky podiel „chcem plán".
+
+**Zrušené:** univerzálny blok „Reštart plán", tlačidlo „Chcem svoj Reštart plán",
+prepínač `📞 Zavolaj mi / ✍️ Radšej napíšem`. Dve konkurenčné kontaktné sekcie už nie sú.
+
+**Nové eventy:** `ReadinessSelected`, `ValyraOfferView` (až keď je ponuka reálne
+v zornom poli, threshold 0.5), `ValyraCheckoutStart`, `ValyraOfferClick`,
+`ConversationView`, `MessageStart`, `MessageSent`, `CallOpen`, `CallRequested`.
+Všetky jednorazové. `Lead` nesie `way`, `readiness` aj `funnelVersion`.
+**`ConsultView` = „dosiahol výsledok", nie „videl ponuku"** — páli sa vo všetkých troch
+vetvách zámerne, aby sa dalo porovnať v3 vs v4.
+
+**⚠️ Čo NIE JE spravené (fáza 2):** CTA vo vetve `plan` vedie na `valyra.sk/Onboarding`
+a **údaje sa neprenášajú** — človek si ich zadá znova. Checkout za 9 € **neexistuje**
+(v repe `valyra` nie je ani riadok Stripe okrem knižníc a políčka v admine).
+Preto je `CONFIG.VALYRA.PRICE_LABEL` zámerne `null` a nikde nie je napísané „9 €" ani
+„predvyplnené" — tlačidlo, ktoré predstiera funkčný nákup, by bolo klamstvo.
+
+**Otestované** (localhost, stubnuté `fbq` aj `fetch`, 375 px): všetky tri vetvy, ženské
+aj mužské skloňovanie, blokovanie odoslania bez výberu, dvojklik na kartu neduplikuje
+event, prázdna správa hlási chybu, dvojklik na odoslanie pošle jeden `Lead`, segment
+vychádza `problem|history|readiness`.
+
+**Cache:** `sw.js` v25, `analyza/app.js?v=6`, `analyza/analyza.css?v=3`.
+
+### Fáza 2a — predvyplnenie Valyry (hotové v kóde, NENASADENÉ)
+
+**Zistenie, ktoré to celé zmenilo:** `/analyza` od 30. 7. posielala objekt `analysis`
+(vek, výška, váha, cieľ, kalórie) a **`quizLead` ho celý ignoroval** — slovo `analysis`
+sa v tej funkcii nevyskytovalo ani raz. Čísla sa teda nikdy neukladali. Z každej ženy
+zostal len text v `band_name`. Predvyplniť sa preto nedalo z čoho.
+
+**⚠️ Platí len pre NOVÉ leady.** Čísla žien, ktoré analýzu spravili do 10. 8., neexistujú
+a nedajú sa dopočítať.
+
+Zmeny v repe `valyra` (vetva `supabase-migration`):
+
+| Súbor | Čo |
+|---|---|
+| `migrations/007_quiz_leads_analysis.sql` | 8 stĺpcov `a_*` (vek, výška, váha, cieľ, aktivita, tdee, kcal, bielkoviny). **Nespustená.** |
+| `functions/quizLead/index.ts` | ukladá `analysis` s kontrolou rozsahov; vracia `leadId` (uuid riadku) |
+| `functions/analysisPrefill/index.ts` | **nová** — vymení uuid za čísla |
+| `src/pages/Onboarding.jsx` | prečíta `?a=`, predvyplní formulár |
+
+Zmena v `vercel-veritas`: `analyza/app.js` pripne k odkazu na Valyru `?a=<uuid>` + UTM.
+
+**Bezpečnosť predvyplnenia:** vracia **len čísla**, nikdy meno ani e-mail. Platí
+**72 hodín** od vzniku leadu. Hľadá výhradne podľa uuid — podľa e-mailu sa to nedá,
+inak by stačilo skúšať adresy. Neplatné, staré aj neexistujúce uuid vracajú rovnaké
+`{found:false}`, takže sa nedá zistiť, či záznam existuje. V URL nie je žiadny osobný
+ani zdravotný údaj — overené: odkaz obsahuje len uuid a UTM.
+
+**Prihlásenie sa NEMENÍ.** Žena stále zadá e-mail a kód ako doteraz; ušetrí len
+prepisovanie piatich políčok. Automatické prihlásenie (fáza 2b) spravené nie je.
+
+**Otestované:** `npx vite build` prejde; analýza generuje správny odkaz s uuid a bez
+osobných údajov; payload nesie všetky čísla. **Neotestované naživo** — `analysisPrefill`
+ani migrácia nie sú nasadené, takže reálne predvyplnenie zatiaľ nikto nevidel.
+
+---
+
 **Aktualizované:** 6. 8. 2026
 **Jednou vetou:** písomná cesta prah nesplnila, ale **nedostala férový test** — sedela
 za tlačidlom `📞 Chcem svoj Reštart plán`, ktoré samo vyzeralo ako súhlas s telefonátom,
