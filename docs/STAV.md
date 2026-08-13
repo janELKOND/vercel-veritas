@@ -1,6 +1,175 @@
 # STAV — kde sme skončili
 
-## 🆕 10. 8. 2026 — `/analyza` sa pýta na pripravenosť a rozvetvuje výsledok
+## 13. 8. 2026 — reklama zámerne stlmená na 1 €/deň
+
+**Nie je to porucha.** Ján znížil denný rozpočet na 1 € — dôvod bol, že lievik
+za 50 € nepriniesol platiaceho klienta. Doručovanie teda kleslo podľa očakávania
+a netreba to hľadať pri platbe ani pri zamietnutí reklamy.
+
+Priebeh podľa Ads API (kampaň je stále `ACTIVE`):
+
+| Deň | Minuté | Zobrazenia | Kliky |
+|---|---|---|---|
+| 9. 8. | 8,07 € | 4 558 | 224 |
+| 10. 8. | 6,98 € | 4 331 | 195 |
+| 11. 8. | 4,68 € | 2 571 | 144 |
+| 12. 8. | **1,11 €** | **498** | **22** |
+| 13. 8. | **žiadny riadok** | — | — |
+
+Sedí to s databázou: 12. 8. prišli **3 leady**, 13. 8. **nula**. Predtým ~50 denne.
+
+**Dôsledok pre v5:** bez premávky sa nová verzia nemá na čom odmerať. Nasadiť sa dá
+kedykoľvek, porovnanie s kohortou B ale začne až keď sa rozpočet vráti hore.
+
+⚠️ **Poradie, ktoré dáva zmysel:** najprv nasadiť v5, až potom zvyšovať rozpočet.
+Opačne by sa platilo za premávku cez obrazovku, o ktorej vieme, že 98 % ľuďom
+ponuku neukáže.
+
+**Čo NIE JE overené a pri rozhodovaní o rozpočte to treba vedieť:** lievik dal
+10 žiadostí o kontakt a **ani jedna nebola vybavená** až do 11. 8. — všetkých 10
+riadkov v `quiz_calls` malo `called = false` a v `quiz_leads` `replied_at = null`.
+Nula platiacich teda zatiaľ nehovorí o kvalite leadov; hovorí o tom, že sa s nimi
+nepracovalo. Prvý test tejto hypotézy sú odpovede odoslané 11. 8.
+
+---
+
+## 13. 8. 2026 — stav nasadenia (overené volaním, nie z gitu)
+
+**v5 JE NAŽIVO.** Nasadené 13. 8. 2026 v poradí migrácia → `quizLead` → stránka.
+
+| Vec | Stav (overené volaním) |
+|---|---|
+| Migrácia `008` | ✅ spustená — `quiz_version`, `selected_path`, `creative_id`, `consult_requested_at` v DB sú |
+| `quizLead` | ✅ nasadený — sonda `{"typ":"cesta"}` vracia „Chyba leadId alebo neznama cesta", teda novú vetvu pozná |
+| Stránka | ✅ `FUNNEL_VERSION: 5`, `sw v27`, `readiness-card` sa v súbore nevyskytuje ani raz |
+| E-mailová stena | ✅ len meno, e-mail, súhlas — otázka na pripravenosť je preč |
+| Výsledok | ✅ dva bloky: „Tvoj ďalší krok / Kde sa ti to zvyčajne rozpadne?" a pod ním „Druhá možnosť / Valyra" |
+| `creative_id` z URL | ✅ overené na `?ad_id=…` — zachytí sa a drží v sessionStorage |
+| Stĺpce `a_*` | ✅ nasadením `quizLead` sa začnú plniť (dovtedy boli prázdne) |
+
+⚠️ **Zmeny sú NECOMMITNUTÉ.** Vercel nasadzuje obsah priečinka, nie git, takže
+naživo to beží, ale v `main` to nie je. Na druhom počítači to po `git pull`
+nebude — kým sa to nescommituje.
+
+⚠️ **`{{ad.id}}` v URL reklamy zatiaľ NIE JE.** Kým sa nedoplní v Ads Manageri,
+`creative_id` ostane pri reálnych leadoch prázdne. Kód je pripravený.
+
+---
+
+## 13. 8. 2026 — REFERENČNÝ SNAPSHOT pred lievikom v5
+
+**Snapshot: 13. 8. 2026, 15:36 Europe/Bratislava (13:36 UTC).** Toto je stav, proti
+ktorému sa bude merať v5. Nič z toho neprepisuj — keď budú nové čísla, pridaj ich vedľa.
+
+**Prečo v5:** z ľudí, ktorí nechajú e-mail, si konzultáciu vypýta 2,3 %. Reklama ani
+zber e-mailov nie sú problém. Vo v4 sa otázka na pripravenosť pýta **na e-mailovej stene
+a je povinná** (`submitLead()` bez nej neodošle), takže stojí medzi človekom a tým
+najhodnotnejším krokom v lieviku. Zároveň 51 % ľudí vyberie „len si pozriem výsledok"
+a tým sa im ponuka vypne úplne. **v5 tú otázku ruší** a nahrádza ju dvoma CTA pod
+výsledkom — o ceste rozhoduje klik, nie vyhlásenie.
+
+### Reklama — kampaň „Analýza – CompleteRegistration"
+
+Okno `last_30d` k 12.–13. 8. 2026 (teda zhruba 14. 7. – 13. 8.). **Pri ďalšom ťahaní
+zadaj presné dátumy**, nie preset — inak sa okno posunie a čísla nebudú porovnateľné.
+
+| Krok | Počet | Konverzia | Cena |
+|---|---|---|---|
+| Zobrazenia | 25 747 | — | — |
+| Kliky | 1 489 | CTR 5,78 % | CPC 0,03 € |
+| Načítanie stránky | 1 036 | 69,6 % z klikov | — |
+| E-mail (`CompleteRegistration`) | 433 | **41,8 %** z načítaní | 0,12 € |
+| Konzultácia (`Lead`) | 10 | **2,3 %** z e-mailov | 5,03 € |
+
+Minuté spolu **50,28 €**. Dve porovnávané kreatívy (nepokrývajú celú kampaň):
+
+| Kreatíva | Registrácie | Konzultácie | % |
+|---|---|---|---|
+| „čas do cieľa" | 67 | 5 | **7,5 %** |
+| pôvodná | 323 | 5 | 1,5 % |
+
+⚠️ Nebežali za rovnakých podmienok ani v rovnakom čase — je to indícia, nie čistý test.
+
+### Databáza
+
+`quiz_leads`: **427** riadkov so `source = 'osobna-analyza'` (celkom 659 vrátane kvízu).
+`quiz_calls`: **11** riadkov, z toho 1 vlastný test → **10 reálnych kontaktov**.
+Všetkých 10 je z analýzy, **z kvízu ani jeden**. 8 písomných, 2 telefonáty.
+
+### Kohorty (pravidlo priradenia: dátum vytvorenia leadu)
+
+Okno pozorovania: **kontakt do 7 dní od vytvorenia leadu**, aby staršia kohorta nemala
+výhodu dlhšieho času.
+
+| Kohorta | Obdobie | Leadov | Kontakt do 7 dní | % | Dozretých |
+|---|---|---|---|---|---|
+| A | do 6. 8. (v3, gate so slúchadlom) | 205 | 1 | **0,49 %** | 91 % |
+| B | 7.–10. 8. (v3, gate bez slúchadla) | 190 | 9 | **4,74 %** | 0 % |
+| C | od 11. 8. (v4) | 32 | 0 | **0 %** | 0 % |
+
+**Kohorta B je referencia pre v5**, nie kohorta C — tá má 32 leadov a nula z 32 je
+zlučiteľná s čímkoľvek do ~11 %. **v4 teda NIE JE dokázane horšia**, len nemeraná.
+
+⚠️ **Hranica 10. 8. je nečistá.** v4 sa nasadilo počas dňa a `quiz_leads` verziu lievika
+neukladá, takže kohorty sa dajú deliť len podľa dátumu. Presne toto rieši migrácia
+`008_quiz_leads_funnel_v5.sql` — od v5 bude `quiz_version` v riadku.
+
+### Kľúčové zistenie: konzultácia sa vyhráva do 4 minút
+
+Oneskorenie medzi zadaním e-mailu a žiadosťou o kontakt, všetkých 10 reálnych prípadov:
+**medián 2,6 min, maximum 3,9 min.** Nikto sa nikdy nevrátil neskôr.
+
+Z toho plynie:
+- 7-dňové okno je formálne správne, ale prakticky bezpredmetné — **v5 sa dá vyhodnotiť
+  do dvoch dní**, netreba čakať týždeň.
+- Konzultácia vzniká **výlučne na obrazovke výsledku**. Nikde inde.
+- **Mostová séria nemá na konte ani jednu žiadosť o konzultáciu** za 427 leadov.
+- ⚠️ **Slepé miesto:** keby niekto odpísal priamo na Gmail, nikde sa to nezaznamená.
+  `quiz_calls` pozná len žiadosti z formulára.
+
+### Rozdelenie pripravenosti vo v4 (n = 51)
+
+| Voľba | Podiel | Čo dostala na výsledku |
+|---|---|---|
+| `informacie` | **51 %** | nič — žiadna ponuka ani konzultácia |
+| `plan` | **47 %** | Valyra; telefón vôbec, písanie skryté za tlačidlom |
+| `podpora` | **2 %** | konzultácia naplno |
+
+Konzultácia sa naplno ponúka vetve, ktorú si vyberú 2 % ľudí.
+
+### Metriky, podľa ktorých sa v5 hodnotí
+
+Odstránením povinného poľa sa zmení **veľkosť aj zloženie** leadov. Preto sa
+`e-mail → konzultácia` **nesmie** brať ako hlavné číslo — môže klesnúť aj keď je
+lievik lepší. Menovatele, ktoré sa zmenou nehýbu:
+
+| Metrika | Dnes |
+|---|---|
+| **Cena za konzultáciu** (hlavná) | 5,03 € |
+| **Konzultácie na 100 načítaní stránky** | 0,97 |
+| Návšteva → e-mail (trenie) | 41,8 % |
+| E-mail → konzultácia (kvalita leadov) | 2,3 % |
+
+### Použité dotazy
+
+```
+GET /rest/v1/quiz_leads?select=email,created_date,source&source=eq.osobna-analyza&order=created_date.asc
+GET /rest/v1/quiz_calls?select=created_date,name,email,phone,message,source,tier&order=created_date.asc
+GET /rest/v1/profiles?select=email,created_date,role&order=created_date.desc
+```
+Dátumový stĺpec je **`created_date`**, nie `created_at`. Kohorty a oneskorenie sa
+počítali lokálne párovaním `quiz_calls.email` ↔ `quiz_leads.email`.
+
+### Rozpočet a poradie nasadenia
+
+Denný rozpočet ~1,7 €, rozdelenie kreatív zatiaľ **nezmenené**. Reklama sa necháva
+tak ešte 48–72 h po nasadení v5 — nie kvôli atribúcii (na tú je objem malý), ale aby
+sa počas kontroly novej obrazovky hýbala jediná premenná. **Úprava kampane cez MCP ju
+navyše zhodí do pauzy**, čo by v tom okne rozbilo prítok. Čas zmeny rozpočtu zapíš sem.
+
+---
+
+## 10. 8. 2026 — `/analyza` sa pýta na pripravenosť a rozvetvuje výsledok
 
 **NASADENÉ 10. 8. 2026** na `kviz.valyra.sk` (overené: `analyza/app.js?v=6`, `sw` v25).
 

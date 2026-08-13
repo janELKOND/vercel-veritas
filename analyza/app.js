@@ -25,11 +25,22 @@ const CONFIG = {
   SOURCE: 'osobna-analyza',
   OFFER: { NAME: 'Reštart plán', LENGTH: '15 minút', SPOTS_PER_MONTH: 5 },
 
-  // Verzia lievika. v4 = pridaná otázka na pripravenosť (readiness) a routing
-  // výsledku na tri vetvy (10. 8. 2026). Leady v3 a nižšie sa NESMÚ miešať
-  // s v4 — v3 readiness nemá vôbec, takže „koľko % chce plán" by z nich vyšlo
-  // falošne nízke.
-  FUNNEL_VERSION: 4,
+  // Verzia lievika. v4 = otázka na pripravenosť a routing na tri vetvy (10. 8.).
+  // v5 (13. 8. 2026) = otázka ZRUŠENÁ. Po e-maile ide rovno výsledok a pod ním
+  // dve cesty pre každého: najprv konzultácia, pod ňou Valyra. O ceste rozhoduje
+  // klik (`selected_path`), nie vyhlásenie o sebe.
+  //
+  // Prečo: cez v4 prešlo 52 leadov a prišlo 0 žiadostí o konzultáciu, kým
+  // predtým (7.–10. 8.) to bolo 9 zo 190. Databáza to potvrdila — všetkých 11
+  // žiadostí, čo kedy prišli, má `readiness` prázdne, teda ani jedna z v4.
+  // v4 nezhoršila text ponuky; ona ju prestala ukazovať 98 % ľudí. Navyše tá
+  // otázka bola povinná a stála pred e-mailom, teda pred krokom so 41,8 %.
+  //
+  // ⚠️ Leady z rôznych verzií sa NESMÚ miešať: v3 `readiness` nemá vôbec, v4 má
+  // aj hodnotu `informacie` a v5 nemá `readiness` žiadny, zato má `selected_path`.
+  // Od v5 sa verzia ukladá do stĺpca `quiz_leads.quiz_version` (migrácia 008),
+  // takže sa už nemusí hádať z dátumu.
+  FUNNEL_VERSION: 5,
 
   // Ponuka Valyry pre vetvu `plan`. Všetko na jednom mieste zámerne — cena aj
   // odkaz sa budú meniť a nemajú byť rozsypané po kóde.
@@ -94,32 +105,23 @@ const HISTORY_Q = {
   ],
 };
 
-// Pripravenosť — jediná otázka, ktorá rozhoduje o tom, čo človek uvidí na konci.
-// Hodnoty MUSIA sedieť s kvízom aj s backendom: `quizLead` ich pozná (READINESS_LABELS,
-// qualifyLead) a vypisuje v notifikácii. Nové hodnoty by tam ticho vypadli ako prázdne.
+// ---------- ZRUŠENÁ OTÁZKA NA PRIPRAVENOSŤ (v4 → v5, 13. 8. 2026) ----------
+// Tu stála otázka „Čo by ti k tvojim číslam pomohlo najviac?". Už tu nie je
+// vôbec a poznámka ostáva preto, že ten omyl stál 52 leadov a nulu konzultácií.
 //
-// PRAVIDLO: nič nie je predvolené. Predvolená odpoveď by nebola odpoveď, ale
-// náš odhad — a celý zmysel tejto otázky je prestať hádať, čo človek chce.
-const READINESS_Q = {
-  q: 'Čo by ti teraz pomohlo najviac?',
-  options: [
-    {
-      value: 'plan',
-      label: 'Chcem konkrétny plán a zvládnem ho {sama}',
-      note: 'Jedálniček a jasné kroky, podľa ktorých môžem postupovať každý deň.',
-    },
-    {
-      value: 'podpora',
-      label: 'Chcem, aby mi s tým niekto osobne pomohol',
-      note: 'Mám otázku alebo potrebujem podporu, aby som pri tom {vydrzala}.',
-    },
-    {
-      value: 'informacie',
-      label: 'Zatiaľ si chcem len pozrieť výsledok',
-      note: 'Teraz nechcem plán ani osobnú pomoc.',
-    },
-  ],
-};
+// Čo sa stalo: otázka sedela na E-MAILOVEJ STENE a bola POVINNÁ — `submitLead()`
+// bez nej neodoslal. Stála teda medzi človekom a krokom, ktorý konvertuje na
+// 41,8 %, a jej odpoveď potom rozhodovala, či ponuku vôbec uvidí. Vo v4 si 51 %
+// ľudí vybralo „zatiaľ si chcem len pozrieť výsledok" a nedostalo nič.
+//
+// Prečo sa to nedalo opraviť lepším znením: sebahodnotenie nepredpovedá, kto
+// o pomoc požiada. Deviati ľudia, ktorí si konzultáciu naozaj vypýtali
+// (7.–10. 8.), nemali ani raz problém „potrebujem podporu" — pýtali sa na
+// večerné chute a na to, čo variť. Preto o ceste rozhoduje KLIK (`recordPath`),
+// nie vyhlásenie o sebe.
+//
+// ⚠️ Ak sem bude niekto chcieť vrátiť kvalifikačnú otázku: nikdy nie pred
+// výsledok a nikdy nie ako podmienku odoslania e-mailu.
 
 // Placeholder do textarey podľa toho, čo človek označil ako svoju brzdu. Nie je
 // to ozdoba: prázdne pole s výzvou „napíš mi" väčšina ľudí preskočí, konkrétny
@@ -162,16 +164,42 @@ const state = {
   activity: null,
   problem: null,
   history: null,
-  readiness: null,   // 'plan' | 'podpora' | 'informacie' — vedomá voľba, nikdy predvolená
+  // Od v5 sa na pripravenosť nepýtame — nahradil ju `selectedPath`, čo je
+  // PREJAVENÉ správanie (klik), nie vyhlásenie. Staré riadky v DB `readiness`
+  // ešte majú (v4 aj hodnotu `informacie`), preto sa nesmú miešať s v5.
+  selectedPath: null,  // 'written_consult' | 'valyra' — prvá cesta, ktorú človek
+                       // reálne použil. Neprepisuje sa: rozhoduje prvý úmysel.
   leadId: null,      // uuid riadku z quizLead → kľúč na predvyplnenie Valyry
   name: '',
   email: '',
   started: false,
   gateTracked: false,
-  readinessTracked: false,
   offerViewTracked: false,
+  askViewTracked: false,
   callbackSent: false,
 };
+
+// ID reklamy, z ktorej človek prišiel. Číta sa RAZ pri prvom načítaní a odkladá
+// do sessionStorage — bez toho by sa stratilo, len čo si človek stránku obnoví
+// alebo sa vráti späť, a lead by ostal bez atribúcie.
+// Do URL reklamy treba doplniť makro `{{ad.id}}`; kým tam nie je, ostáva null
+// a to je v poriadku (organická a priama návšteva ho nemá nikdy).
+const CREATIVE_ID = (() => {
+  const KEY = 'analyza_creative_id';
+  try {
+    const q = new URLSearchParams(location.search);
+    const fromUrl = q.get('ad_id') || q.get('utm_content') || q.get('creative_id');
+    if (fromUrl) {
+      sessionStorage.setItem(KEY, fromUrl.slice(0, 60));
+      return fromUrl.slice(0, 60);
+    }
+    return sessionStorage.getItem(KEY);
+  } catch (e) {
+    // Súkromný režim vie sessionStorage zakázať. Atribúcia je pekná vec,
+    // ale nesmie zhodiť analýzu — preto sa chyba prehltne.
+    return null;
+  }
+})();
 
 const app = document.getElementById('app');
 const progressTrack = document.getElementById('progressTrack');
@@ -186,6 +214,42 @@ function valyraUrl() {
   u.searchParams.set('utm_campaign', 'analyza-plan');
   if (state.leadId) u.searchParams.set('a', state.leadId);
   return u.toString();
+}
+
+// Zapíše, ktorú cestu človek REÁLNE použil. Volá sa pri prvom prejave úmyslu —
+// prvé písmeno v poli, klik na Valyru, rozbalenie telefónu — nie pri zobrazení
+// ponuky. Klik ešte nie je dokončená konverzia (tú drží `consult_requested_at`),
+// ale je to najskorší okamih, kedy vieme, čo si človek vybral.
+//
+// Prvý úmysel vyhráva a NEPREPISUJE sa: kto začne písať a potom si otvorí aj
+// Valyru, je stále človek, ktorý najprv chcel odpoveď.
+//
+// ⚠️ Názvoslovie: `written_consult` znamená CESTU KU KONZULTÁCII vrátane
+// telefónu — ten je vnorený v tom istom bloku. Hodnoty sú zámerne len dve,
+// rovnako ako CHECK constraint v migrácii `008_quiz_leads_funnel_v5.sql`.
+//
+// Posiela sa mimo hlavného toku (`keepalive`) a každá chyba sa prehltne:
+// meranie nesmie zhodiť ani spomaliť to, čo človek práve robí.
+function recordPath(path) {
+  if (state.selectedPath) return;
+  state.selectedPath = path;
+  trackAd('PathSelected', { path, source: CONFIG.SOURCE });
+  if (!state.leadId) return; // bez uuid nie je čo v databáze aktualizovať
+  try {
+    fetch(CONFIG.WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'cors',
+      keepalive: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        typ: 'cesta',
+        leadId: state.leadId,
+        selectedPath: path,
+        creativeId: CREATIVE_ID,
+        quizVersion: CONFIG.FUNNEL_VERSION,
+      }),
+    }).catch(() => {});
+  } catch (e) { /* ticho — atribúcia nie je dôvod na chybu pre človeka */ }
 }
 
 // Skloňovanie v textoch mimo showResult (tam má vlastné `g`). Zástupné značky
@@ -406,18 +470,6 @@ function showGate() {
         <div class="teaser-num">${plan.tdee} <small>kcal</small></div>
         <p>Toľko spáliš pri svojej výške, váhe, veku a pohybe. Koľko z toho máš jesť, aby si ${state.gender === 'muz' ? 'schudol' : 'schudla'} — a ako dlho by to trvalo — ti ukážem hneď.</p>
       </div>
-      <fieldset class="readiness" id="readinessGroup">
-        <legend class="readiness-q" id="readinessLegend">${READINESS_Q.q}</legend>
-        <div class="readiness-cards" role="radiogroup" aria-labelledby="readinessLegend">
-          ${READINESS_Q.options.map((o, i) => `
-            <button type="button" class="readiness-card" role="radio" aria-checked="false"
-                    id="rd-${o.value}" data-readiness="${o.value}" tabindex="${i === 0 ? '0' : '-1'}">
-              <span class="readiness-label">${gg(o.label)}</span>
-              <span class="readiness-note">${gg(o.note)}</span>
-            </button>`).join('')}
-        </div>
-      </fieldset>
-
       <h2>Kam ti mám poslať celú analýzu?</h2>
       <p class="sub">Po zadaní adresy uvidíš svoje čísla hneď tu. Na e-mail ti ich pošlem, aby si ich nemusela hľadať.</p>
       <div class="field">
@@ -437,37 +489,6 @@ function showGate() {
     </section>
   `;
   document.getElementById('submitBtn').addEventListener('click', submitLead);
-
-  // Karty sa správajú ako prístupná skupina prepínačov: šípky prepínajú, medzerník
-  // aj Enter vyberajú, tabom sa do skupiny vojde raz (roving tabindex).
-  const cards = Array.from(document.querySelectorAll('.readiness-card'));
-  const select = (card) => {
-    state.readiness = card.dataset.readiness;
-    cards.forEach((c) => {
-      const on = c === card;
-      c.classList.toggle('selected', on);
-      c.setAttribute('aria-checked', String(on));
-      c.tabIndex = on ? 0 : -1;
-    });
-    // Jednorazovo — inak by preklikávanie medzi kartami nafúklo štatistiku.
-    if (!state.readinessTracked) {
-      state.readinessTracked = true;
-      trackAd('ReadinessSelected', { readiness: state.readiness });
-    }
-    document.getElementById('errMsg').classList.remove('show');
-  };
-  cards.forEach((card, i) => {
-    card.addEventListener('click', () => select(card));
-    card.addEventListener('keydown', (e) => {
-      const dir = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1
-        : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 0;
-      if (!dir) return;
-      e.preventDefault();
-      const next = cards[(i + dir + cards.length) % cards.length];
-      next.focus();
-      select(next);
-    });
-  });
 }
 
 async function submitLead() {
@@ -478,15 +499,6 @@ async function submitLead() {
   const btn = document.getElementById('submitBtn');
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-  // Pripravenosť sa kontroluje PRVÁ — je hore na obrazovke a chyba má ukázať
-  // na najvyššie nevyplnené miesto, nie poslať človeka hľadať späť hore.
-  if (!state.readiness) {
-    err.textContent = 'Vyber, prosím, čo by ti teraz pomohlo najviac.';
-    err.classList.add('show');
-    document.getElementById('readinessGroup').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    document.querySelector('.readiness-card').focus();
-    return;
-  }
   if (!name || !emailOk || !gdpr) {
     err.textContent = !name ? 'Doplň, prosím, meno.'
       : !emailOk ? 'Skontroluj, prosím, e-mail — nevyzerá kompletný.'
@@ -507,14 +519,12 @@ async function submitLead() {
     name,
     email,
     gender: state.gender,
-    // Zložený segment v rovnakom tvare ako kvíz: problém|história|pripravenosť.
-    // Od v4 je tretí diel konečne vyplnený — dovtedy bol pri analýze vždy prázdny.
-    segment: [state.problem, state.history, state.readiness].filter(Boolean).join('|'),
+    // Zložený segment: problém|história. Tretí diel (pripravenosť) mala len v4;
+    // od v5 sa nepýtame, takže je zase dvojdielny ako vo v3. Práve preto sa
+    // v4 riadky nesmú porovnávať s v5 naslepo — `quizVersion` je na to.
+    segment: [state.problem, state.history].filter(Boolean).join('|'),
     baseSegment: state.problem,
     history: state.history,
-    // Backend to už vie prijať aj použiť (READINESS_LABELS, qualifyLead) —
-    // analýza mu to doteraz jednoducho neposielala.
-    readiness: state.readiness,
     // Analýza nemá skóre. Výsledok posielame cez `bandName`, ktorý backend ukladá
     // aj vypisuje v notifikácii — Ján tak v maili rovno vidí, s akými číslami
     // človek odišiel, bez zmeny schémy DB kvôli testu.
@@ -526,6 +536,7 @@ async function submitLead() {
     },
     ts: new Date().toISOString(),
     source: CONFIG.SOURCE,
+    creativeId: CREATIVE_ID,
     quizVersion: CONFIG.FUNNEL_VERSION,
   };
 
@@ -583,10 +594,13 @@ function showResult(plan) {
     ? `<p class="relapse-line">A ešte jedna vec, ktorú si ${g('označila', 'označil')}: kilá sa ti už vrátili. To nie je o vôli — je to o tom, že plán na papieri a plán, ktorý prežije zlý týždeň, sú dve rôzne veci.</p>`
     : '';
 
-  // ---------- ROUTING PODĽA VOĽBY ČLOVEKA ----------
-  // Rozhoduje `readiness`, NIE interný tier. Žena s jojo efektom je interne
-  // „hot", ale ak si vybrala „zatiaľ si chcem len pozrieť výsledok", nedostane
-  // ponuku. Tier ostáva na notifikáciu pre Jána, na UI nemá vplyv.
+  // ---------- ZÁVER VÝSLEDKU: ŽIADNE VETVENIE ----------
+  // Od v5 tu nie je routing vôbec. Každý dostane to isté a v tom istom poradí:
+  // najprv cesta ku konzultácii, potom Valyra. `tier` na UI nemá vplyv a nikdy
+  // mať nesmie — slúži len notifikácii Jánovi.
+  //
+  // ⚠️ Ak sem niekto pridá vetvenie, oba bloky v ňom MUSIA ostať. Vo v4 sa
+  // stalo presne to, že vetva ponuku vypla — 98 % ľudí ju nikdy neuvidelo.
   const writePane = (placeholder) => `
       <div class="callback" id="callbackForm">
         <label class="callback-note callback-promise" for="message">Bez telefonátu, zadarmo. Odpoviem na e-mail, ktorý si ${g('zadala', 'zadal')} vyššie.</label>
@@ -611,39 +625,43 @@ function showResult(plan) {
         <p class="callback-alt">Radšej si vyberieš termín ${g('sama', 'sám')}? <a href="${CONFIG.CAL_URL}" target="_blank" rel="noopener" id="calLink">Otvor kalendár</a>.</p>
       </div>`;
 
-  let ctaBlock = '';
-  if (state.readiness === 'plan' && CONFIG.VALYRA.ENABLED) {
-    ctaBlock = `
-      <div class="offer" id="offerCard">
+  const placeholder = gg(MESSAGE_PLACEHOLDER[state.problem] || MESSAGE_PLACEHOLDER['co-jest']);
+
+  // ---------- DVE CESTY, KONZULTÁCIA PRVÁ ----------
+  // Od v5 (13. 8. 2026) sa už nikoho nepýtame, čo chce. Otázka na pripravenosť
+  // sedela na e-mailovej stene a bola POVINNÁ — stála teda medzi človekom a tým
+  // najhodnotnejším krokom lievika (41,8 % z návštev). Teraz rozhoduje KLIK:
+  // prejavené správanie je lepší údaj než vyhlásenie o sebe a nič nestojí.
+  //
+  // Poradie nie je vec vkusu. Konzultácia je hore, lebo je to jediná cesta
+  // s dokázaným výsledkom: 10 žiadostí, z toho 8 písomných. Valyra self-serve
+  // má 24 registrácií a nula platiacich. Preto je druhá — ale plnohodnotná,
+  // s vlastným tlačidlom. Rovnocennou sa stane, keď z nej príde prvý platiaci.
+  //
+  // ⚠️ Textarea musí ostať VŽDY viditeľná, nikdy za tlačidlom. Vo v4 bola vo
+  // vetve `plan` schovaná za „Mám ešte otázku pre Jána" a za dva dni ju
+  // neotvoril nikto.
+  const askBlock = `
+      <div class="offer" id="askCard">
         <div class="offer-eyebrow">Tvoj ďalší krok</div>
-        <h3 class="offer-title">Tvoje čísla už máš. Teraz z nich sprav plán na každý deň.</h3>
-        <p class="offer-lead">Valyra ti podľa tvojich <strong>${plan.target} kcal</strong> a <strong>${plan.protein} g bielkovín</strong> pripraví jedálniček, nákupný zoznam a jednoduché denné kroky. Nemusíš každý deň premýšľať, čo jesť a či to robíš správne.</p>
-        <div class="offer-stack">
-          <div>✓ Jedálniček podľa tvojich kalórií a výmena jedál podľa chuti</div>
-          <div>✓ Nákupný zoznam a recepty</div>
-          <div>✓ Sledovanie váhy, pokroku a denných návykov</div>
-        </div>
+        <h3 class="offer-title">Kde sa ti to zvyčajne rozpadne?</h3>
+        <p class="offer-lead">Napíš mi jednou vetou, čo ti pri chudnutí nejde najviac. Pozriem sa na tvoje čísla a osobne ti odpíšem, čo by som na tvojom mieste upravil ako prvé.</p>
+      </div>
+      ${writePane(placeholder)}
+      ${callPane}`;
+
+  // Druhá cesta. Kratšia ako vo v4 zámerne — je to alternatíva, nie hlavná ponuka.
+  const valyraBlock = `
+      <div class="offer offer-second" id="offerCard">
+        <div class="offer-eyebrow">Druhá možnosť</div>
+        <h3 class="offer-title">Alebo chceš začať ${g('sama', 'sám')}, hneď teraz?</h3>
+        <p class="offer-lead">Valyra ti podľa tvojich <strong>${plan.target} kcal</strong> a <strong>${plan.protein} g bielkovín</strong> pripraví jedálniček, nákupný zoznam a jednoduché denné kroky.</p>
         ${CONFIG.VALYRA.PRICE_LABEL ? `<p class="offer-price">${CONFIG.VALYRA.PRICE_LABEL}</p>` : ''}
       </div>
-      <a class="btn" id="valyraBtn" href="${valyraUrl()}" target="_blank" rel="noopener">${CONFIG.VALYRA.CTA}</a>
-      <p class="callback-alt">${CONFIG.VALYRA.NOTE}</p>
-      <button type="button" class="btn secondary" id="askToggle">Mám ešte otázku pre Jána</button>
-      <div id="askPane" hidden>${writePane(gg(MESSAGE_PLACEHOLDER[state.problem] || MESSAGE_PLACEHOLDER['co-jest']))}</div>`;
-  } else if (state.readiness === 'podpora') {
-    ctaBlock = `
-      <div class="offer" id="offerCard">
-        <div class="offer-eyebrow">Tvoj ďalší krok</div>
-        <h3 class="offer-title">Kde sa ti tento plán zvyčajne rozpadne?</h3>
-        <p class="offer-lead">Napíš mi jednou vetou, čo ti pri chudnutí nejde. Pozriem sa na tvoje čísla a osobne ti odpíšem, čo by som na tvojom mieste upravil ako prvé.</p>
-      </div>
-      ${writePane(gg(MESSAGE_PLACEHOLDER[state.problem] || MESSAGE_PLACEHOLDER['co-jest']))}
-      ${callPane}`;
-  } else {
-    // `informacie` — žiadna ponuka, žiadna scarcity, žiadny telefonát.
-    // Jemný odkaz smie existovať, ale nesmie konkurovať výsledku.
-    ctaBlock = `
-      <p class="soft-link">Ak budeš neskôr chcieť plán na každý deň, Valyru nájdeš <a href="${valyraUrl()}" target="_blank" rel="noopener" id="softValyra">tu</a>.</p>`;
-  }
+      <a class="btn secondary" id="valyraBtn" href="${valyraUrl()}" target="_blank" rel="noopener">${CONFIG.VALYRA.CTA}</a>
+      <p class="callback-alt">${CONFIG.VALYRA.NOTE}</p>`;
+
+  const ctaBlock = askBlock + (CONFIG.VALYRA.ENABLED ? valyraBlock : '');
 
   app.innerHTML = `
     <section class="result">
@@ -720,29 +738,45 @@ function showResult(plan) {
     io.observe(offerCard);
   }
   if (valyraBtn) {
-    valyraBtn.addEventListener('click', () => trackAd('ValyraCheckoutStart', meta), { once: true });
+    valyraBtn.addEventListener('click', () => {
+      recordPath('valyra');
+      trackAd('ValyraCheckoutStart', meta);
+    }, { once: true });
   }
-  const softValyra = document.getElementById('softValyra');
-  if (softValyra) softValyra.addEventListener('click', () => trackAd('ValyraOfferClick', meta), { once: true });
 
-  // Vetva `plan`: písomná cesta je schovaná za sekundárnym tlačidlom, lebo
-  // primárna ponuka je Valyra. Vo vetve `podpora` je textarea rovno viditeľná.
-  const askToggle = document.getElementById('askToggle');
-  if (askToggle) {
-    askToggle.addEventListener('click', () => {
-      const pane = document.getElementById('askPane');
-      pane.hidden = false;
-      askToggle.hidden = true;
+  // Písomná cesta je od v5 viditeľná v oboch vetvách, takže tu už nie je čo
+  // rozbaľovať. `ConversationView` sa preto páli v oboch — je to „videl pole",
+  // nie „vybral si podporu". Pri porovnávaní s v4 to treba vedieť: vo v4 sa
+  // pálilo len vo vetve `podpora`, teda 2 % ľudí.
+  //
+  // `MessageStart` sa už neviaže na otvorenie panelu (žiadny nie je), ale na
+  // prvé písmeno v poli. To je lepší signál — meria úmysel, nie klik zo zvedavosti.
+  const askCard = document.getElementById('askCard');
+  if (askCard && 'IntersectionObserver' in window) {
+    const ioAsk = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting) && !state.askViewTracked) {
+        state.askViewTracked = true;
+        trackAd('ConversationView', meta);
+        ioAsk.disconnect();
+      }
+    }, { threshold: 0.5 });
+    ioAsk.observe(askCard);
+  } else if (askCard) {
+    state.askViewTracked = true;
+    trackAd('ConversationView', meta);
+  }
+
+  const messageBox = document.getElementById('message');
+  if (messageBox) {
+    messageBox.addEventListener('input', () => {
+      recordPath('written_consult');
       trackAd('MessageStart', meta);
-      pane.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      document.getElementById('message').focus({ preventScroll: true });
     }, { once: true });
   }
 
   let chosenWindow = '';
   const cbSubmit = document.getElementById('cbSubmit');
   if (cbSubmit) {
-    if (state.readiness === 'podpora') trackAd('ConversationView', meta);
     cbSubmit.addEventListener('click', () => submitCallback(meta, () => '', () => 'write'));
   }
 
@@ -754,6 +788,8 @@ function showResult(plan) {
       const pane = document.getElementById('callFormPane');
       pane.hidden = false;
       callToggle.hidden = true;
+      // Telefón je súčasť cesty ku konzultácii, nie tretia cesta.
+      recordPath('written_consult');
       trackAd('CallOpen', meta);
       pane.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, { once: true });
@@ -809,9 +845,10 @@ async function submitCallback(meta, getWindow, getMode) {
     preferredTime: writing ? '' : (getWindow() || ''),
     segment: state.problem,
     history: state.history,
-    readiness: state.readiness,
+    selectedPath: state.selectedPath,
     tier: meta.tier,
     source: CONFIG.SOURCE,
+    creativeId: CREATIVE_ID,
     band: `${plan.target} kcal / ${plan.protein} g B`,
     ts: new Date().toISOString(),
     quizVersion: CONFIG.FUNNEL_VERSION,
@@ -843,10 +880,10 @@ async function submitCallback(meta, getWindow, getMode) {
     // spoločnom `Lead`. Inak by sa v Ads Manageri tvárili ako to isté.
     trackAd('Lead', {
       ...meta, way: writing ? 'message' : 'call',
-      readiness: state.readiness, funnelVersion: CONFIG.FUNNEL_VERSION,
+      selectedPath: state.selectedPath, funnelVersion: CONFIG.FUNNEL_VERSION,
       value: 25.00, currency: 'EUR',
     });
-    trackAd(writing ? 'MessageSent' : 'CallRequested', { ...meta, readiness: state.readiness });
+    trackAd(writing ? 'MessageSent' : 'CallRequested', { ...meta, selectedPath: state.selectedPath });
     document.getElementById(writing ? 'callbackForm' : 'callFormPane').innerHTML = `
       <div class="callback-done">
         <h4>✓ Mám to, ${state.name}</h4>
