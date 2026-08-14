@@ -23,8 +23,9 @@
        vyhodnotilo voči koreňu (/analyza.css, 404), nie voči /analyza/. -->
   <link rel="stylesheet" href="/analyza/analyza.css?v=3">
 
-  <!-- Meta Pixel — rovnaké poradie ako na kvíze: prvý je pixel ad účtu (learning
-       history kampane), druhý Valyra. Konverzie páľ adresne cez trackAd(). -->
+  <!-- Meta Pixel — jediný, patriaci ad účtu. Konverzie páľ adresne cez trackAd().
+       Druhý (Valyra, 1529505581872759) bol odstránený 14. 8. 2026 — ad účet
+       k nemu nemal prístup, len spomaľoval načítanie. -->
   <script>
     !function(f,b,e,v,n,t,s)
     {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -35,7 +36,6 @@
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', '2221207801987418');
-    fbq('init', '1529505581872759');
     fbq('track', 'PageView');
   </script>
   <noscript><img height="1" width="1" style="display:none"

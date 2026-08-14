@@ -30,10 +30,9 @@
     t.src=v;s=b.getElementsByTagName(e)[0];
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
-    // Duálny pixel — 2221207801987418 sleduje aktívna FB kampaň (learning history),
-    // 1529505581872759 je Valyra pixel. Rovnaké poradie ako na kalkulačke a valyra.sk.
+    // Jediný pixel patriaci ad účtu. Druhý (Valyra, 1529505581872759) bol odstránený
+    // 14. 8. 2026 — ad účet k nemu nemal prístup, len spomaľoval načítanie.
     fbq('init', '2221207801987418');
-    fbq('init', '1529505581872759');
     fbq('track', 'PageView');
   </script>
   <noscript><img height="1" width="1" style="display:none"
