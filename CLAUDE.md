@@ -62,8 +62,8 @@ cez `trackSingle` (zámena = pixel event zahodí).
 sedieť, nastav `SPOTS_LEFT` na `null` — veta o miestach sa prestane zobrazovať.
 Vymyslené miesta, ktoré sa nikdy nemenia, ľudia odhalia a stoja dôveru.
 
-**`ConsultClick` nie je rezervácia**, je to len klik na Cal.com. Skutočný počet
-hovorov z reklamy sa dá merať až eventom `Lead` z Cal.com webhooku — do vtedy je
+**`ConsultClick` nie je rezervácia**, je to len klik na rezervačnú stránku. Skutočný počet
+hovorov z reklamy sa dá merať až podľa rezervácií v Google Kalendári — do vtedy je
 konverzia hovoru odhad. Pomer `ConsultView` → `ConsultClick` hovorí o copy ponuky.
 
 **Zápis leadu ide na Supabase funkciu `quizLead`** (`mode: 'cors'`, kontrola

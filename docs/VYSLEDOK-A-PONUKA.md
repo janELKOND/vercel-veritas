@@ -140,7 +140,7 @@ stretnutí, ale za to, že to konečne zaberie."*
 
 ### Ako sa hovor rezervuje — dnes Cal.com
 
-**Živá cesta je Cal.com.** Tlačidlo v ponuke je odkaz na `CAL_URL`.
+**Živá cesta je rezervačná stránka Google Kalendára.** Tlačidlo v ponuke je odkaz na `CAL_URL`.
 
 Existuje aj hotový formulár na telefónne číslo, ale je **uspaný za prepínačom**
 `CONFIG.BOOKING_ENABLED: false` — nevykreslí sa a v HTML vôbec nie je. Prečo je

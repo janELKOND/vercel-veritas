@@ -11,7 +11,7 @@
    či prípadná zmena čísel bola o magnete alebo o reklame.
 
    Zdieľa s kvízom celý backend: `quizLead` (lead + notifikácia + e-mailová
-   séria), tiering podľa histórie návratov, formulár na telefón, Cal.com.
+   séria), tiering podľa histórie návratov, formulár na telefón, rezerváciu termínu.
    Preto sa aj hodnoty segmentu a histórie MUSIA zhodovať s kvízom.
    ============================================================ */
 
@@ -19,7 +19,7 @@ const CONFIG = {
   WEBHOOK_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
   BOOKING_URL: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
   BOOKING_ENABLED: true,
-  CAL_URL: 'https://cal.com/jan-karas-kdm2il/15min',
+  CAL_URL: 'https://calendar.app.google/xfubmW69zjcoGnsH8',
   CONTACT_EMAIL: 'karas.jan2@gmail.com',
   PIXEL_AD: '2221207801987418',
   SOURCE: 'osobna-analyza',

@@ -9,7 +9,7 @@ const CONFIG = {
   // Cal.com už NIE je primárna cesta. Odskok na cudziu stránku, kde treba vyberať
   // dátum, čas a znova písať meno aj e-mail, je najväčšie trenie na celom výsledku.
   // Zostáva ako sekundárna možnosť pre tých, čo si radšej vyberú termín sami.
-  CAL_URL: 'https://cal.com/jan-karas-kdm2il/15min',
+  CAL_URL: 'https://calendar.app.google/xfubmW69zjcoGnsH8',
   // Rezervácia hovoru ide na tú istú Supabase funkciu ako lead — rozlišuje ich
   // pole `typ: 'konzultacia'`. Funkcia musí telefón ULOŽIŤ a v odpovedi to POTVRDIŤ
   // (`kind: 'call'`), inak klient zápis považuje za neúspešný. Dôvod: keby polia len
