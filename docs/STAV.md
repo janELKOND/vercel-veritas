@@ -101,6 +101,35 @@ Všetkých 10 je z analýzy, **z kvízu ani jeden**. 8 písomných, 2 telefonát
 Okno pozorovania: **kontakt do 7 dní od vytvorenia leadu**, aby staršia kohorta nemala
 výhodu dlhšieho času.
 
+> ⚠️ **OPRAVA 14. 8. 2026 — toto pravidlo je nepresné a takto sa už deliť nemá.**
+>
+> `quizLead` robí `.upsert(lead, { onConflict: 'email' })` ([quizLead/index.ts:379]).
+> Tabuľka má teda **jeden riadok na e-mail**, nie jeden na vyplnenie. Kto sa vráti
+> a vyplní analýzu znova, prepíše si vlastný riadok: `created_date` ostane z PRVEJ
+> návštevy, všetky ostatné polia sú z POSLEDNEJ.
+>
+> **Rozsah:** 36 zo 450 leadov analýzy (**8 %**) má `updated_date` o viac než hodinu
+> neskôr než `created_date`. Jeden sa vrátil po 22 dňoch. Dva z 25 riadkov s
+> `quiz_version = 5` majú dátum spred nasadenia v5.
+>
+> **Čo to kazí:**
+> 1. Kohorta podľa `created_date` zaradí vrátivšieho sa človeka k prvej návšteve,
+>    hoci nesie hodnoty z poslednej.
+> 2. Sedemdňové okno takého človeka **zahodí úplne** — konverzia deväť dní po prvej
+>    návšteve nespadne do žiadnej kohorty.
+> 3. Počty sa nedajú porovnávať s Metou jedna k jednej: DB ráta **ľudí**, Meta ráta
+>    **udalosti**. Rozdiel 433 (Meta) vs 426 (DB) teda nie je len o atribučných
+>    oknách, ako tu pôvodne stálo — časť z neho sú opakované vyplnenia.
+>
+> **Ako deliť kohorty odteraz:**
+> - primárne podľa **`quiz_version`** — je to presné a preto sme ten stĺpec pridali
+> - časovo podľa **`updated_date`**, nikdy nie `created_date`
+> - riadok popisuje POSLEDNÚ interakciu človeka, čo je pre vyhodnotenie lievika
+>   správne: konvertoval (alebo nie) pod tou verziou, ktorú videl naposledy
+>
+> **Čísla nižšie tým ovplyvnené nie sú** — všetkých 10 historických kontaktov prišlo
+> do 4 minút od vytvorenia leadu, takže medzi nimi vrátivší sa nie je ani jeden.
+
 | Kohorta | Obdobie | Leadov | Kontakt do 7 dní | % | Dozretých |
 |---|---|---|---|---|---|
 | A | do 6. 8. (v3, gate so slúchadlom) | 205 | 1 | **0,49 %** | 91 % |
