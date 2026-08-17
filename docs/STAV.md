@@ -1,9 +1,32 @@
 # STAV — kde sme skončili
 
-## 🆕 15. 8. 2026 — ťuknutie namiesto písania („kedy ti to praská")
+## 🆕 17. 8. 2026 — čo pribudlo za 15.–17. 8. (zhrnutie)
 
-**NAPÍSANÉ A OTESTOVANÉ LOKÁLNE, ⚠️ NENASADENÉ.** Cache pripravená: `sw.js` v30,
-`analyza/app.js?v=8`, `analyza/analyza.css?v=4`.
+| Vec | Stav |
+|---|---|
+| Klikacie odpovede na výsledku | **NASADENÉ 17. 8.** (`sw` v30, `app.js?v=8`) |
+| E-mailový most: preč od telefónu ku Google Kalendáru | **NASADENÉ** (`quizLead` v38, `quizBridge` v31) |
+| `quizBridge` — poistky proti odoslaniu registrovaným | **NASADENÉ** (v31) |
+| `sendOneReply` — pätička a zápis do `email_logs` | **NASADENÉ** (v2) |
+| Migrácia 009 — stavy vybavovania žiadostí | **SPUSTENÁ** |
+| Odpovede 4 ženám + 8 nadviazaní | ⚠️ **NAPÍSANÉ, NEODOSLANÉ** |
+
+**Ako to overiť:** `curl -s https://kviz.valyra.sk/sw.js | head -1` → `v30`;
+`npx supabase migration list --linked` → 009 má vyplnené `remote`;
+`npx supabase functions list` → quizBridge v31, quizLead v38, sendOneReply v2.
+
+**⚠️ Najdôležitejšie číslo:** za celý čas kampane je **0 € tržieb**.
+`client_accesses` má 16 riadkov, všetky trial, `paid_started_at` prázdne u všetkých.
+Lievik nikdy nedošiel na koniec — optimalizovať horné kroky má zmysel len s vedomím,
+že spodný ešte nikdy nezavrel.
+
+---
+
+## 15. 8. 2026 — ťuknutie namiesto písania („kedy ti to praská")
+
+**NASADENÉ 17. 8. 2026.** Overené na živej stránke: `sw.js` v30,
+`analyza/app.js?v=8`, `analyza/analyza.css?v=4`, obsah bajt na bajt zhodný
+s commitom `1049f1e`.
 
 **Prečo:** pixel prvýkrát ukázal mikro-lievik na stránke a vyvrátil hypotézu, na ktorej
 stála väčšina doterajších zmien. K výzve na konzultáciu **doscrolluje 90 % ľudí**
@@ -33,6 +56,87 @@ podobách, telefónna cesta nedotknutá. Screenshot v paneli padá na timeout �
 
 **Čo z toho ešte NIE JE:** `quiz_calls` nemá stĺpec na uloženie voľby zvlášť — nesie ju
 text správy. Na analýzu po segmentoch by chcel vlastný stĺpec (migrácia + backend).
+
+**Prah:** pred zmenou klikalo na konzultáciu 7 z 80 ľudí (8,8 %). Ak sa to pri ďalších
+~80 leadoch nepohne, prah nie je v písaní a treba sa vrátiť k tomu, čo ponuka sľubuje.
+
+---
+
+## 17. 8. 2026 — e-maily prestali sľubovať telefonát
+
+**NASADENÉ** (`quizLead` v38, `quizBridge` v31). Repo `valyra`, commit `eb85c40`.
+
+Stránka prestala sľubovať telefonát už 6. 8. a konverzia vtedy skočila z 0,5 % na 4,7 %.
+**E-maily tú istú opravu nikdy nedostali.** Všetkých 8 malo tlačidlo `📞 Rezervovať`
+a hovorilo „15 minút po telefóne", pritom:
+
+- rezervačná stránka mala za mesiac **10 klikov z 2 581 doručených e-mailov**
+- **12 z 13 kontaktov prišlo písomne**, jediný telefonát nedvihla
+- 68 % všetkých klikov v e-mailoch je **odhlásenie**
+
+Zmeny: `ctaLabel` → `Vybrať si termín — 15 minút, nezáväzne` (sedí s názvom rezervačnej
+stránky), z `callBlock`, `bridge_0`, `bridge_1` a `bridge_3` zmizlo „po telefóne"
+aj „volám ja, ty len zdvihneš". `bridge_0` priznáva reálnu dostupnosť (všedné dni
+podvečer, overené: 18:30–19:15) a pridáva cestu „stačí odpísať na tento e-mail".
+
+**Cal.com sa v celom backende už nevyskytuje.** Odkaz je `calendar.app.google/…`
+a ťahá sa z env `CAL_URL` — **secret prebije kód**, takže pri zmene ho treba meniť tam.
+
+### quizBridge — poistky proti odoslaniu registrovaným
+
+4. 8. odišiel most **17 registrovaným ľuďom naraz**. Príčina: starý kód čítal profily
+cez `usersRes.data ?? []` a chybu čítania ticho prehltol — prázdna množina neblokuje
+nikoho. Commit `53a0cfa` (4. 8.) to vyriešil a **od vtedy je chybných odoslaní nula**.
+
+Pridané ako druhá vrstva: `trim()` pri porovnávaní adries na **všetkých štyroch**
+miestach (orezať len jednu stranu by rozbilo dedup a most by odišiel dvakrát)
+a zastavenie behu, ak je zoznam registrovaných prázdny pri neprázdnych leadoch.
+Odsimulované na ostrých dátach — s `trim()` aj bez neho by most odišiel rovnakým
+277 ľuďom.
+
+---
+
+## 17. 8. 2026 — migrácia 009: koniec zavádzajúceho `called`
+
+**SPUSTENÁ.** Repo `valyra`, commit `8fddcf9`.
+
+Doteraz existoval len boolean `called`. Používal sa na „vybavené", lenže **zo 17
+žiadostí je 14 písomných** — zapisovať im `called = true` znamená tvrdiť, že sa volalo.
+
+Rovnaká zámena už raz nastala pri `quiz_leads.replied_at`: to pole označuje moment,
+keď **Ján rozposlal odpovede**, nie keď odpovedali ženy. Všetkých osem z 11. 8. má
+v ňom rovnakú sekundu. **Nepoužívať ho ako „ona odpovedala".**
+
+Nové stĺpce v `quiz_calls`: `status` (`new` | `awaiting_reply` | `replied` | `closed`),
+`outreach_sent_at` (ozvali sme sa MY), `lead_replied_at` (odpovedal ČLOVEK),
+`outreach_channel` (`email` | `phone`). Doterajšie `called = true` sa prepísalo
+na `closed`, **nie na `replied`** — či odpovedali, z dát nevieme.
+
+⚠️ **`quiz_calls` zakladá samostatný riadok na každý pokus.** Aktualizovať vždy podľa
+`id`, nikdy `where email = ...` — taký príkaz prepíše aj staré uzavreté pokusy.
+(K 17. 8. má 17 riadkov 17 rôznych adries, takže dnes by škodu nespravil.)
+
+---
+
+## ⚠️ 17. 8. 2026 — čaká na odoslanie (nie je hotové)
+
+**Štyri ženy sa ozvali a nemajú odpoveď** (16. 8. ráno, 16. 8. večer ×2, 17. 8.
+poobede). Texty sú napísané, skript `posli-odpovede.js` hotový, migrácia 009
+spustená — chýba len `REPLY_SECRET`, ktorý vie zadať len Ján.
+
+Konkrétne mená, adresy a znenia sú **mimo repa** (pracovný priečinok) — toto repo
+je verejné a osobné údaje leadov do neho nepatria. V databáze ich nájdeš cez
+`select * from quiz_calls where status = 'new' and phone is null`.
+
+**Osem nadviazaní** na ženy, ktoré 11. 8. dostali tú istú šablónu a **ani jedna
+neodpísala**. Texty priznávajú predošlý e-mail a končia jednou otázkou.
+
+**Tri telefonické žiadosti visia** 17, 14 a 7 dní. Po takom čase telefonát nedáva
+zmysel — zavrieť (`status = closed`) alebo napísať.
+
+**Úzke miesto sa presunulo.** Stránka teraz vyrába kontakty rýchlejšie, než sa
+stíhajú vybavovať: v5 je na **7,5 % (6 z 80)** oproti 4,7 % vo v3 a 0 % vo v4.
+Ďalší zisk už nie je na stránke, ale v tom, čo sa stane po kontakte.
 
 
 
