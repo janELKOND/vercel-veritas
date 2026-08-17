@@ -9,16 +9,208 @@
 | `quizBridge` — poistky proti odoslaniu registrovaným | **NASADENÉ** (v31) |
 | `sendOneReply` — pätička a zápis do `email_logs` | **NASADENÉ** (v2) |
 | Migrácia 009 — stavy vybavovania žiadostí | **SPUSTENÁ** |
-| Odpovede 4 ženám + 8 nadviazaní | ⚠️ **NAPÍSANÉ, NEODOSLANÉ** |
+| Odpovede 5 ženám (v5 kontakty) | **ODOSLANÉ 17. 8. ~16:09 a 16:39** (ručne, mimo systému) |
+| 8 nadviazaní na ženy z 11. 8. | ⚠️ **NAPÍSANÉ, NEODOSLANÉ** |
+| Test písomného dvojkroku | **BEŽÍ** — menovateľ 5, dozreje 20. 8. (sekcia nižšie) |
 
 **Ako to overiť:** `curl -s https://kviz.valyra.sk/sw.js | head -1` → `v30`;
 `npx supabase migration list --linked` → 009 má vyplnené `remote`;
 `npx supabase functions list` → quizBridge v31, quizLead v38, sendOneReply v2.
 
 **⚠️ Najdôležitejšie číslo:** za celý čas kampane je **0 € tržieb**.
-`client_accesses` má 16 riadkov, všetky trial, `paid_started_at` prázdne u všetkých.
-Lievik nikdy nedošiel na koniec — optimalizovať horné kroky má zmysel len s vedomím,
-že spodný ešte nikdy nezavrel.
+
+⚠️ **OPRAVA 17. 8.:** doteraz sa to tu rámovalo cez `client_accesses` (16 riadkov,
+všetky trial, `paid_started_at` prázdne). **Tak sa to merať nemá.** Zámer je predať
+8-týždňový program cez telefonát alebo správu; **Valyra je nástroj v platenej
+spolupráci, nie samostatný produkt**. Appka nemá funkčný checkout, takže nula
+v `client_accesses` je **očakávaný stav, nie zlyhanie lievika**.
+
+Skutočná miera úspechu je **kontakt → uzavretá platená spolupráca**, a tá je
+**0 zo 17** reálnych kontaktov (18 riadkov mínus 1 vlastný test).
+
+---
+
+## 🧪 17. 8. 2026 — TEST: písomný dvojkrok po žiadosti o kontakt
+
+**Prečo:** 15 z 18 kontaktov je písomných, v kalendári nie je ani jedna rezervácia.
+Skutočný ďalší krok človeka teda nie je rezervácia termínu, ale **odpoveď na e-mail**.
+Doteraz sa kontakt vybavoval jednorazovou odpoveďou; odteraz je to **rozhovor na dva
+kroky** — prvá správa nemá predávať, má len rozhovoriť.
+
+### Ako má vyzerať prvá odpoveď
+
+| Musí obsahovať | Nesmie obsahovať |
+|---|---|
+| jeden **konkrétny pravdivý detail** z jej analýzy alebo zvolenej odpovede | sľub termínu odpovede („ozvem sa do 24 h") |
+| jednu **otázku zodpovedateľnú jedným slovom** | tvrdenie, že to nie je automat / že píšem osobne |
+| možnosť **„alebo je to inak"** | ponuku hovoru, kalendára ani Valyry |
+| | generický copy-paste bez detailu o konkrétnej osobe |
+
+Príklad tvaru: *„Napísala si, že ti to praská večer doma. Je to vtedy skôr hlad,
+únava, alebo stres — alebo je to inak?"*
+
+„Alebo je to inak" nie je kozmetika — bez neho má človek na výber buď odpovedať
+nepresne, alebo neodpovedať vôbec. Núti si vybrať z mojich domnienok.
+
+**Detail ber:** pri novších kontaktoch z vybranej odpovede (`Praská mi to večer doma`),
+pri starších iba z voľného textu v `message`.
+
+### Menovateľ testu — presne 5
+
+Overené v živých dátach 17. 8. Do testu patrí riadok `quiz_calls`, ktorý má **súčasne**
+`quiz_version = 5`, `status = awaiting_reply`, vyplnené `outreach_sent_at`
+a `outreach_channel = email`.
+
+| Skupina | Počet | Do testu? |
+|---|---|---|
+| v5, `awaiting_reply`, oslovenie zapísané | **5** | ✅ **jediný menovateľ** |
+| v5, `closed` bez dôkazu odpovede (13. a 14. 8.) | 2 | ❌ nemiešať |
+| v3, `closed` | 8 | ❌ samostatná kohorta `reaktivácia` |
+| v3, `new` | 3 | ❌ z toho 1 je vlastný test, 2 sú nevybavené telefonáty |
+
+⚠️ **Starých 10 v3 kontaktov do tohto testu nepatrí.** Nevie sa, čo presne dostali ani
+či odpovedali. Ak sa im niekedy ozve znova, meraj ich **zvlášť ako `reaktivácia`**,
+nie ako pokračovanie dvojkroku.
+
+### ⚠️ Čo tí piati reálne dostali (dôležité pre záver)
+
+Správy odišli **17. 8. ~16:09 (4 ženy) a ~16:39 (1 žena)**, ručne, mimo systému.
+Obsahovali **dva z troch prvkov: detail + otázku na jedno slovo. „Alebo je to inak"
+tam nebolo.**
+
+Preto ak odpovede neprídu, **nedá sa povedať, či je to typom správy, alebo tým
+chýbajúcim prvkom.** Nezapisovať to ako „dvojkrok nefunguje" — testoval sa neúplný.
+Ďalšie oslovenia už majú mať všetky tri prvky.
+
+⚠️ **Slepé miesto:** správy odoslané z Gmailu sa **nikde nezaznamenávajú** — ani obsah,
+ani fakt odoslania. `email_logs` a `email_events` vidia len to, čo ide cez Resend.
+V okne 14:09–14:39 UTC je v oboch tabuľkách len automatika (`bridge_0`, notifikácie).
+Overené volaním.
+
+### Pravidlá zápisu — dodržať doslova
+
+| Kedy | Čo nastaviť |
+|---|---|
+| **Pri odoslaní mojej správy** | `status = awaiting_reply`, `outreach_sent_at`, `outreach_channel = email` |
+| **Až keď človek naozaj odpovie** | `status = replied`, `lead_replied_at` |
+
+- ⚠️ **`quiz_leads.replied_at` NIKDY nepoužívať ako mieru odpovede človeka.** Označuje
+  moment, keď Ján rozposlal odpovede. K 17. 8. má tri hromadné zápisy na rovnakú
+  sekundu: 8× `11. 8. 10:12:37`, 2× `14. 8. 19:05:14`, 5× `17. 8. 14:11:55`.
+- ⚠️ **Nikdy neaktualizovať `quiz_calls` podľa e-mailu, iba podľa `id`.**
+- ⚠️ **Nezapisovať odpoveď z pocitu, že výmena „už je vybavená".** K 17. 8. je
+  `lead_replied_at` vyplnené **0×** — teda systém eviduje nula reálnych odpovedí.
+  To znamená „nesledované", nie preukázateľne „nula".
+- **Zatiaľ nepridávať tretí stĺpec ani nový stav.** Prvý test meria jedinú vec:
+  **oslovený → skutočne odpovedal.**
+
+### Kedy a ako vyhodnocovať
+
+**„Dozretý kontakt" = aspoň 72 hodín od `outreach_sent_at`.**
+Všetkých 5 dozreje **20. 8. 2026 medzi 16:09 a 16:39** (nie skôr — 72 h sú tri dni).
+
+| Dozretých oslovení | Čo robiť |
+|---|---|
+| 5–10 | **iba zbierať dáta, nerobiť záver** |
+| 20, z toho 0–1 odpoveď | varovný signál → najprv audit doručiteľnosti, času, predmetu, obsahu a publika |
+| 20, z toho 2–3 odpovede | pokračovať do 30 |
+| 20, z toho 4+ odpovedí | dvojkrok držať, až potom riešiť ďalší krok |
+
+⚠️ **Nízka odpoveď sama osebe nedokazuje príčinu.** Bez porovnávacej verzie môže ísť
+o text, oneskorenie, publikum alebo doručenie.
+
+⚠️ **Tým piatim nič neposielať znova.** Dnes už správu dostali; druhá by bola presne
+tá chyba s dvojitým mailom (9. 8. ju dostalo 90 ľudí).
+
+---
+
+## 📐 17. 8. 2026 — opravy čísel po celolievikovej analýze
+
+Prepočítané z živých dát (PostgREST so stránkovaním) a Ads API. **Toto prepisuje
+staršie tvrdenia nižšie v dokumente.**
+
+### v5 NIE JE dokázane lepšia než kohorta B
+
+Fisherov exaktný test (pri jednotkách konverzií je chí-kvadrát nevhodný):
+
+| Porovnanie | Podiely | p | Záver |
+|---|---|---|---|
+| A (gate so slúchadlom) vs B (bez neho) | 1/205 vs 9/190 | **0,0085** | ✅ **preukázané** — sľub telefonátu škodil |
+| A vs v5 | 1/205 vs 7/83 | **0,0008** | ✅ preukázané |
+| **B vs v5** | 9/190 vs 7/83 | **0,27** | ❌ **nepreukázané** |
+| v4 vs v5 | 0/32 vs 7/83 | 0,19 | ❌ nepreukázané |
+| analýza vs kvíz (kontakty) | 18/504 vs 0/232 | **0,0014** | ✅ preukázané |
+
+**Čo to znamená:** máš dobrý dôkaz, že **zrušenie sľubu telefonátu** (6. 8.) zabralo.
+Nemáš dôkaz, že v5 pridala niečo **navyše oproti B**. Číslo 8,4 % je zlučiteľné s tým,
+že v5 nezmenila nič. Nepísať „v5 funguje" bez tejto výhrady.
+
+### Telefonické žiadosti: sú DVE, nie tri
+
+Riadok z **31. 7. 16:24 je vlastný test** (meno „janci", vlastná adresa). Reálne
+nevybavené telefonické žiadosti sú **2** — staré 14 a 7 dní, obe `status = new`.
+
+### Krok „klik → zobrazená stránka" je stabilný, nie zhoršujúci sa
+
+Kampaň „Analýza", 31. 7. – 17. 8., deň po dni:
+
+| Obdobie | Klik → zobrazenie | Klikov |
+|---|---|---|
+| plný rozpočet (31. 7. – 12. 8.) | 69,6 % | 1 511 |
+| stlmené na 1 €/deň (13. – 17. 8.) | **72,1 %** | 272 |
+
+Útlm rozpočtu tento krok **nezhoršil**. ~30 % strata je bežná hranica merateľnosti
+pixelom (mobil, pomalé pripojenie, zavretie pred dokreslením), nie chyba stránky.
+**Neinvestovať sem** — zvyšovalo by to objem, a objem dnes nie je limit.
+
+Celý lievik za obdobie, **64,01 €** minutých:
+
+| Krok | Počet | Konverzia |
+|---|---|---|
+| Kliky | 1 783 | — |
+| Zobrazenie stránky | 1 247 | 69,9 % |
+| E-mail (`CompleteRegistration`) | 520 | 41,7 % |
+| Žiadosť o kontakt (`Lead`) | 17 | 3,3 % |
+
+Kampaň na kvíz minula pred zastavením ďalších **72,96 €** → 232 leadov, **0 kontaktov**.
+
+### „Veľkosť cieľa predpovedá, kto sa ozve" — efekt je slabší, než sa písalo
+
+Pôvodne uvádzané −21 kg vs −10 kg. Prepočítané na dnešné dáta: medián cieľa u tých,
+čo sa ozvali, je **−14 kg** (n = **7**, len toľkí majú vyplnené `a_*`), u všetkých
+leadov s dátami **−11 kg** (n = 132). Je to **smer, nie zistenie** — pri n = 7 sa naň
+nedá spoľahnúť.
+
+### Cal.com: oprava funguje, ŽIADNA chyba tu nie je
+
+⚠️ **Toto som najprv ohlásil ako chybu a bolo to zle.** Zapisujem aj postup overenia,
+nech sa to nezopakuje.
+
+Klik na cal.com **16. 8. o 16:08** zo šablóny `bridge_10` vyzeral ako dôkaz, že oprava
+z 15. 8. nepokryla všetky šablóny. **Nie je.** Ten e-mail **odišiel 12. 8. o 07:31** —
+tri dni pred opravou. Je to presne prípad popísaný nižšie: staré maily v obehu.
+
+Rozhoduje **čas odoslania mailu**, nie čas kliku:
+
+| Odkaz | Najnovší mail, z ktorého prišiel klik |
+|---|---|
+| cal.com (11 klikov) | **12. 8. 07:31** — všetky pred opravou |
+| Google kalendár (6 klikov) | **16.–17. 8.** — všetky po oprave |
+
+Čistý predel. **Z každého mailu odoslaného po oprave sa klikalo výhradne na Google.**
+V `supabase/functions` sa reťazec `cal.com` nevyskytuje ani raz; odkaz sa ťahá
+z `Deno.env.get('CAL_URL')` s fallbackom na `calendar.app.google/…`
+(`_shared/bridgeTemplates.ts:140`, `sendHotBatch/index.ts:92`).
+`bridge_5/7/10/14` sú v poriadku, **netreba na nich nič meniť**.
+
+Rozpad všetkých 60 klikov v e-mailoch (z 3 374 odoslaných = 1,8 %):
+**38 odhlásenie (63 %)**, 11 cal.com, 6 Google kalendár, 5 valyra.sk.
+
+### Sledovanie otvorení je preukázateľne vypnuté
+
+`email_events` má `{sent: 3374, delivered: 3308, clicked: 60, bounced: 68}` —
+udalosť `email.opened` sa nevyskytuje **ani raz**. Doručiteľnosť je pritom v poriadku
+(bounce 2,0 %).
 
 ---
 
@@ -131,8 +323,11 @@ je verejné a osobné údaje leadov do neho nepatria. V databáze ich nájdeš c
 **Osem nadviazaní** na ženy, ktoré 11. 8. dostali tú istú šablónu a **ani jedna
 neodpísala**. Texty priznávajú predošlý e-mail a končia jednou otázkou.
 
-**Tri telefonické žiadosti visia** 17, 14 a 7 dní. Po takom čase telefonát nedáva
-zmysel — zavrieť (`status = closed`) alebo napísať.
+**~~Tri telefonické žiadosti visia 17, 14 a 7 dní.~~ VYBAVENÉ 17. 8.** Boli **dve**
+(14 a 7 dní), tretí riadok je vlastný test z 31. 7. Po takom čase telefonát nedáva
+zmysel, preto sú **obe zavreté** (`status = closed`, aktualizované podľa `id`).
+`outreach_sent_at` aj `lead_replied_at` ostali prázdne — nikto sa im neozval,
+a zapisovať opak by klamalo.
 
 **Úzke miesto sa presunulo.** Stránka teraz vyrába kontakty rýchlejšie, než sa
 stíhajú vybavovať: v5 je na **7,5 % (6 z 80)** oproti 4,7 % vo v3 a 0 % vo v4.
