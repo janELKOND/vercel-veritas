@@ -1,5 +1,41 @@
 # STAV — kde sme skončili
 
+## 🆕 15. 8. 2026 — ťuknutie namiesto písania („kedy ti to praská")
+
+**NAPÍSANÉ A OTESTOVANÉ LOKÁLNE, ⚠️ NENASADENÉ.** Cache pripravená: `sw.js` v30,
+`analyza/app.js?v=8`, `analyza/analyza.css?v=4`.
+
+**Prečo:** pixel prvýkrát ukázal mikro-lievik na stránke a vyvrátil hypotézu, na ktorej
+stála väčšina doterajších zmien. K výzve na konzultáciu **doscrolluje 90 % ľudí**
+(`ConversationView` ~36 pri ~40 analýzach) — ponuku teda vidia. Ale do prázdneho poľa
+začnú písať **traja**. To je 92 % strata na jedinom kroku a najväčšia v celom lieviku.
+Kto raz začne písať, ten dokončí (2 z 3). Prah je celý v prvom písmene.
+
+**Zmena:** namiesto prázdnej textarey sú štyri veľké tlačidlá — *Večer doma · Cez deň
+v práci · Cez víkend · Už po pár dňoch*. Pole na vetu aj tlačidlo na odoslanie sú
+**skryté, kým človek neťukne**. Veta je potom **NEPOVINNÁ** — samotné ťuknutie stačí
+na odoslanie.
+
+- Správa sa skladá: `Praská mi to večer doma.` + prípadná dopísaná veta pod tým.
+  Backend vyžaduje neprázdnu správu (CHECK v `quiz_calls`), takže prázdna sa neodošle.
+- Otázka mieri na to, čo o človeku **ešte nevieme** — problém, históriu, vek aj kalórie
+  máme z formulára, kedy mu to praská nie.
+- Potvrdenie po odoslaní rozlišuje, či človek písal: kto len ťukol, nedostane
+  „čo si napísala", ale „kedy ti to praská".
+
+**Nová udalosť `BreakPointSelected`.** `MessageStart` ZÁMERNE zostáva viazaný na
+písanie — keby dostal význam „ťukol", porovnanie verzií by sa ticho rozbilo.
+
+**Otestované** (localhost, 375 px, stubnuté `fbq` aj `fetch`): pole aj tlačidlo skryté
+pred ťuknutím a viditeľné po ňom, `aria-pressed` sedí, odoslanie **bez písania**
+(správa 24 znakov), odoslanie s vetou, ženské aj mužské skloňovanie, potvrdenie v oboch
+podobách, telefónna cesta nedotknutá. Screenshot v paneli padá na timeout — overované cez DOM.
+
+**Čo z toho ešte NIE JE:** `quiz_calls` nemá stĺpec na uloženie voľby zvlášť — nesie ju
+text správy. Na analýzu po segmentoch by chcel vlastný stĺpec (migrácia + backend).
+
+
+
 ## 13. 8. 2026 — reklama zámerne stlmená na 1 €/deň
 
 **Nie je to porucha.** Ján znížil denný rozpočet na 1 € — dôvod bol, že lievik

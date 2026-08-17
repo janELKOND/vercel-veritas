@@ -150,6 +150,50 @@
 }
 .callback-alt { font-size: 13.5px; color: var(--ink-soft); margin-top: 12px; text-align: center; }
 
+/* ---------- KEDY TO PRASKÁ — ťuknutie namiesto písania (15. 8. 2026) ---------- */
+/* Veľké tlačidlá, nie pilulky ako `.when-chip`: toto je prvé a hlavné rozhodnutie
+   na celej výzve, nie doplnková voľba termínu. Na mobile má každé zabrať celý
+   riadok, aby sa dalo trafiť palcom bez mierenia.
+   Dôvod zmeny: k výzve doscrolluje 90 % ľudí, ale do prázdneho poľa napíše 8 %. */
+.break-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+@media (min-width: 420px) {
+  .break-row { grid-template-columns: 1fr 1fr; }
+}
+.break-chip {
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  padding: 14px 16px;
+  min-height: 52px;          /* pohodlný cieľ pre palec */
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.break-chip:hover { border-color: var(--berry); }
+.break-chip:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.break-chip.active { border-color: var(--berry); background: var(--berry-tint); }
+.break-chip.active::after { content: ' ✓'; color: var(--berry); }
+
+/* „(nepovinné)" musí byť vidieť skôr než pole — inak sa z doplnkovej vety stane
+   pocit povinnosti a sme späť pri prázdnom poli, ktoré nikto nevyplní. */
+.ask-optional {
+  display: block;
+  margin: 20px 0 6px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.ask-optional span { font-weight: 400; color: var(--ink-soft); }
+
 /* ---------- DRUHÁ MOŽNOSŤ (Valyra) — v5, 13. 8. 2026 ---------- */
 /* Otázka na pripravenosť je zrušená aj s celým `.readiness*` blokom; pod
    výsledkom sú dve cesty a rozhoduje klik. Konzultácia ostáva v bežnom

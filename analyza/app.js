@@ -135,6 +135,28 @@ const MESSAGE_PLACEHOLDER = {
   'potrebujem-podporu': 'Napr.: Viem, čo mám robiť, ale {sama} pri tom dlho nevydržím…',
 };
 
+// KEDY TO PRASKÁ (15. 8. 2026) — ťuknutie namiesto písania.
+//
+// PREČO: na výsledok doscrolluje k výzve 90 % ľudí (`ConversationView` ~36 pri
+// ~40 analýzach), ale písať začnú traja. Strata 92 % na jedinom kroku, najväčšia
+// v celom lieviku. Nie je to problém viditeľnosti — je to prah prvého písmena.
+// Vlastné dáta projektu to potvrdzujú: osem ťukov o vlastnej váhe dokončí 96 %
+// ľudí, jedno prázdne textové pole nevyplní takmer nikto.
+//
+// Otázka je zámerne na to, čo o človeku ešte NEVIEME. Problém, históriu, vek aj
+// kalórie máme z formulára; kedy mu to praská, nie. Aj samotné ťuknutie bez vety
+// je teda použiteľná informácia, s ktorou sa dá začať rozhovor.
+//
+// `phrase` ide do správy pre Jána, `label` je text na tlačidle. Znenia vychádzajú
+// z toho, čo ľudia reálne písali („Cez deň zvládnem ale večer nie", „Prídem
+// unavená z práce", „Teóriu viem, dodržať neviem") — nie z domnienky.
+const BREAK_POINTS = [
+  { value: 'vecer', label: 'Večer doma', phrase: 'večer doma' },
+  { value: 'praca', label: 'Cez deň v práci', phrase: 'cez deň v práci' },
+  { value: 'vikend', label: 'Cez víkend', phrase: 'cez víkend' },
+  { value: 'zaciatok', label: 'Už po pár dňoch', phrase: 'už po pár dňoch od začiatku' },
+];
+
 // Prvý krok na dnes podľa toho, čo človek označil ako svoj problém.
 const FIRST_STEP = {
   'co-jest': 'K obedu aj večeri pridaj dlaň bielkovín (mäso, ryba, tvaroh, vajcia, strukoviny). Nič nerátaj — len nech tam sú.',
@@ -169,6 +191,8 @@ const state = {
   // ešte majú (v4 aj hodnotu `informacie`), preto sa nesmú miešať s v5.
   selectedPath: null,  // 'written_consult' | 'valyra' — prvá cesta, ktorú človek
                        // reálne použil. Neprepisuje sa: rozhoduje prvý úmysel.
+  breakPoint: null,    // hodnota z BREAK_POINTS — ťuknutie, ktoré otvorí formulár.
+                       // Bez neho sa nedá odoslať; veta navyše je NEPOVINNÁ.
   leadId: null,      // uuid riadku z quizLead → kľúč na predvyplnenie Valyry
   name: '',
   email: '',
@@ -601,12 +625,21 @@ function showResult(plan) {
   //
   // ⚠️ Ak sem niekto pridá vetvenie, oba bloky v ňom MUSIA ostať. Vo v4 sa
   // stalo presne to, že vetva ponuku vypla — 98 % ľudí ju nikdy neuvidelo.
+  // Poradie je celý zmysel tejto zmeny: NAJPRV ťuknutie, pole a tlačidlo až po ňom.
+  // Prázdne pole s kurzorom bolo doteraz prvé, čo tu človek uvidel — a 92 % ľudí,
+  // ktorí sem doscrollovali, doň nenapísalo ani písmeno. Jedno rozhodnutie naraz.
   const writePane = (placeholder) => `
       <div class="callback" id="callbackForm">
-        <label class="callback-note callback-promise" for="message">Bez telefonátu, zadarmo. Odpoviem na e-mail, ktorý si ${g('zadala', 'zadal')} vyššie.</label>
-        <textarea id="message" rows="4" placeholder="${placeholder}"></textarea>
-        <div class="error-msg" id="cbErr" role="alert" aria-live="polite"></div>
-        <button type="button" class="btn" id="cbSubmit">Chcem Jánovu osobnú odpoveď</button>
+        <div class="break-row" id="breakRow" role="group" aria-label="Kedy ti to najčastejšie praskne">
+          ${BREAK_POINTS.map((b) => `<button type="button" class="break-chip" aria-pressed="false" data-break="${b.value}">${b.label}</button>`).join('')}
+        </div>
+        <div id="askPane" hidden>
+          <label class="ask-optional" for="message">Chceš k tomu doplniť vetu? <span>(nepovinné)</span></label>
+          <textarea id="message" rows="3" placeholder="${placeholder}"></textarea>
+          <p class="callback-note callback-promise">Bez telefonátu, zadarmo. Odpoviem na e-mail, ktorý si ${g('zadala', 'zadal')} vyššie.</p>
+          <div class="error-msg" id="cbErr" role="alert" aria-live="polite"></div>
+          <button type="button" class="btn" id="cbSubmit">Chcem Jánovu osobnú odpoveď</button>
+        </div>
       </div>`;
 
   // Telefón je vždy až druhá možnosť a rozbalí sa len po vedomom kliknutí.
@@ -644,8 +677,8 @@ function showResult(plan) {
   const askBlock = `
       <div class="offer" id="askCard">
         <div class="offer-eyebrow">Tvoj ďalší krok</div>
-        <h3 class="offer-title">Kde sa ti to zvyčajne rozpadne?</h3>
-        <p class="offer-lead">Napíš mi jednou vetou, čo ti pri chudnutí nejde najviac. Pozriem sa na tvoje čísla a osobne ti odpíšem, čo by som na tvojom mieste upravil ako prvé.</p>
+        <h3 class="offer-title">Kedy ti to najčastejšie praskne?</h3>
+        <p class="offer-lead">Ťukni na to, čo ti sedí najviac. Pozriem sa na tvoje čísla aj na to, čo si ${g('označila', 'označil')}, a osobne ti odpíšem, čo by som na tvojom mieste upravil ako prvé.</p>
       </div>
       ${writePane(placeholder)}
       ${callPane}`;
@@ -766,6 +799,32 @@ function showResult(plan) {
     trackAd('ConversationView', meta);
   }
 
+  // Ťuknutie na „kedy to praská" je nový prvý krok a otvára zvyšok formulára.
+  // Páli vlastnú udalosť `BreakPointSelected`. `MessageStart` ZÁMERNE zostáva
+  // viazaný na písanie — keby som mu zmenil význam na „ťukol", číslo „koľkí
+  // začali písať" by pred zmenou a po nej meralo dve rôzne veci a porovnanie
+  // verzií by sa ticho rozbilo.
+  const chips = Array.from(document.querySelectorAll('.break-chip'));
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      state.breakPoint = chip.dataset.break;
+      chips.forEach((c) => {
+        const on = c === chip;
+        c.classList.toggle('active', on);
+        c.setAttribute('aria-pressed', String(on));
+      });
+      const pane = document.getElementById('askPane');
+      if (pane && pane.hidden) {
+        pane.hidden = false;
+        recordPath('written_consult');
+        trackAd('BreakPointSelected', { ...meta, breakPoint: state.breakPoint });
+        // Bez fokusu do textarey zámerne: na mobile by vyskočila klávesnica a
+        // prekryla by tlačidlo aj slovo „nepovinné". Kto chce písať, klikne sám.
+        pane.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+  });
+
   const messageBox = document.getElementById('message');
   if (messageBox) {
     messageBox.addEventListener('input', () => {
@@ -816,7 +875,15 @@ async function submitCallback(meta, getWindow, getMode) {
   const btn = document.getElementById(writing ? 'cbSubmit' : 'callSubmit');
   const input = document.getElementById(writing ? 'message' : 'phone');
   const phone = writing ? '' : document.getElementById('phone').value.trim();
-  const message = writing ? document.getElementById('message').value.trim() : '';
+  // Veta je NEPOVINNÁ — stačí ťuknutie. Správa sa skladá tak, aby Ján z notifikácie
+  // videl to podstatné aj vtedy, keď človek nedopísal nič. Backend navyše vyžaduje
+  // neprázdnu správu (CHECK v `quiz_calls`: riadok musí mať telefón alebo správu),
+  // takže prázdny text sa sem nesmie dostať.
+  const extra = writing ? document.getElementById('message').value.trim() : '';
+  const bp = BREAK_POINTS.find((b) => b.value === state.breakPoint);
+  const message = writing
+    ? [bp ? `Praská mi to ${bp.phrase}.` : '', extra].filter(Boolean).join('\n\n')
+    : '';
 
   if (!writing && phone.replace(/\D/g, '').length < 9) {
     err.textContent = 'Skontroluj, prosím, číslo — nevyzerá kompletné.';
@@ -824,10 +891,13 @@ async function submitCallback(meta, getWindow, getMode) {
     input.focus();
     return;
   }
+  // Poistka: tlačidlo je skryté, kým sa neťukne, takže sem sa dá dostať len
+  // okrajovo. Chyba preto smeruje na ťuknutie, nie do textového poľa.
   if (writing && message.length < 2) {
-    err.textContent = 'Napíš mi aspoň pár slov — nemusí to byť dlhé.';
+    err.textContent = 'Ťukni, prosím, na to, kedy ti to najčastejšie praskne.';
     err.classList.add('show');
-    input.focus();
+    document.getElementById('breakRow')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.querySelector('.break-chip')?.focus();
     return;
   }
   err.classList.remove('show');
@@ -888,7 +958,10 @@ async function submitCallback(meta, getWindow, getMode) {
       <div class="callback-done">
         <h4>✓ Mám to, ${state.name}</h4>
         ${writing
-          ? `<p>Pozriem sa na tvoje čísla aj na to, čo si ${gg('{napisala}')}, a odpoviem ti osobne najneskôr zajtra na <strong>${state.email}</strong>. Nemusíš nikam volať ani si vyberať termín.</p>`
+          // Kto len ťukol a nič nedopísal, ten NIČ NENAPÍSAL — potvrdenie mu to
+          // nesmie tvrdiť. Rozlíšenie stojí jednu podmienku a je to presne ten
+          // typ drobnosti, na ktorej sa dôvera buď drží, alebo stráca.
+          ? `<p>Pozriem sa na tvoje čísla aj na to, ${extra ? `čo si ${gg('{napisala}')}` : `kedy ti to praská`}, a odpoviem ti osobne najneskôr zajtra na <strong>${state.email}</strong>. Nemusíš nikam volať ani si vyberať termín.</p>`
           : `<p>Ozvem sa ti na <strong>${phone}</strong>${payload.preferredTime ? ` — <strong>${payload.preferredTime.toLowerCase()}</strong>` : ' čo najskôr'}. Ak by ti to nevyhovovalo, napíš mi na <a href="mailto:${CONFIG.CONTACT_EMAIL}">${CONFIG.CONTACT_EMAIL}</a>.</p>`}
       </div>`;
   } catch (e) {
