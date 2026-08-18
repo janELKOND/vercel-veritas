@@ -158,6 +158,53 @@ Funkcia je podľa vlastného komentára jednorazová; po dobehnutí testu ju aj 
 
 ---
 
+## 📨 18. 8. 2026 — kohorta C (reaktivácia): 11 ľudí, čo ťuklo a neodoslalo
+
+**Odoslané 18. 8. cez `sendOneReply`, kľúč `tuklo_neodoslalo_2026_08_18`.**
+
+⚠️ **TRETIA kohorta. Nemiešať s A ani B.** Títo ľudia **nič nenapísali** — oslovenie
+je studené, preto má **odhlasovaciu pätičku** (`unsubscribe: true`), na rozdiel
+od kohort A a B.
+
+| | |
+|---|---|
+| Ťuklo a neodoslalo | 12 |
+| **Odhlásená — NEOSLOVENÁ** | **1** |
+| **Reálne odoslané** | **11** |
+
+⛔ Jedna žena má `unsubscribed = true`. **Vynechaná zámerne** — odhlásenie platí
+aj pre osobné oslovenie.
+
+### Ako sa písala otázka, keď nevieme, čo ťukli
+
+`breakPoint` sa do databázy neukladá, takže ktorú zo štyroch odpovedí ťukli, sa
+dohľadať nedá. Otázka preto vychádza z **označenej prekážky** (`segment`), ktorá
+v databáze je:
+
+| Segment | Otázka |
+|---|---|
+| `vecerne-chute` | Je to večer skôr hlad, únava, alebo zvyk? |
+| `nevydrzim` | Po čom to praskne — po pár dňoch, alebo po pár týždňoch? |
+| `potrebujem-podporu` | Čo chýba najviac — plán, kontrola, alebo niekto, kto sa spýta? |
+| `nemam-cas` | Kde chýba čas — pri nákupe, varení, alebo plánovaní? |
+| `co-jest` | Ktoré jedlo dňa je najťažšie? |
+
+Detail v úvode sú **jej vlastné čísla z analýzy** (kcal + bielkoviny). Cieľová váha
+sa zámerne nespomína — jeden z oslovených má cieľ, ktorý je pod zdravým rozpätím,
+a text by ho nemal potvrdzovať.
+
+Každá otázka je zodpovedateľná jedným slovom a končí „alebo je to inak".
+
+### Meranie
+
+Títo ľudia **nemajú riadok v `quiz_calls`** a zakladať im ho netreba — odpoveď príde
+e-mailom. Sleduje sa cez `email_logs` (kľúč vyššie) a cez to, či niektorá odpíše.
+
+⚠️ **Ich odpovede sa nesmú počítať do testu dvojkroku.** Iný formát, iná teplota
+kontaktu, iná otázka.
+
+---
+
 ## 🔧 18. 8. 2026 — OPRAVA: tlačidlo po ťuknutí ostávalo mimo obrazovky
 
 **NASADENÉ 18. 8. 2026.** Overené volaním: `sw.js` **v31**, `analyza/app.js?v=9`,
