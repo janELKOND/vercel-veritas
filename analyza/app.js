@@ -634,11 +634,12 @@ function showResult(plan) {
           ${BREAK_POINTS.map((b) => `<button type="button" class="break-chip" aria-pressed="false" data-break="${b.value}">${b.label}</button>`).join('')}
         </div>
         <div id="askPane" hidden>
-          <label class="ask-optional" for="message">Chceš k tomu doplniť vetu? <span>(nepovinné)</span></label>
-          <textarea id="message" rows="3" placeholder="${placeholder}"></textarea>
-          <p class="callback-note callback-promise">Bez telefonátu, zadarmo. Odpoviem na e-mail, ktorý si ${g('zadala', 'zadal')} vyššie.</p>
+          <p class="ask-echo" id="askEcho"></p>
           <div class="error-msg" id="cbErr" role="alert" aria-live="polite"></div>
           <button type="button" class="btn" id="cbSubmit">Chcem Jánovu osobnú odpoveď</button>
+          <p class="callback-note callback-promise">Bez telefonátu, zadarmo. Odpoviem na e-mail, ktorý si ${g('zadala', 'zadal')} vyššie.</p>
+          <label class="ask-optional" for="message">Chceš k tomu doplniť vetu? <span>(nepovinné)</span></label>
+          <textarea id="message" rows="3" placeholder="${placeholder}"></textarea>
         </div>
       </div>`;
 
@@ -813,6 +814,14 @@ function showResult(plan) {
         c.classList.toggle('active', on);
         c.setAttribute('aria-pressed', String(on));
       });
+      // Ozvena ťuknutia. Ukázať DOSLOVA to, čo sa odošle, je zároveň potvrdenie,
+      // že ťuknutie sa počíta, aj informácia, že odoslanie ešte len príde.
+      // Prepisuje sa pri KAŽDOM ťuknutí, nielen pri prvom — inak by po zmene
+      // voľby ukazovala starú vetu.
+      const bp = BREAK_POINTS.find((b) => b.value === state.breakPoint);
+      const echo = document.getElementById('askEcho');
+      if (echo && bp) echo.innerHTML = 'Odošle sa: <strong>Praská mi to ' + bp.phrase + '.</strong>';
+
       const pane = document.getElementById('askPane');
       if (pane && pane.hidden) {
         pane.hidden = false;
@@ -820,7 +829,24 @@ function showResult(plan) {
         trackAd('BreakPointSelected', { ...meta, breakPoint: state.breakPoint });
         // Bez fokusu do textarey zámerne: na mobile by vyskočila klávesnica a
         // prekryla by tlačidlo aj slovo „nepovinné". Kto chce písať, klikne sám.
-        pane.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        //
+        // ⚠️ Scrolluje sa na TLAČIDLO, nie na začiatok panelu. S block:'nearest'
+        // ostávalo tlačidlo pod okrajom obrazovky a 12 z 25 ľudí ťuklo a neodoslalo
+        // (zistené 18. 8. 2026). Cieľom pohľadu musí byť ďalší krok, nie pole.
+        const cielScroll = document.getElementById('cbSubmit');
+        if (cielScroll) {
+          cielScroll.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Poistka: plynulý scroll v časti prehliadačov ticho nespraví NIČ
+          // (overené 18. 8. 2026 — scrollY ostal na nule, skok bez animácie
+          // fungoval). Keď sa tlačidlo do 400 ms nedostane do zorného poľa,
+          // doskrolluj natvrdo. Vidieť ďalší krok je dôležitejšie než plynulosť.
+          setTimeout(() => {
+            const r = cielScroll.getBoundingClientRect();
+            if (r.top < 0 || r.bottom > window.innerHeight) {
+              cielScroll.scrollIntoView({ block: 'center' });
+            }
+          }, 400);
+        }
       }
     });
   });

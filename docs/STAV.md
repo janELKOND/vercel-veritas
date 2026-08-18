@@ -158,6 +158,66 @@ Funkcia je podľa vlastného komentára jednorazová; po dobehnutí testu ju aj 
 
 ---
 
+## 🔧 18. 8. 2026 — OPRAVA: tlačidlo po ťuknutí ostávalo mimo obrazovky
+
+**NASADENÉ 18. 8. 2026.** Overené volaním: `sw.js` **v31**, `analyza/app.js?v=9`,
+`analyza.css?v=5`, a živý `app.js` sa **hashom zhoduje s lokálnym** (`453dd460c998d3d1`).
+
+Rieši nález o 12 ľuďoch, ktorí ťukli a neodoslali (sekcia vyššie).
+
+### Čo bolo zle — DVE veci, nie jedna
+
+**1. Poradie v paneli.** Po ťuknutí sa ako prvé odhalilo **prázdne textové pole**
+a tlačidlo bolo až pod ním a pod poznámkou. Layout tým hovoril „teraz píš", hoci
+veta je nepovinná.
+
+**2. `scrollIntoView` s `behavior: 'smooth'` ticho nespravil NIČ.** Overené v teste
+18. 8.: `scrollY` ostal na nule, ten istý príkaz bez animácie posunul stránku okamžite.
+Pôvodný kód používal `smooth` presne takto.
+
+⚠️ **Nie je overené, či smooth scroll zlyháva aj v prehliadačoch reálnych ľudí** — na to
+by bolo treba ich zariadenia. Ak áno, je to veľmi dobrý kandidát na vysvetlenie tých 12:
+ťukli, panel sa otvoril **mimo obrazovky** a nemali ako vedieť, že tam dole niečo je.
+
+### Čo sa zmenilo
+
+| # | Zmena |
+|---|---|
+| 1 | **Poradie v `askPane`:** ozvena → chyba → **tlačidlo** → prísľub → nepovinná veta → textarea |
+| 2 | **Ozvena ťuknutia** (`#askEcho`): ukáže doslova `Odošle sa: Praská mi to večer doma.` |
+| 3 | **Scroll mieri na `#cbSubmit`**, nie na začiatok panelu |
+| 4 | **Poistka:** ak sa tlačidlo do 400 ms nedostane do zorného poľa, doskroluje sa **bez animácie** |
+
+Ozvena robí dve veci naraz: potvrdí, že ťuknutie sa počíta, a zároveň povie, že
+odoslanie ešte len príde. **Prepisuje sa pri KAŽDOM ťuknutí**, nielen pri prvom —
+inak by po zmene voľby ukazovala starú vetu.
+
+### Namerané (mobil 375 × 812, lokálne)
+
+| | Pred | Po |
+|---|---|---|
+| Pozícia `#cbSubmit` po ťuknutí | **2205 px** (mimo okna) | **371 px** |
+| Tlačidlo v zornom poli | ❌ | ✅ |
+| Celý panel v zornom poli | ❌ | ✅ |
+
+### Otestované
+
+Ozvena pri všetkých štyroch voľbách aj po zmene voľby; odoslanie **bez písania**
+(`Praská mi to večer doma.`); odoslanie **s vetou** (ťuknutie + prázdny riadok + veta);
+`typ`, `selectedPath`, `quizVersion` v payloade nedotknuté. `fbq` aj `fetch` stubnuté —
+**v databáze nepribudol ani jeden testovací riadok** (overené: `quiz_calls` = 24 pred aj po).
+
+### Prah
+
+Pred opravou: **13 z 25 odoslalo (52 %)**. Ak sa pri ďalších ~25 ťuknutiach nepohne
+podiel odoslaní nahor, prekážka nebola vo viditeľnosti tlačidla a treba hľadať inde —
+napríklad v tom, čo tlačidlo sľubuje.
+
+Merať ako: `quiz_leads.selected_path = 'written_consult'` oproti počtu riadkov
+v `quiz_calls` za to isté obdobie.
+
+---
+
 ## 🕳️ 18. 8. 2026 — NOVÝ NÁLEZ: 12 ľudí ťuklo a neodoslalo
 
 **Toto je krok lievika, ktorý sa doteraz nemeral.**

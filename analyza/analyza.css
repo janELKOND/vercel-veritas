@@ -185,6 +185,18 @@
 
 /* „(nepovinné)" musí byť vidieť skôr než pole — inak sa z doplnkovej vety stane
    pocit povinnosti a sme späť pri prázdnom poli, ktoré nikto nevyplní. */
+/* Ozvena ťuknutia. Bez nej bolo prvé, čo človek po ťuknutí uvidel, prázdne
+   textové pole — a časť ľudí to čítala tak, že už odpovedali. */
+.ask-echo {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--berry-tint);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
 .ask-optional {
   display: block;
   margin: 20px 0 6px;
