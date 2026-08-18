@@ -124,6 +124,80 @@ tá chyba s dvojitým mailom (9. 8. ju dostalo 90 ľudí).
 
 ---
 
+## 🧪 18. 8. 2026 — kohorta B: prvý ČISTÝ test dvojkroku
+
+**Odoslané 18. 8. 18:24 UTC (20:24 u nás), 6 e-mailov cez `sendOneReply`.**
+Zapísané v `email_logs` pod kľúčom `dvojkrok_2026_08_18`.
+
+Toto je prvá dávka, ktorá dostala **všetky tri prvky** — detail z jej vlastných slov,
+otázku na jedno slovo aj „alebo je to inak".
+
+### ⚠️ V hre sú DVE kohorty. Nesčítavať ich.
+
+`quiz_calls` má odteraz 11 riadkov `awaiting_reply`, ale nie je to jedno číslo:
+
+| Kohorta | Počet | Formát | Oslovené | Dozreje | Rozlíšiš podľa |
+|---|---|---|---|---|---|
+| **A** | 5 | 2 z 3 prvkov (chýba „alebo je to inak") | 17. 8. 14:09 a 14:39 | **20. 8. ~16:09** | žiadny záznam v `email_logs` |
+| **B** | 6 | **3 z 3 prvkov** | 18. 8. 18:24 | **21. 8. ~20:24** | `automation_key = dvojkrok_2026_08_18` |
+
+**Kohorta B je referenčná.** Kohorta A testovala neúplnú verziu a jej výsledok
+nehovorí o dvojkroku ako celku.
+
+Odhlasovacia pätička zámerne **nie je** — obe kohorty napísali ako prvé, takže
+odpoveď na ich vlastnú správu nie je marketing.
+
+### Nový `REPLY_SECRET`
+
+Starý sa nedal prečítať (Supabase ukazuje len hash), preto bol 18. 8. **nastavený nový**.
+Používa ho jediný súbor v repe — `sendOneReply/index.ts` — takže rotácia nič nerozbila.
+Funkcia je podľa vlastného komentára jednorazová; po dobehnutí testu ju aj so secretom zmazať.
+
+⚠️ **Brána Supabase odmietne požiadavku ešte pred spustením funkcie, ak chýba hlavička
+`Authorization`.** Samotný `apikey` nestačí — `x-reply-secret` sa vtedy vôbec nevyhodnotí.
+
+---
+
+## 🕳️ 18. 8. 2026 — NOVÝ NÁLEZ: 12 ľudí ťuklo a neodoslalo
+
+**Toto je krok lievika, ktorý sa doteraz nemeral.**
+
+`quiz_leads.selected_path = 'written_consult'` sa zapisuje v momente, keď človek
+**ťukne na jednu zo štyroch odpovedí** (alebo začne písať, alebo otvorí telefónny
+formulár) — overené v `analyza/app.js:819,831,851`. **Neznamená to odoslanie.**
+
+| Krok | Počet |
+|---|---|
+| Ťuklo na odpoveď (`written_consult`) | **25** |
+| Z toho reálne odoslalo (riadok v `quiz_calls`) | **13** (52 %) |
+| **Ťuklo a neodoslalo** | **12** (48 %) |
+
+Jedenásť z tých dvanástich ťuklo **17.–18. 8.**, teda už po nasadení klikacích odpovedí.
+Zmena teda zdvihla objem úmyslu, ale **posledný klik na odoslanie stále chýba zhruba
+polovici ľudí**.
+
+**Hypotéza (NEOVERENÁ):** po ťuknutí sa chip zvýrazní a otvorí sa panel s poľom
+a tlačidlom. Časť ľudí môže mať pocit, že ťuknutím už odpovedali, a ďalší krok
+nespraví. Sedí to s tým, že veta je nepovinná — ale tlačidlo nie.
+
+⚠️ **Čo o nich NEVIEME:** ktorú z odpovedí ťukli. `recordPath` posiela do databázy
+len `selectedPath`; hodnota `breakPoint` ide iba na pixel a per-osobu sa nedá dohľadať.
+Osobný detail pre nich preto musí vychádzať z ich analýzy, nie z ich slov.
+
+⚠️ **Nemiešať ich do testu dvojkroku.** Nič nenapísali, takže oslovenie by bolo
+studené — a pri studenom oslovení je odhlasovacia pätička **povinná** (sľub
+z e-mailovej steny, `sendOneReply` má na to parameter `unsubscribe: true`).
+
+⚠️ Nie sú bez kontaktu — mostová séria im beží normálne.
+
+### Druhá cesta: 19 ľudí kliklo na Valyru
+
+`selected_path = 'valyra'` má 19 ľudí a **ani jeden nemá riadok v `quiz_calls`** —
+to je očakávané, tá cesta žiadnu žiadosť nezakladá. Appka ale nie je platobná cesta,
+takže títo ľudia dnes nemajú kam dôjsť. Zatiaľ neriešené.
+
+---
+
 ## 📐 17. 8. 2026 — opravy čísel po celolievikovej analýze
 
 Prepočítané z živých dát (PostgREST so stránkovaním) a Ads API. **Toto prepisuje
