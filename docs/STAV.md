@@ -20,7 +20,7 @@
 | 5 | **Ťukne** na jednu zo štyroch odpovedí | 25 ľudí | „12 ľudí ťuklo a neodoslalo" |
 | 6 | **Odošle** → riadok v `quiz_calls` + pixel `Lead` | 13 z 25 · **52 %** | tamtiež |
 | 7 | Ján odpíše **ručne** — dvojkrok, prvá správa nepredáva | kohorty A/B/C | „TEST: písomný dvojkrok" |
-| 8 | Ona odpovie → **cena** → platba vopred → program | **zatiaľ 0×** | sekcia „Ponuka a cena" nižšie |
+| 8 | Ona odpovie → **cena** → platba vopred → program | **prvýkrát 19. 8. — 12 ľuďom** | sekcia „Ponuka a cena" nižšie |
 
 **Spolu za obdobie:** 64,01 € minutých, **18 žiadostí o kontakt**, z toho **15 písomných**
 a **0 rezervácií v kalendári**. Kampaň na kvíz minula pred zastavením ďalších 72,96 € →
@@ -68,9 +68,55 @@ Pravidlo: **cena patrí do mailu, ktorý je odpoveďou na niečo, čo ten člove
 
 ### Jediné číslo, ktoré rozhoduje
 
-**0 € tržieb za celý čas kampane.** Krok 8 je jediný, ktorý sa **nikdy netestoval** —
-cena nebola do 19. 8. poslaná ani jednému človeku. Kým sa to nestane, žiadne číslo
-vyššie v lieviku nepovie, či to celé funguje.
+**0 € tržieb za celý čas kampane.** Krok 8 sa **prvýkrát stal 19. 8. 2026** — cena
+odišla 12 ľuďom (kľúč `ponuka_150_2026_08_19` v `email_logs`). Do vtedy nebola
+poslaná ani jednému. Kým z toho nepríde platba, žiadne číslo vyššie v lieviku
+nepovie, či to celé funguje.
+
+⚠️ **Prahy stanovené vopred, aby sa výsledok nečítal zle:** 1 predaj z 12 = ponuka má
+život. 0 z 12 **nie je dôkaz zlyhania** — pri týchto počtoch je nula zlučiteľná aj
+s fungujúcou ponukou. Rozhodovať až okolo 30 oslovených, a vtedy riešiť ponuku
+a rozhovor, nie booking a maily.
+
+---
+
+## 🚨 19. 8. 2026 — systém tvrdil ľuďom niečo, čo nepovedali
+
+**Nájdené pri odosielaní ponuky, opravené a nasadené v ten istý deň**
+(`quizLead` **v43**, `quizBridge` **v34**, repo `valyra`).
+
+`qualifyLead` malo `explicitAsk = wantsGuidance`, čím zlepilo odpovede na **dve rôzne
+otázky**:
+
+| Odpoveď | Otázka | Čo naozaj znamená |
+|---|---|---|
+| `readiness = 'podpora'` | „Ako to chceš dotiahnuť?" | človek si vedenie **vypýtal** |
+| brzda `potrebujem-podporu` | „Čo ťa brzdí najviac?" | človek **pomenoval prekážku**, o nič nepožiadal |
+
+**Dopad bol väčší, než sa zdá, lebo `/analyza` sa na pripravenosť nepýta** (v5 tú otázku
+zrušila) — takže na hlavnom zdroji leadov padala **výhradne tá nepravdivá vetva**:
+
+- notifikácia Jánovi tvrdila *„sám/sama si vypýtal(a), aby si sa mu/jej na tie čísla
+  pozrel osobne"* — pri **99 leadoch**
+- mostový e-mail tvrdil **priamo človeku** *„Napísala si, že chceš, aby ťa niekto
+  viedol"* — reálne to dostalo **98 ľudí**, ktorí to nikdy nenapísali
+
+⚠️ **Stojí za zváženie, či to nie je časť dôvodu, prečo je v sérii 63 % klikov
+odhlásenie.** Povedať človeku, že napísal niečo, čo nenapísal, znie presne ako automat,
+ktorý si o ňom niečo domyslel. Nedá sa to dokázať, ale sedí to.
+
+**Oprava rozdeľuje tvrdenie, nie triedenie.** `explicitAsk` je odteraz len skutočná
+žiadosť; pribudlo `namedSupportAsBlocker` s vlastným predmetom aj vlastným textom
+(*„Ako hlavnú brzdu si označila, že ti chýba podpora a vedenie"*) — rovnaký ťah,
+rovnaká ponuka, pravdivé tvrdenie.
+
+⚠️ **`worthCalling` a `tier` sa zámerne NEMENILI.** Ozvať sa tým ľuďom sa oplatí
+rovnako ako predtým; chybné bolo len to, čo o nich text tvrdil. Zúženie tieringu by
+navyše rozbilo porovnateľnosť s doterajšími dátami uprostred bežiaceho testu kohort.
+
+**Poučenie:** ten kód mal priamo nad sebou komentár, ktorý pred touto zámenou varuje
+(*„POZOR na rozdiel medzi tým, čo si lead VYŽIADAL, a tým, čo z jeho SPRÁVANIA len
+ODVODZUJEME"*) — a nasledujúci riadok ten rozdiel zmazal. **Komentár nie je poistka.**
 
 ---
 
