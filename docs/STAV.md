@@ -13,7 +13,7 @@
 
 | # | Krok | Číslo | Kde je detail |
 |---|---|---|---|
-| 1 | FB reklama „Analýza" (optimalizácia na `CompleteRegistration`) | **1 €/deň** od 13. 8. — zámerne stlmené | „reklama zámerne stlmená" |
+| 1 | FB reklama „Analýza" (optimalizácia na `CompleteRegistration`) | rozpočet **3 €/deň, od 16. 8. sa míňa celý** | „oprava: útlm rozpočtu skončil" |
 | 2 | Klik → zobrazená stránka `/analyza` | 1 783 → 1 247 · **69,9 %** | „opravy čísel" |
 | 3 | Vyplní analýzu → **e-mailová stena** | → 520 · **41,7 %** = lead | tamtiež |
 | 4 | Výsledok: jej čísla + dve cesty (kontakt / Valyra) | — | „Kontakt na výsledku — DVE CESTY" |
@@ -105,6 +105,33 @@ rezervácia, dáta z rôznych `quizVersion` sa nedajú férovo porovnávať, a *
 vybavovanie kontaktov je úzke miesto**. Plus to, čo analýza prehliadla: **63 % klikov
 v e-mailoch je odhlásenie**, ručné maily z Gmailu sa nikde nezaznamenávajú, a **19 ľudí
 kliklo na Valyru a nemá kam dôjsť**.
+
+---
+
+## 📐 18. 8. 2026 — oprava: útlm rozpočtu skončil
+
+Overené z Ads API 18. 8. **Tvrdenie „stlmené na 1 €/deň (13. – 17. 8.)" bolo
+nepravdivé** a opravené na dvoch miestach nižšie (sekcia „Krok klik → zobrazená
+stránka" a sekcia „13. 8. 2026 — reklama zámerne stlmená").
+
+| Deň | 12. 8. | 13. 8. | 14. 8. | 15. 8. | 16. 8. | 17. 8. |
+|---|---|---|---|---|---|---|
+| Minuté | 1,11 € | 1,58 € | 2,81 € | 2,90 € | **3,66 €** | **3,44 €** |
+
+Útlm trval **len 12. – 13. 8.** Rozpočet je 3 €/deň a **od 16. 8. sa míňa celý.**
+
+**Čo to mení:**
+
+- Podmienka „porovnanie s kohortou B začne, až keď sa rozpočet vráti hore" je
+  **splnená od 16. 8.** Premávka na meranie v5 už existuje.
+- Záver „klik → zobrazenie je stabilný" **platí ďalej** a je teraz silnejší —
+  krok drží pri nízkom aj plnom výdaji.
+- Nezrovnalosť „nastavené 3 €, míňa sa ~1,5 €" zo 14. 8. je **vybavená**;
+  doručovanie sa rozbehlo samo, nebola to porucha.
+
+⚠️ **Do kampane vstúpili 18. 8. dve zmeny** (vypnutá jedna kreatíva, druhá
+presunutá do vlastného ad setu). Sú zapísané v privátnom repe `lievik`,
+`docs/KONZULTACIE.md` sekcia 7 — pri vyhodnocovaní v5 s nimi treba počítať.
 
 ---
 
@@ -446,11 +473,24 @@ Kampaň „Analýza", 31. 7. – 17. 8., deň po dni:
 | Obdobie | Klik → zobrazenie | Klikov |
 |---|---|---|
 | plný rozpočet (31. 7. – 12. 8.) | 69,6 % | 1 511 |
-| stlmené na 1 €/deň (13. – 17. 8.) | **72,1 %** | 272 |
+| nižší výdaj a návrat hore (13. – 17. 8.) | **72,1 %** | 272 |
 
-Útlm rozpočtu tento krok **nezhoršil**. ~30 % strata je bežná hranica merateľnosti
+Nižší výdaj tento krok **nezhoršil**. ~30 % strata je bežná hranica merateľnosti
 pixelom (mobil, pomalé pripojenie, zavretie pred dokreslením), nie chyba stránky.
 **Neinvestovať sem** — zvyšovalo by to objem, a objem dnes nie je limit.
+
+⚠️ **OPRAVA 18. 8.:** druhý riadok bol pôvodne označený ako „stlmené na 1 €/deň
+(13. – 17. 8.)". **Tak to nebolo.** Útlm reálne trval len 12. – 13. 8.; potom sa
+výdaj vrátil hore a od 16. 8. sa míňa celý nastavený rozpočet 3 €/deň:
+
+| Deň | 12. 8. | 13. 8. | 14. 8. | 15. 8. | 16. 8. | 17. 8. |
+|---|---|---|---|---|---|---|
+| Minuté | 1,11 € | 1,58 € | 2,81 € | 2,90 € | **3,66 €** | **3,44 €** |
+
+Záver sekcie sa tým **nemení** — krok „klik → zobrazenie" je stabilný pri nízkom
+aj plnom výdaji, čo je dokonca silnejší dôkaz než pôvodné tvrdenie. Mení sa dôvod:
+nie je to porovnanie „plný vs stlmený rozpočet", ale porovnanie dvoch období,
+z ktorých druhé rozpočet postupne získavalo späť.
 
 Celý lievik za obdobie, **64,01 €** minutých:
 
@@ -625,6 +665,15 @@ stíhajú vybavovať: v5 je na **7,5 % (6 z 80)** oproti 4,7 % vo v3 a 0 % vo v4
 
 
 ## 13. 8. 2026 — reklama zámerne stlmená na 1 €/deň
+
+> ⚠️ **STAV K 18. 8.: ÚTLM SKONČIL — táto sekcia je historický zápis.**
+> Rozpočet je nastavený na **3 €/deň a od 16. 8. sa míňa celý** (16. 8. → 3,66 €,
+> 17. 8. → 3,44 €). Nezrovnalosť „nastavené 3 €, míňa sa ~1,5 €", ktorú si všimol
+> zápis zo 14. 8., sa vyriešila sama — doručovanie sa rozbehlo. Nižšie uvedený
+> priebeh 9. – 13. 8. platí ako záznam, **nie ako popis dnešného stavu.**
+>
+> Dôsledok: podmienka „porovnanie s kohortou B začne, až keď sa rozpočet vráti
+> hore" je **splnená od 16. 8.** Premávka na meranie v5 už je.
 
 **Nie je to porucha.** Ján znížil denný rozpočet na 1 € — dôvod bol, že lievik
 za 50 € nepriniesol platiaceho klienta. Doručovanie teda kleslo podľa očakávania
