@@ -3,10 +3,15 @@
 Lead-gen PWA nasadená na Verceli. Zbiera odpovede, zaradí človeka do segmentu,
 vypýta e-mail a na výsledku ponúkne kontakt (telefón **alebo** správa).
 
-⚠️ **Cieľom lievika nie je registrácia do appky.** Predáva sa **8-týždňová platená
-spolupráca cez hovor alebo písomnú konzultáciu**; Valyra je nástroj v nej, nie
-samostatný produkt (pivot 24. 7. 2026). Staršie dokumenty merajú lievik cez
-registrácie a trialy — to je opustený model.
+⚠️ **Cieľom lievika nie je registrácia do appky.** Predáva sa **dvojmesačné platené
+vedenie (60 dní, 150 €) cez hovor alebo písomnú konzultáciu**; Valyra je nástroj v ňom,
+nie samostatný produkt (pivot 24. 7. 2026). Staršie dokumenty merajú lievik cez
+registrácie a trialy — to je opustený model, a staršie rámovanie „8 týždňov" nahradilo
+rozhodnutie z 19. 8. 2026.
+
+👉 **Celý lievik od reklamy po platbu je popísaný v jednej sekcii:
+[`docs/STAV.md`](docs/STAV.md) → „🧭 LIEVIK DNES" (úplne hore).** Začni tam — zvyšok
+`STAV.md` je denník podľa dátumu, dobrý na „prečo", zlý na „ako to vyzerá teraz".
 
 ## Súbory
 
@@ -40,13 +45,29 @@ funkcia beží stará). Príkazy na overenie nasadenia sú v `STAV.md` a v skill
 
 ## Kde sme skončili
 
-Napíš **„skontroluj si a pokračuj"** (alebo `/stav`, „kukni do githubu") a spustí sa
-skill [`.claude/skills/stav`](.claude/skills/stav/SKILL.md): načíta
-[`docs/STAV.md`](docs/STAV.md), **overí volaním**, čo je reálne nasadené (stránka aj
-Supabase funkcia), pozrie otvorené PR v oboch repách a povie ďalší krok.
+Napíš **„skontroluj si a pokračuj"** (alebo „aký je stav", „kukni do githubu")
+a spustí sa skill **`lievik`**: nájde všetky repá, spraví `git pull`, **overí
+volaním**, čo je reálne nasadené, a povie ďalší krok z otvoreného zoznamu úloh.
 
-**Projekt je v dvoch repách:** `vercel-veritas` (kvíz, verejné) a `valyra` vetva
-`supabase-migration` (funkcia `quizLead` — príjem leadu, e-maily, notifikácie).
+> ⚠️ **Projektový skill `stav` bol 19. 8. 2026 zmazaný** — robil to isté ako `lievik`,
+> len horšie (fungoval iba vnútri tohto priečinka a volal `gh`, ktoré na PC#1 nie je
+> nainštalované). Dva skilly s rovnakými spúšťačmi znamenali, že sa nedalo predvídať,
+> ktorý sa spustí. História je v gite.
+
+**Tento systém žije v TROCH repách:**
+
+| Repo | Čo | Kde na PC#1 |
+|---|---|---|
+| `janELKOND/lievik` (privátne) | **stratégia** — ponuka, cena, čísla, otvorené úlohy | `~/lievik` |
+| `janELKOND/vercel-veritas` (**verejné**) | toto repo — kvíz, analýza, výsledok | `~/Projects/pravda-kviz` |
+| `janELKOND/valyra` @ `supabase-migration` | `quizLead`, e-maily, DB | `~/valyra` |
+
+⚠️ **Priečinok sa volá inak než repo** (`pravda-kviz` ≠ `vercel-veritas`) — repá hľadaj
+podľa `git remote`, nie podľa mena priečinka, inak si naklonuješ duplikát.
+
+⚠️ **Ponuka, cena a peniaze patria do `lievik` (privátne), nie sem.** Sem patrí len
+zmena textu na stránke. Cena je rozhodnutá v `lievik/docs/PONUKA.md`, sekcia 0.
+
 Ján pracuje na dvoch počítačoch, takže najprv `git pull`.
 
 ## Na čo si dať pozor

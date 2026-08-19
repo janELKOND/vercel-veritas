@@ -1,5 +1,79 @@
 # STAV — kde sme skončili
 
+## 🧭 LIEVIK DNES — celá cesta na jednej obrazovke (stav k 19. 8. 2026)
+
+> **Toto je jediné miesto, kde je lievik popísaný ako celok.** Zvyšok dokumentu je
+> denník zoradený podľa dátumu — dobrý na otázku „prečo", zlý na otázku „ako to
+> vyzerá teraz".
+>
+> ⚠️ **Pri každej zmene lievika oprav najprv túto sekciu**, až potom píš nový záznam
+> nižšie. Ak sa rozídu, platí to, čo je overené volaním — a táto sekcia sa opraví.
+
+### Cesta človeka — od reklamy po platbu
+
+| # | Krok | Číslo | Kde je detail |
+|---|---|---|---|
+| 1 | FB reklama „Analýza" (optimalizácia na `CompleteRegistration`) | **1 €/deň** od 13. 8. — zámerne stlmené | „reklama zámerne stlmená" |
+| 2 | Klik → zobrazená stránka `/analyza` | 1 783 → 1 247 · **69,9 %** | „opravy čísel" |
+| 3 | Vyplní analýzu → **e-mailová stena** | → 520 · **41,7 %** = lead | tamtiež |
+| 4 | Výsledok: jej čísla + dve cesty (kontakt / Valyra) | — | „Kontakt na výsledku — DVE CESTY" |
+| 5 | **Ťukne** na jednu zo štyroch odpovedí | 25 ľudí | „12 ľudí ťuklo a neodoslalo" |
+| 6 | **Odošle** → riadok v `quiz_calls` + pixel `Lead` | 13 z 25 · **52 %** | tamtiež |
+| 7 | Ján odpíše **ručne** — dvojkrok, prvá správa nepredáva | kohorty A/B/C | „TEST: písomný dvojkrok" |
+| 8 | Ona odpovie → **cena** → platba vopred → program | **zatiaľ 0×** | sekcia „Ponuka a cena" nižšie |
+
+**Spolu za obdobie:** 64,01 € minutých, **18 žiadostí o kontakt**, z toho **15 písomných**
+a **0 rezervácií v kalendári**. Kampaň na kvíz minula pred zastavením ďalších 72,96 € →
+232 leadov a **0 kontaktov** — preto beží reklama len na `/analyza`.
+
+### Čo beží automaticky popri tom
+
+**Mostová séria** (`bridge_0` hneď po leade, cron `quizBridge` deň 1/3/5/7, + 10 a 14).
+Za obdobie **3 374 odoslaných**, doručenosť v poriadku (bounce 2,0 %).
+⚠️ **63 % všetkých klikov v tých mailoch je odhlásenie** (38 zo 60). Sledovanie otvorení
+je preukázateľne vypnuté, takže o sérii sa dá súdiť len z klikov a odpovedí.
+
+### Ponuka a cena — ROZHODNUTÉ 19. 8. 2026
+
+> ⚠️ **Záväzný zdroj je `lievik/docs/PONUKA.md`, sekcia 0** (privátne repo). Tu sú len
+> fakty, ktoré aj tak počuje zákazník. Ekonomika — bod zlomu, strop, hodinovka —
+> patrí do privátneho repa a **do tohto verejného repa sa nekopíruje.**
+> Keď sa cena zmení, mení sa **najprv tam**.
+
+| | |
+|---|---|
+| Čo sa predáva | **dva mesiace vedenia** (60 dní) — nahrádza staršie rámovanie „8 týždňov" |
+| Cena | **150 € za celý program** = 2,50 €/deň |
+| Platba | **celá vopred, pred prvým dňom.** Ústupok 2× 75 € len keď sa človek sám spýta |
+| Kam | Revolut odkaz (primárne) alebo IBAN — **údaje sú mimo repa**, posielajú sa až po „idem" |
+| Kapacita | **5 ľudí mesačne** (`CONFIG.OFFER.SPOTS_PER_MONTH`) — pravdivý limit sólo kouča |
+| Štart | každý začne v pondelok po zaplatení (netlačí to termínom) |
+
+⚠️ **Cena sa nikdy nedáva do prvého studeného oslovenia ani do automatickej série.**
+Pravidlo: **cena patrí do mailu, ktorý je odpoveďou na niečo, čo ten človek spravil.**
+
+| Komu | Cena ide do | Kedy |
+|---|---|---|
+| `readiness = 'podpora'` mimo kohort (~8) — sami napísali „chcem, aby ma niekto viedol" | **1. mailu** | hneď |
+| Kohorty A (5) / B (6) / C (11) — sú uprostred rozhovoru | **2. mailu**, do odpovede | keď odpíšu (A dozrela 20. 8., B 21. 8.) |
+| Zvyšok databázy (~500) a mostová séria | **zatiaľ nikam** | až keď ponuku kúpi prvý človek |
+
+### Čo lievik nemá (vedome)
+
+- **žiadnu platobnú cestu v appke** — 19 ľudí kliklo na Valyru a **nemá kam dôjsť**
+- **žiadny záznam o ručne odoslaných správach** — Gmail sa nikde neloguje
+- **`breakPoint` v databáze** — nevie sa, ktorú odpoveď človek ťukol
+- **sledovanie otvorení e-mailov**
+- **webhook z kalendára** — zámerne: 0 rezervácií, meral by nulu
+
+### Jediné číslo, ktoré rozhoduje
+
+**0 € tržieb za celý čas kampane.** Krok 8 je jediný, ktorý sa **nikdy netestoval** —
+cena nebola do 19. 8. poslaná ani jednému človeku. Kým sa to nestane, žiadne číslo
+vyššie v lieviku nepovie, či to celé funguje.
+
+---
+
 ## 🧹 19. 8. 2026 — zosúladenie dokumentov (nič sa nenasadzovalo)
 
 **Prečo:** analýza lievika z 19. 8. ohlásila šesť „dier". **Tri z nich boli falošné** —
