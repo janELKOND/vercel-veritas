@@ -691,9 +691,9 @@ function showResult(plan) {
   // Ostáva jedna veta bez tlačidla a bez odkazu. Valyra sa tým stáva dôvodom
   // pre spoluprácu namiesto alternatívy k nej.
   //
-  // ⚠️ ČO SEM NESMIE: cena programu (150 €), jeho dĺžka ani obsah. „Čo presne je
-  // v cene" je v PONUKA.md stále otvorené a ponuka sa hovorí v odpovedi človeku,
-  // nie na stránke. Peniaze patria do repa `lievik`, toto je verejné.
+  // ⚠️ ČO SEM NESMIE: cena programu, jeho dĺžka ani obsah. „Čo presne je v cene"
+  // je v `lievik/docs/PONUKA.md` stále otvorené a ponuka sa hovorí v odpovedi
+  // človeku, nie na stránke. Čísla o peniazoch patria do repa `lievik`.
   const valyraLine = `
       <p class="soft-link">Valyra je moja appka na jedálničky a denné kroky. Nastavujem ju na čísla ľuďom, ktorých vediem.</p>`;
 
