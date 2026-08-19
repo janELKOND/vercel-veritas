@@ -4,10 +4,12 @@ Lead-gen PWA nasadená na Verceli. Zbiera odpovede, zaradí človeka do segmentu
 vypýta e-mail a na výsledku ponúkne kontakt (telefón **alebo** správa).
 
 ⚠️ **Cieľom lievika nie je registrácia do appky.** Predáva sa **dvojmesačné platené
-vedenie (60 dní, 150 €) cez hovor alebo písomnú konzultáciu**; Valyra je nástroj v ňom,
+vedenie (60 dní) cez hovor alebo písomnú konzultáciu**; Valyra je nástroj v ňom,
 nie samostatný produkt (pivot 24. 7. 2026). Staršie dokumenty merajú lievik cez
 registrácie a trialy — to je opustený model, a staršie rámovanie „8 týždňov" nahradilo
 rozhodnutie z 19. 8. 2026.
+
+**Cena sem nepatrí** — je v `lievik/docs/PONUKA.md`, sekcia 0. Toto repo je verejné.
 
 👉 **Celý lievik od reklamy po platbu je popísaný v jednej sekcii:
 [`docs/STAV.md`](docs/STAV.md) → „🧭 LIEVIK DNES" (úplne hore).** Začni tam — zvyšok

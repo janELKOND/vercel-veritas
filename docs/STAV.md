@@ -81,11 +81,14 @@ je preukázateľne vypnuté, takže o sérii sa dá súdiť len z klikov a odpov
 | | |
 |---|---|
 | Čo sa predáva | **dva mesiace vedenia** (60 dní) — nahrádza staršie rámovanie „8 týždňov" |
-| Cena | **150 € za celý program** = 2,50 €/deň |
-| Platba | **celá vopred, pred prvým dňom.** Ústupok 2× 75 € len keď sa človek sám spýta |
-| Kam | Revolut odkaz (primárne) alebo IBAN — **údaje sú mimo repa**, posielajú sa až po „idem" |
+| Cena a spôsob platby | **`lievik/docs/PONUKA.md`, sekcia 0** — sem sa nekopíruje |
+| Kam sa platí | Revolut odkaz alebo IBAN — **údaje sú mimo repa**, posielajú sa až po „idem" |
 | Kapacita | **5 ľudí mesačne** (`CONFIG.OFFER.SPOTS_PER_MONTH`) — pravdivý limit sólo kouča |
 | Štart | každý začne v pondelok po zaplatení (netlačí to termínom) |
+
+> Sumy tu **zámerne nie sú**, hoci tu do 19. 8. 2026 boli. Toto repo je verejné
+> a pravidlo dva riadky nad tabuľkou hovorí, že cena sa sem nekopíruje — dokument
+> ho pritom sám porušoval. Keď potrebuješ číslo, otvor `lievik/docs/PONUKA.md`.
 
 ⚠️ **Cena sa nikdy nedáva do prvého studeného oslovenia ani do automatickej série.**
 Pravidlo: **cena patrí do mailu, ktorý je odpoveďou na niečo, čo ten človek spravil.**
