@@ -42,21 +42,17 @@ const CONFIG = {
   // takže sa už nemusí hádať z dátumu.
   FUNNEL_VERSION: 5,
 
-  // Ponuka Valyry pre vetvu `plan`. Všetko na jednom mieste zámerne — cena aj
-  // odkaz sa budú meniť a nemajú byť rozsypané po kóde.
+  // Valyra sa na výsledku len SPOMÍNA, nepredáva sa tu (19. 8. 2026).
   //
-  // FÁZA 1 (teraz): CTA vedie na existujúci onboarding. Údaje sa NEPRENÁŠAJÚ,
-  // človek si ich vo Valyre zadá znova. Preto tu NIE JE napísané „predvyplnené"
-  // ani cena 9 € — checkout za 9 € neexistuje a tlačidlo, ktoré predstiera
-  // funkčný nákup, by bolo klamstvo.
-  // FÁZA 2: sem príde URL checkoutu a prenos údajov cez podpísaný token.
-  VALYRA: {
-    ENABLED: true,
-    URL: 'https://valyra.sk/Onboarding',
-    CTA: 'Otvoriť môj plán vo Valyre',
-    PRICE_LABEL: null, // fáza 2: napr. '9 € jednorazovo'
-    NOTE: 'Otvorí sa aplikácia Valyra. Svoje čísla z tejto analýzy máš aj v e-maile, ktorý ti o chvíľu príde.',
-  },
+  // Do 19. 8. tu bola celá ponuka: URL na self-serve onboarding, tlačidlo,
+  // miesto na cenu. Rozhodnutie z `lievik/docs/PONUKA.md` sekcie 1 hovorí, že
+  // Valyra je nástroj v platenej spolupráci a nie lákadlo — tak tu ostala jedna
+  // veta a nič, na čo sa dá kliknúť.
+  //
+  // `ENABLED` je vypínač tej vety. URL, CTA, cena ani poznámka tu už nie sú;
+  // keby sa Valyra niekedy predávala samostatne, patrí to k rozhodnutiu
+  // v repe `lievik`, nie späť sem ako mŕtvy kód (viď `CONFIG.OFFER`).
+  VALYRA: { ENABLED: true },
 };
 
 // ---------- OTÁZKY ----------
@@ -198,7 +194,6 @@ const state = {
   email: '',
   started: false,
   gateTracked: false,
-  offerViewTracked: false,
   askViewTracked: false,
   callbackSent: false,
 };
@@ -229,20 +224,16 @@ const app = document.getElementById('app');
 const progressTrack = document.getElementById('progressTrack');
 progressTrack.hidden = true; // jedna obrazovka na vstup — ukazovateľ postupu tu nemá čo ukazovať
 
-// Odkaz na Valyru aj s kľúčom na predvyplnenie. UTM ostáva, nech sa dá v appke
-// rozlíšiť, že človek prišiel z analýzy a nie z reklamy na valyra.sk.
-function valyraUrl() {
-  const u = new URL(CONFIG.VALYRA.URL);
-  u.searchParams.set('utm_source', 'analyza');
-  u.searchParams.set('utm_medium', 'funnel');
-  u.searchParams.set('utm_campaign', 'analyza-plan');
-  if (state.leadId) u.searchParams.set('a', state.leadId);
-  return u.toString();
-}
+// `valyraUrl()` tu bola do 19. 8. 2026 — skladala odkaz na self-serve onboarding
+// s UTM a kľúčom na predvyplnenie (`?a=<leadId>`, funkcia `analysisPrefill`).
+// Odišla spolu s tlačidlom: na výsledku sa Valyra už nepredáva. Predvyplnenie
+// v Supabase ostáva funkčné, len ho odtiaľto nikto nevolá — keby sa odkaz mal
+// vrátiť, celý postup je v gite a v `docs/STAV.md` (fáza 2a, 10. 8.).
 
 // Zapíše, ktorú cestu človek REÁLNE použil. Volá sa pri prvom prejave úmyslu —
-// prvé písmeno v poli, klik na Valyru, rozbalenie telefónu — nie pri zobrazení
-// ponuky. Klik ešte nie je dokončená konverzia (tú drží `consult_requested_at`),
+// prvé písmeno v poli alebo rozbalenie telefónu — nie pri zobrazení ponuky.
+// (Do 19. 8. sem patril aj klik na Valyru; tá cesta už neexistuje.)
+// Klik ešte nie je dokončená konverzia (tú drží `consult_requested_at`),
 // ale je to najskorší okamih, kedy vieme, čo si človek vybral.
 //
 // Prvý úmysel vyhráva a NEPREPISUJE sa: kto začne písať a potom si otvorí aj
@@ -684,18 +675,29 @@ function showResult(plan) {
       ${writePane(placeholder)}
       ${callPane}`;
 
-  // Druhá cesta. Kratšia ako vo v4 zámerne — je to alternatíva, nie hlavná ponuka.
-  const valyraBlock = `
-      <div class="offer offer-second" id="offerCard">
-        <div class="offer-eyebrow">Druhá možnosť</div>
-        <h3 class="offer-title">Alebo chceš začať ${g('sama', 'sám')}, hneď teraz?</h3>
-        <p class="offer-lead">Valyra ti podľa tvojich <strong>${plan.target} kcal</strong> a <strong>${plan.protein} g bielkovín</strong> pripraví jedálniček, nákupný zoznam a jednoduché denné kroky.</p>
-        ${CONFIG.VALYRA.PRICE_LABEL ? `<p class="offer-price">${CONFIG.VALYRA.PRICE_LABEL}</p>` : ''}
-      </div>
-      <a class="btn secondary" id="valyraBtn" href="${valyraUrl()}" target="_blank" rel="noopener">${CONFIG.VALYRA.CTA}</a>
-      <p class="callback-alt">${CONFIG.VALYRA.NOTE}</p>`;
+  // VALYRA NIE JE DRUHÁ PONUKA (19. 8. 2026).
+  //
+  // Rozhodnutie je staré (24. 7.) a v `lievik/docs/PONUKA.md` sekcii 1 stojí
+  // doslova: „Valyra je nástroj v platenej spolupráci, nie lákadlo." Stránka mu
+  // pritom do dnes odporovala — mala tu blok „Druhá možnosť · Alebo chceš začať
+  // sama, hneď teraz?" s vlastným tlačidlom na self-serve registráciu. To je
+  // presne to lákadlo, ktoré rozhodnutie zakazuje.
+  //
+  // Dáta to potvrdzujú z druhej strany: to tlačidlo bralo VIAC klikov než
+  // konzultácia (9 vs 8 vo v5) a za celý čas kampane z neho neprišlo ani jedno
+  // euro — 24 registrácií z leadov, 0 platieb. Súťažilo s jedinou cestou, ktorá
+  // kedy vyrobila rozhovor, a vyhrávalo.
+  //
+  // Ostáva jedna veta bez tlačidla a bez odkazu. Valyra sa tým stáva dôvodom
+  // pre spoluprácu namiesto alternatívy k nej.
+  //
+  // ⚠️ ČO SEM NESMIE: cena programu (150 €), jeho dĺžka ani obsah. „Čo presne je
+  // v cene" je v PONUKA.md stále otvorené a ponuka sa hovorí v odpovedi človeku,
+  // nie na stránke. Peniaze patria do repa `lievik`, toto je verejné.
+  const valyraLine = `
+      <p class="soft-link">Valyra je moja appka na jedálničky a denné kroky. Nastavujem ju na čísla ľuďom, ktorých vediem.</p>`;
 
-  const ctaBlock = askBlock + (CONFIG.VALYRA.ENABLED ? valyraBlock : '');
+  const ctaBlock = askBlock + (CONFIG.VALYRA.ENABLED ? valyraLine : '');
 
   app.innerHTML = `
     <section class="result">
@@ -756,27 +758,16 @@ function showResult(plan) {
   const meta = { segment: state.problem, history: state.history, tier, source: CONFIG.SOURCE };
   trackAd('ConsultView', meta);
 
-  // Ponuka Valyry sa počíta ako videná až keď sa reálne dostane do zorného poľa.
-  // Meranie pri vykreslení by nafúklo ValyraOfferView o ľudí, ktorí k nej nikdy
-  // nedoscrollovali — a práve pomer videných ku klikom je to, čo chceme vedieť.
-  const valyraBtn = document.getElementById('valyraBtn');
-  const offerCard = document.getElementById('offerCard');
-  if (valyraBtn && offerCard && 'IntersectionObserver' in window) {
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting) && !state.offerViewTracked) {
-        state.offerViewTracked = true;
-        trackAd('ValyraOfferView', meta);
-        io.disconnect();
-      }
-    }, { threshold: 0.5 });
-    io.observe(offerCard);
-  }
-  if (valyraBtn) {
-    valyraBtn.addEventListener('click', () => {
-      recordPath('valyra');
-      trackAd('ValyraCheckoutStart', meta);
-    }, { once: true });
-  }
+  // MERANIE VALYRY ZRUŠENÉ 19. 8. 2026 spolu s tlačidlom.
+  //
+  // Zmizli `ValyraOfferView` a `ValyraCheckoutStart` a `selected_path` už nikdy
+  // nebude 'valyra'. Stĺpec aj hodnotu v CHECK constrainte nechávame — staré
+  // riadky ju majú a prepisovať históriu by znamenalo stratiť možnosť porovnať,
+  // čo sa stalo, keď tá druhá cesta ešte existovala (9 klikov, 0 platieb).
+  //
+  // ⚠️ PRI VYHODNOCOVANÍ: `selected_path = 'valyra'` existuje len pre leady
+  // do 19. 8. Po tomto dátume je jediná zaznamenaná cesta 'written_consult',
+  // takže podiely ciest sa medzi obdobiami NEDAJÚ porovnávať.
 
   // Písomná cesta je od v5 viditeľná v oboch vetvách, takže tu už nie je čo
   // rozbaľovať. `ConversationView` sa preto páli v oboch — je to „videl pole",

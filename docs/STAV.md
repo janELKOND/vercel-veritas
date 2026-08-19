@@ -1,5 +1,43 @@
 # STAV — kde sme skončili
 
+## 🆕 19. 8. 2026 — Valyra prestala byť druhou ponukou
+
+**NASADENÉ.** `sw` v32, `analyza/app.js?v=10`, `analyza.css?v=5`.
+
+Pod výsledkom stál blok *„Druhá možnosť · Alebo chceš začať sama, hneď teraz?"*
+s tlačidlom na self-serve registráciu. **Odporovalo to rozhodnutiu z 24. 7.**, ktoré je
+v `lievik/docs/PONUKA.md` sekcii 1 zapísané doslova: *„Valyra je nástroj v platenej
+spolupráci, nie lákadlo."* Dokument to mal 26 dní, stránka to nemala nikdy.
+
+Dáta hovorili to isté: tlačidlo bralo **viac klikov než konzultácia** (9 vs 8 vo v5)
+a za celý čas kampane z neho neprišlo **ani jedno euro** — 24 registrácií, 0 platieb.
+Súťažilo s jedinou cestou, ktorá kedy vyrobila rozhovor.
+
+Ostala jedna veta v `.soft-link`, bez tlačidla a **bez odkazu**:
+
+> *„Valyra je moja appka na jedálničky a denné kroky. Nastavujem ju na čísla ľuďom,
+> ktorých vediem."*
+
+**Cena ani obsah programu tu zámerne nie sú** — patria do `lievik` (privátne) a hovoria
+sa v odpovedi človeku, nie na stránke. Toto repo je verejné.
+
+**Odstránené aj:** `valyraUrl()`, `CONFIG.VALYRA.{URL,CTA,PRICE_LABEL,NOTE}`,
+`state.offerViewTracked`, CSS `.offer-second` a `.offer-price`. Ostal len
+`CONFIG.VALYRA.ENABLED` ako vypínač tej vety. Zámerne sa nenechal mŕtvy kód —
+`CONFIG.OFFER` už raz spôsobil, že sa nepoužívané nastavenie považovalo za živé.
+
+⚠️ **Dopad na meranie:** `selected_path = 'valyra'` už nikdy nepribudne,
+`ValyraOfferView` a `ValyraCheckoutStart` sa prestali páliť. **Podiely ciest sa nedajú
+porovnávať cez 19. 8.** Hodnota `'valyra'` ostáva v CHECK constrainte kvôli starým
+riadkom — tie ukazujú, čo sa dialo, kým tá cesta existovala.
+
+**Otestované** (localhost, stubnuté `fbq` aj `fetch`): na výsledku nie je žiadny odkaz
+na `valyra.sk`, ťuknutie na čip stále otvára pole, odoslanie skladá správu
+„Praská mi to večer doma.", `PathSelected` aj `BreakPointSelected` sa pália, Valyra
+eventy nie. Živá stránka je bajt na bajt zhodná s commitnutým súborom.
+
+---
+
 ## 🧭 LIEVIK DNES — celá cesta na jednej obrazovke (stav k 19. 8. 2026)
 
 > **Toto je jediné miesto, kde je lievik popísaný ako celok.** Zvyšok dokumentu je
@@ -16,7 +54,7 @@
 | 1 | FB reklama „Analýza" (optimalizácia na `CompleteRegistration`) | rozpočet **3 €/deň, od 16. 8. sa míňa celý** | „oprava: útlm rozpočtu skončil" |
 | 2 | Klik → zobrazená stránka `/analyza` | 1 783 → 1 247 · **69,9 %** | „opravy čísel" |
 | 3 | Vyplní analýzu → **e-mailová stena** | → 520 · **41,7 %** = lead | tamtiež |
-| 4 | Výsledok: jej čísla + dve cesty (kontakt / Valyra) | — | „Kontakt na výsledku — DVE CESTY" |
+| 4 | Výsledok: jej čísla + **jedna cesta** (kontakt) | — | „Valyra prestala byť druhou ponukou" |
 | 5 | **Ťukne** na jednu zo štyroch odpovedí | 25 ľudí | „12 ľudí ťuklo a neodoslalo" |
 | 6 | **Odošle** → riadok v `quiz_calls` + pixel `Lead` | 13 z 25 · **52 %** | tamtiež |
 | 7 | Ján odpíše **ručne** — dvojkrok, prvá správa nepredáva | kohorty A/B/C | „TEST: písomný dvojkrok" |
