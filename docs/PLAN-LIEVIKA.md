@@ -1,7 +1,35 @@
 # Veritas kvíz — plán opráv lievika
 
-**Stav:** návrh, nezačaté
-**Vytvorené:** 23. 7. 2026
+**Stav: 🗄️ HISTORICKÝ DOKUMENT — nekonať podľa neho.**
+**Vytvorené:** 23. 7. 2026 · **Zosúladené so `STAV.md`:** 19. 8. 2026
+
+> ⚠️ **Tento plán vznikol PRED pivotom z 24. 7. 2026.** Popisuje self-serve lievik,
+> kde bol cieľom **predaj predplatného appky** (lead → registrácia → trial → platiaci).
+> **Ten model sa opustil.** Dnes je cieľom hovor alebo písomná konzultácia a **Valyra
+> je nástroj v platenej spolupráci, nie samostatný produkt.**
+>
+> Prakticky to znamená, že **metriky v sekcii 1 už nie sú metriky tohto biznisu** —
+> najmä „lead → registrácia 11 %", „trial → platiaci" a CAC 29 €. Kto ich vezme ako
+> dnešnú prioritu, bude optimalizovať cestu, ktorá nikam nevedie. (Presne to sa už
+> raz stalo.)
+>
+> **Kde je pravda o dnešku:** [`STAV.md`](STAV.md).
+
+**Čo z tohto dokumentu stále platí:**
+
+- ✅ **reklamné čísla za 18.–23. 7.** ako historický snapshot
+- ✅ **sekcia 3** (zacielenie 45+ a iba feed) — analýza bola správna a **je vykonaná**
+- ✅ **sekcia 9** (neprepínať kampaň na optimalizáciu `Lead`) — platí naďalej
+- ✅ princíp „opravy sa násobia, neškáluj cez deravé sito"
+
+**Čo z neho neplatí:**
+
+- ❌ celá logika **registrácia → trial → platiaci** (opustený model)
+- ❌ **sekcia 7** (Apps Script, `no-cors`, Google Sheet) — zápis ide na Supabase
+  funkciu `quizLead` s `mode: 'cors'`; `apps-script.gs` je pozostatok
+- ❌ **sekcia 5.2** (komu zobraziť ponuku podľa segmentu) — tiering ide podľa histórie
+  návratov a pripravenosti, nie podľa brzdy
+- ❌ **sekcia 8** ako úloha — e-mailová séria **existuje a beží** od začiatku
 
 > **Poznámka k tomuto dokumentu:** repo je verejné, preto tu nie sú žiadne kontakty
 > leadov, ID Google Sheetu ani ID ad účtu. Tie sú v Sheete a v Ads Manageri.
@@ -50,11 +78,22 @@ Deväť z desiatich zaplatených klikov nedôjde na koniec kvízu. Z 21 € za k
 
 **Kritické: časť tejto diery sa nedá zmerať.** Meta „link click" nie je načítaná stránka. Bez vlastných eventov sa nedá rozlíšiť, či ľudia odpadávajú na pomalom načítaní, na prvej otázke, alebo až na e-mailovom formulári na konci. To sú tri úplne odlišné opravy. **Preto sekcia 4 (meranie) predchádza akejkoľvek oprave kvízu.**
 
-### Diera č. 2: lead → registrácia (11 %)
+### ~~Diera č. 2: lead → registrácia (11 %)~~ — METRIKA OPUSTENÁ 24. 7.
+
+⚠️ **Toto prestalo byť diera, lebo prestal existovať krok.** Registrácia do appky už
+nie je cieľ lievika — dnešný ďalší krok po leade je **žiadosť o kontakt**, nie účet.
+Číslo 11 % sa preto **nesmie citovať ako aktuálna priorita** (stalo sa to už dvakrát).
 
 89 zo 100 ľudí dalo e-mail a nikdy si nezaložilo účet. Nie je to rovnomerné — viď segmenty v sekcii 5.2. Časť tých leadov nie je zachrániteľná (`schudnut`, `navyky`), tie treba prestať kupovať, nie zachraňovať.
 
-**Otvorené: existuje vôbec e-mailová sekvencia?** Ak nie, je to najlacnejšia oprava v systéme.
+~~**Otvorené: existuje vôbec e-mailová sekvencia?**~~ **ZODPOVEDANÉ: áno, existuje a
+beží.** `bridge_0` odchádza hneď po kvíze, cron `quizBridge` posiela deň 1/3/5/7
+(+ `bridge_10`, `bridge_14`). Prepísaná 30. 7. a 17. 8. Za obdobie **3 374 odoslaných
+e-mailov**, doručiteľnosť v poriadku (bounce 2,0 %).
+
+⚠️ **Čo o nej vieme dnes a je dôležitejšie:** **63 % všetkých klikov v e-mailoch je
+odhlásenie** (38 zo 60). Sledovanie otvorení je vypnuté, takže o sérii sa dá súdiť len
+z klikov a odpovedí.
 
 ### Prečo sa opravy oplatí spraviť pred škálovaním
 
@@ -70,15 +109,18 @@ Opravy sa **násobia, nie sčítavajú**. Zdvíhať rozpočet pred nimi znamená
 
 ---
 
-## 2. Poradie opráv
+## 2. Poradie opráv — VYHODNOTENÉ 19. 8. 2026
 
-1. **Zacielenie 45+ a iba feed** (sekcia 3) — 5 minút, bez kódu, hneď lacnejšie leady
-2. **Osobné oslovenie dvoch ľudí, ktorí sa zaregistrovali a nedokončili onboarding** (kontakty v Sheete) — 10 minút, dvaja skoro-zákazníci
-3. **Dátum ku každému leadu + vyhodenie testov** (sekcia 4.2) — polhodina, odomkne všetky ďalšie analýzy
-4. **Eventy v kvíze** (sekcia 4.1) — bez nich zostane diera č. 1 hádankou
-5. **E-mailová sekvencia** (sekcia 8), ak ešte neexistuje
-6. **Rezervácia konzultácie** (sekcie 5–7)
-7. **Až potom** zdvíhať rozpočet
+1. ✅ **Zacielenie 45+ a iba feed** (sekcia 3) — **hotové**, nastavené 23. 7., overené 30. 7.
+2. ✅ **Osobné oslovenie** — prebehlo, dnes je to hlavná prevádzková činnosť (vlny v `email_logs`)
+3. ✅ **Dátum ku každému leadu + vyhodenie testov** (sekcia 4.2) — dáta sú v Supabase, `created_at` je vždy; testy sa filtrujú ručne
+4. ✅ **Eventy v kvíze** (sekcia 4.1) — `QuizStart`, `QuizStep` (11 obrazoviek), `QuizComplete` nasadené 30. 7.
+5. ✅ **E-mailová sekvencia** (sekcia 8) — **existovala už vtedy**, netreba stavať
+6. ✅ **Rezervácia konzultácie** (sekcie 5–7) — formulár beží od 30. 7., dve cesty od 3. 8. *(ale sekcia 7 sa spravila inak — cez Supabase, nie Apps Script)*
+7. ⏸️ **Zdvíhať rozpočet** — zatiaľ zámerne nie, od 13. 8. je stlmený na **1 €/deň**
+
+**Celý tento zoznam je teda vybavený.** Aktuálne poradie práce je v [`STAV.md`](STAV.md),
+nie tu.
 
 ---
 
@@ -200,7 +242,12 @@ Veta o nepredávaní tam patrí zámerne: presne toho sa ľudia pri „konzultá
 
 ---
 
-## 7. Oprava `no-cors` zápisu do Sheetu
+## 7. ~~Oprava `no-cors` zápisu do Sheetu~~ — PREKONANÉ, NEIMPLEMENTOVAŤ
+
+⚠️ **Kód nižšie nekopíruj.** Zápis leadu ide na **Supabase funkciu `quizLead`**
+(`mode: 'cors'`, kontrola `response.ok` aj `kind`, timeout 12 s), nie do Sheetu cez
+Apps Script. Súbor `apps-script.gs` v repe je pozostatok a slúži nanajvýš ako záloha.
+Sekcia zostáva ako záznam o tom, prečo sa od Apps Scriptu odišlo.
 
 **Súčasný stav:** webhook sa volá v režime `no-cors`, teda bez odpovede — nevie sa, či zápis prešiel. Kontrola z 23. 7. ukázala 100 riadkov oproti 102 z Facebooku, takže **zápis reálne netečie**. Oprava preto nie je havarijná, ale je nutná pre rezervácie: tam sa musí `Lead` páliť až po potvrdení.
 
@@ -290,35 +337,43 @@ Presne to sa spravilo 13. 7. 2026 na predošlej kampani a stálo to **28,53 € 
 
 ---
 
-## 10. Hotovo, keď
+## 10. Hotovo, keď — ODŠKRTNUTÉ 19. 8. 2026
 
 **Reklama**
-- [ ] Ad set má vek 45+ a iba feed umiestnenia
+- [x] Ad set má vek 45+ a iba feed umiestnenia — *nastavené 23. 7., overené 30. 7.*
 
 **Meranie**
 - [x] Kvíz páli `PageView`, `QuizStart`, **`QuizStep`** (11 obrazoviek, 30. 7.), `QuizComplete`
-- [ ] Každý lead má v Sheete timestamp
-- [ ] Segmenty majú jednotný formát
-- [ ] Testovacie e-maily (`+test`) sú vyfiltrované zo štatistík
+- [x] Každý lead má timestamp — *`created_at` v Supabase, nie v Sheete*
+- [x] Segmenty majú jednotný formát — *rieši `quiz_version`; staré riadky ho nemajú a porovnávať sa nedajú*
+- [x] Testovacie e-maily sú vyfiltrované zo štatistík — *ručne pri každom prepočte, viď `STAV.md`*
 
 **Konzultácia**
-- [ ] Blok s ponukou sa zobrazuje len segmentom `schudnut`, `navyky`, `potrebujem-podporu`
-- [ ] Rezervácia sa zapíše do Sheetu so stĺpcom `typ = konzultacia`
-- [ ] Klient dostane `{ ok: true }` a až potom sa páli `Lead`
-- [ ] Event `Lead` je vidieť v Events Manageri na pixeli `2221207801987418`
-- [ ] Testovacia rezervácia prejde celou cestou: formulár → Sheet → pixel → Ads Manager
+- [ ] ~~Blok s ponukou len segmentom `schudnut`, `navyky`, `potrebujem-podporu`~~
+      **ZRUŠENÉ ZÁMERNE** — tiering ide podľa histórie návratov a pripravenosti,
+      nie podľa brzdy. Ponuku vidí každý.
+- [x] Rezervácia sa zapíše — *do Supabase `quiz_calls`, nie do Sheetu*
+- [x] Klient dostane potvrdenie a až potom sa páli `Lead` — *vyžaduje sa aj `kind`, nie len `ok`*
+- [x] Event `Lead` je vidieť v Events Manageri na pixeli `2221207801987418` — *17 za 31. 7.–17. 8.*
+- [x] Testovacia rezervácia prešla celou cestou (30. 7., testovací riadok zmazaný)
 
 **Nedotknuté**
-- [ ] Kampaň **naďalej** optimalizuje na `CompleteRegistration`
+- [x] Kampaň **naďalej** optimalizuje na `CompleteRegistration`
 
 ---
 
-## 11. Otvorené otázky
+## 11. Otvorené otázky — ZODPOVEDANÉ 19. 8. 2026
 
-1. **Existuje e-mailová sekvencia?** Ak nie, sekcia 8 je priorita pred sekciami 5–7.
-2. **Ako dlho trvá trial?** Bez toho sa nedá povedať, či je 1 platiaci z 9 trialov zlý výsledok alebo len predčasný.
-3. **Kde presne v onboardingu ľudia zastanú?** Na to odpovedia tí dvaja, ktorí sa zaregistrovali a nedokončili onboarding (kontakty v Sheete). Ich odpovede zapísať; ak sa obaja zasekli na tom istom kroku, je to oprava pre všetkých ďalších.
-4. **Cal.com alebo vlastný formulár?** Odporúčanie je Cal.com kvôli objemu, ale závisí od toho, či sa termíny majú riadiť ručne.
-5. **Ide sekvencia cez Resend?** Ak áno, mala by ísť tou istou cestou ako zvyšok mailingu.
+1. ~~**Existuje e-mailová sekvencia?**~~ **Áno**, existovala už vtedy a beží (`bridge_0`
+   hneď, cron deň 1/3/5/7, plus 10 a 14).
+2. ~~**Ako dlho trvá trial?**~~ **Otázka zanikla pivotom** — trial už nie je krok lievika.
+3. ~~**Kde v onboardingu ľudia zastanú?**~~ **Zaniklo** z toho istého dôvodu.
+4. ~~**Cal.com alebo vlastný formulár?**~~ **Rozhodnuté: vlastný formulár** (30. 7.),
+   od 3. 8. s druhou, **písomnou** cestou — a tá sa ukázala ako tá, ktorú ľudia volia
+   (15 z 18). Odkaz na kalendár zostal sekundárny a má za celý čas 0 rezervácií.
+5. ~~**Ide sekvencia cez Resend?**~~ **Áno.** Preto sa aj dá merať — `email_logs`
+   a `email_events` vidia iba to, čo ide cez Resend (ručné maily z Gmailu **nie**).
+
+**Nové otvorené otázky nepatria sem** — patria do [`STAV.md`](STAV.md).
 
 **Zodpovedané 23. 7.:** ~~Koľko riadkov je reálne v Sheete oproti FB?~~ → 100 vs. 102, zápis netečie.

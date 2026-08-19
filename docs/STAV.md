@@ -1,5 +1,39 @@
 # STAV — kde sme skončili
 
+## 🧹 19. 8. 2026 — zosúladenie dokumentov (nič sa nenasadzovalo)
+
+**Prečo:** analýza lievika z 19. 8. ohlásila šesť „dier". **Tri z nich boli falošné** —
+vznikli tak, že staré plány sa čítali ako popis súčasnosti. Konkrétne: „formulár na
+telefón je vypnutý" (je zapnutý od 30. 7.), „cielenie 45+ nie je nastavené" (je od
+23. 7. — **rovnaký falošný nález ako v handoffe 30. 7., už druhýkrát**) a „chýba
+e-mailová sekvencia" (beží od začiatku, 3 374 odoslaných).
+
+**Čo sa zmenilo:** nič v kóde ani v reklame. Iba dokumenty — každý dostal datovanú
+hlavičku so stavom a opravy priamo na miestach, kde tvrdil niečo iné než realita.
+**Nič sa nemazalo**, prekonané state sú v `<details>` ako história.
+
+| Súbor | Čo bolo zle |
+|---|---|
+| `VYSLEDOK-A-PONUKA.md` | tvrdil, že formulár je uspaný a `Lead` sa nepáli; `quizVersion: 3`; cache `v16`; zoznam „nespravené" bol celý neaktuálny |
+| `SUPABASE-REZERVACIA.md` | prvým odsekom radil nechať `BOOKING_ENABLED: false` |
+| `PLAN-HOVORY.md` | K3 „zapnúť formulár" viedol ako úlohu; „`Lead` sa nepáli"; 45+ ako nespravené |
+| `PLAN-LIEVIKA.md` | metriky opusteného self-serve modelu bez varovania; „existuje e-mailová sekvencia?" |
+| `PLAN-7DNI.md` | tvrdil, že `qualifyLead` je nenasadený a formulár vypnutý |
+| `STAV.md` (sekcia 5) | „42 hot leadov čaká", „máš 1 platiaceho zákazníka", Cal.com webhook ako blokujúci |
+| `CLAUDE.md`, skill `stav` | chýbala `/analyza`; „`Lead` sa zatiaľ nezbiera"; pokyn nezapínať `BOOKING_ENABLED` |
+
+⚠️ **Pravidlo, ktoré z toho vzniklo:** *dnešná priorita sa nikdy nevyvodzuje z plánu.*
+Nezaškrtnuté políčko v datovanom dokumente **nie je** nesplnená úloha — over v `STAV.md`
+a v kóde, až potom to nazvi dierou.
+
+**Tri body tej analýzy boli oprávnené** a nie sú vyriešené: `ConsultClick` nie je
+rezervácia, dáta z rôznych `quizVersion` sa nedajú férovo porovnávať, a **ručné
+vybavovanie kontaktov je úzke miesto**. Plus to, čo analýza prehliadla: **63 % klikov
+v e-mailoch je odhlásenie**, ručné maily z Gmailu sa nikde nezaznamenávajú, a **19 ľudí
+kliklo na Valyru a nemá kam dôjsť**.
+
+---
+
 ## 🆕 17. 8. 2026 — čo pribudlo za 15.–17. 8. (zhrnutie)
 
 | Vec | Stav |
@@ -884,13 +918,19 @@ Prah: ak z ďalších ~100 leadov prídu aspoň 2–3 správy, hypotéza sedela 
 (zarovnať sľub tlačidla, referencia). **Ak bude znovu nula, prekážka nie je spôsob
 kontaktu, ale samotná ponuka** — a vtedy má zmysel meniť ju, nie formulár.
 
-> Tento dokument je vstupný bod — **kde sme skončili**.
-> [`PLAN-HOVORY.md`](PLAN-HOVORY.md) je **plán ďalšej etapy**: ako z lead magnetu robiť
-> objednávky hovorov (aktuálne čísla z ad účtu, 5 krokov, rozhodovacie prahy).
-> [`PLAN-7DNI.md`](PLAN-7DNI.md) je **návrh úplne nového lead magnetu** („7 dní bez
-> diéty") — výzva namiesto testu, ponuka hovoru na dni 4.
-> [`VYSLEDOK-A-PONUKA.md`](VYSLEDOK-A-PONUKA.md) vysvetľuje, **ako** veci fungujú;
-> [`PLAN-LIEVIKA.md`](PLAN-LIEVIKA.md) má čísla z 23. 7. a je čiastočne prekonaný.
+> **Mapa dokumentov — prepísaná 19. 8. 2026.** Tento dokument je vstupný bod a
+> **jediný, ktorý hovorí o súčasnosti.** Ostatné sú datované:
+>
+> | Dokument | Ako ho čítať |
+> |---|---|
+> | [`VYSLEDOK-A-PONUKA.md`](VYSLEDOK-A-PONUKA.md) | **ako** veci fungujú — mechanika platí, text je písaný k 30. 7. / v3 |
+> | [`PLAN-HOVORY.md`](PLAN-HOVORY.md) | 🗄️ 30. 7. — K3 hotové, predpoklad „cieľ = rezervovaný hovor" sa nepotvrdil |
+> | [`PLAN-LIEVIKA.md`](PLAN-LIEVIKA.md) | 🗄️ 23. 7., **pred pivotom** — metriky opusteného self-serve modelu |
+> | [`PLAN-7DNI.md`](PLAN-7DNI.md) | 💤 návrh, **zámerne nezačatý** — tretí magnet |
+> | [`SUPABASE-REZERVACIA.md`](SUPABASE-REZERVACIA.md) | 🗄️ historický návod, všetko hotové |
+>
+> ⚠️ **Z plánov nevyvodzuj dnešnú prioritu a nezaškrtnuté políčko v nich neber ako
+> nesplnenú úlohu.** Už dvakrát to vyrobilo falošný nález.
 
 **Projekt je v dvoch repách:**
 
@@ -972,7 +1012,10 @@ git log --oneline -5
 - **Čestnosť:** intro priznáva 11 otázok a ~5 minút, e-mailová stena oznámená
   dopredu, GDPR súhlas kryje aj obchodné oslovenie, žiadny sľub, ktorý 15-minútový
   hovor nesplní
-- **Ponuka vedie na Cal.com** (`CAL_URL`)
+- ~~**Ponuka vedie na Cal.com** (`CAL_URL`)~~ **OPRAVENÉ 19. 8.:** ponuka otvára
+  **formulár priamo na stránke** (od 30. 7.), od 3. 8. s prepínačom telefón/správa.
+  `CAL_URL` je dnes **Google Kalendár** a je len sekundárny odkaz — Cal.com sa
+  v kóde nevyskytuje.
 - **Meranie:** `QuizStart`, **`QuizStep` (všetkých 11 obrazoviek)**, `QuizComplete`,
   `CompleteRegistration`, `ConsultView`, `ConsultClick` — signály o hovore a kroky idú
   adresne na pixel ad účtu cez `trackAd()`. `QuizStep` konečne ukáže, na ktorej
@@ -1097,6 +1140,13 @@ byť aj riadky **bez čísla a so správou**. Tie sa vybavujú odpoveďou na e-m
 
 ## 5. Čo treba — v poradí
 
+> ⚠️ **POZOR: táto sekcia je z ~3. 8. 2026 a čiastočne ju prepisujú novšie sekcie
+> na začiatku dokumentu.** Zosúladené 19. 8. — opravy sú priamo pri jednotlivých
+> bodoch. **Aktuálne poradie práce ber z datovaných sekcií hore, nie odtiaľto.**
+>
+> Rýchly prehľad k 19. 8.: body 1 a 5 platia, bod 2 je zámerne odložený, body 3, 4
+> a 7 sú prekonané.
+
 ### Blokujúce (musí spraviť Ján — Claude na to nemá prístup)
 
 **1. Odsúhlasiť podmienky pre vlastné publiká.** Bez toho sa nedá vytvoriť
@@ -1107,15 +1157,28 @@ https://www.facebook.com/customaudiences/app/tos/?act=1183460279376761
 Je to súhlas s podmienkami, teda vec majiteľa účtu — Claude ho odklikať nesmie.
 Keď to Ján potvrdí, publiká vytvorí Claude (dokončili kvíz / navštívili a nedokončili).
 
-**2. Webhook z Cal.com → event `Lead`.** Dnes sa nevie, koľko klikov na kalendár
-skončí termínom. Rezervácie cez formulár na telefón sa už merajú (`Lead` po
-potvrdenom zápise), cesta cez Cal.com nie. Potrebný prístup do nastavení Cal.com.
+**2. ~~Webhook z Cal.com → event `Lead`.~~ ZÁMERNE ODLOŽENÉ (19. 8.)** — nie je to
+chyba, je to rozhodnutie. Za celé obdobie je v kalendári **0 rezervácií** a 15 z 18
+kontaktov je písomných; webhook by meral cestu s dokázanou nulou. Žiadosť o kontakt
+sa pritom meria priamo (`Lead` pri oboch cestách po potvrdenom zápise). Vrátiť sa
+k tomu, ak sa hovory niekedy stanú reálnou cestou.
 
-> **Poradie ďalšej etapy je v [`PLAN-HOVORY.md`](PLAN-HOVORY.md).** Zhrnutie: kvíz
-> dnes vyrába leady za 0,33 € (151 za 14 dní), ale **nula rezervovaných hovorov** —
-> obmedzenie už nie je v kóde. Prvý krok je retargeting na ľudí, ktorí kvíz dokončili.
+> ~~**Poradie ďalšej etapy je v [`PLAN-HOVORY.md`](PLAN-HOVORY.md).**~~
+> ⚠️ **Neplatí (19. 8.):** `PLAN-HOVORY.md` je z 30. 7., jeho K3 je dávno hotové
+> a jeho hlavný predpoklad (cieľ = rezervovaný hovor) sa nepotvrdil. Dokument je
+> označený ako čiastočne prekonaný. **Poradie práce je v datovaných sekciách hore.**
 
-**3. Ozvať sa 42 hot leadom z 1.–3. 8.** Za dva dni pribudlo 74 leadov, z toho 42
+**3. ~~Ozvať sa 42 hot leadom z 1.–3. 8.~~ PREKONANÉ (19. 8.).** Číslo 42 je stav
+z ~3. 8. a **nesmie sa citovať ako dnešný nevybavený zoznam** — už sa to raz stalo.
+Odvtedy prebehli vlny 11. 8. (8 žien), 17. 8. (kohorta A, 5) a 18. 8. (kohorta B, 6
++ kohorta C, 11). Tí ľudia navyše **nikdy neboli bez kontaktu** — mostová séria im
+beží automaticky. Čo reálne čaká, je v sekcii „⚠️ 17. 8. — čaká na odoslanie".
+Pravidlo o kontrole proti `email_logs` pred každou vlnou platí ďalej.
+
+<details>
+<summary>Pôvodné znenie z 3. 8.</summary>
+
+Za dva dni pribudlo 74 leadov, z toho 42
 spadá do `hot` (kritérium `qualifyLead`: opakovaný návrat `viackrat`/`jojo`, alebo
 výslovné „chcem vedenie"). **Ani jeden z nich nebol oslovený.** Písomná cesta pomôže
 až budúcim leadom — týchto 42 ňou nezastihneš. Pri súčasnom objeme je osobné
@@ -1123,6 +1186,8 @@ oslovenie stále najväčšia páka; predošlé vlny (24. 7., 29. 7., 30. 7.) s�
 `email_logs` pod kľúčmi `manual_outreach_2026_07_24`, `hot_call_2026_07_29`,
 `hot_call_2026_07_30` — **každú novú vlnu najprv preveriť proti nim**, aby nikto
 nedostal dva maily (29. 7. sa to už raz stalo piatim ľuďom).
+
+</details>
 
 **Pozor na slovník:** „hot" ≠ „chce konzultáciu". Za celý čas kampane napísalo
 výslovne „chcem, aby ma niekto viedol" **10 reálnych ľudí** (13 riadkov mínus 3 testy),
@@ -1137,9 +1202,12 @@ priamo na ad sete `Kviz – CompleteRegistration`: `age_min 45`, `age_max 65`, i
 23. 7., handoff to viedol ako nesplnené. Čísla po znovuspustení (30. 7. do obeda):
 **2,13 € → 9 registrácií = 0,24 €**, CTR 17,8 %, CPC 0,03 €.
 
-**4. Ozvať sa leadom, ktorí sa nezaregistrovali.** Kontakty v Sheete/Supabase.
-Desať rozhovorov povie o produkte viac než ďalšia zmena na stránke. Máš **1
-platiaceho zákazníka** — to je anekdota, nie miera.
+**4. Ozvať sa leadom, ktorí sa nezaregistrovali.** Kontakty v Supabase. Desať
+rozhovorov povie o produkte viac než ďalšia zmena na stránke.
+
+⚠️ **OPRAVA 19. 8.:** ~~Máš 1 platiaceho zákazníka.~~ **Za celý čas kampane je 0 €
+tržieb** — a „registrácia" už nie je krok lievika (pivot 24. 7.). Ten jeden platiaci
+pochádzal zo starého self-serve modelu. Viď opravu zo 17. 8. na začiatku dokumentu.
 
 **5. Prvá klientska referencia — a to PRIAMO K FORMULÁRU, nie vyššie na stránku.**
 Dôvera chýba presne v momente, keď má človek nechať kontakt, nie o tri obrazovky
@@ -1154,10 +1222,14 @@ naozaj tlačila „Vyskúšať Valyru — 7 dní zadarmo" vo všetkých piatich 
 kým stránka predávala hovor. Prepísané a nasadené (viď sekcia 2b). Prvý beh cronu
 `quizBridge` s novými textami: nasledujúce ráno 7:30 UTC.
 
-**7. Sledovať prvé rezervácie.** Po zapnutí formulára a prepísaní e-mailov je toto
-jediné číslo, ktoré rozhodne. Ak po ~100 leadoch cez novú verziu nepríde ani jedna
-rezervácia, problém nie je v trení ani v kóde — vtedy má zmysel meniť ponuku alebo
-lead magnet ([`PLAN-7DNI.md`](PLAN-7DNI.md)), nie skôr.
+**7. ~~Sledovať prvé rezervácie.~~ VYHODNOTENÉ (19. 8.) — prah prebehol.** Cez novú
+verziu prešlo výrazne viac než 100 leadov a **rezervácia neprišla ani jedna**. Podľa
+vlastného pravidla by to znamenalo meniť ponuku alebo magnet — **realita ale ukázala
+tretiu možnosť, ktorú toto pravidlo nepočítalo:** ľudia sa ozývajú, len **písomne**
+(15 z 18). Nie je to teda „nikto nechce", ale „nikto nechce **telefón**".
+
+Preto sa nešlo do [`PLAN-7DNI.md`](PLAN-7DNI.md), ale do **písomného dvojkroku** —
+a to je dnes bežiaci test. Nový prah je pri kohorte B (dozrieva 21. 8.), nie tu.
 
 ---
 
@@ -1196,9 +1268,11 @@ lead magnet ([`PLAN-7DNI.md`](PLAN-7DNI.md)), nie skôr.
 | `style.css` | `.diagnosis` · `.offer` · `.callback` · `.way-tab` (voľba cesty) — zdieľaný oboma stránkami |
 | `sw.js` | cache verzia — **bumpnúť pri každej zmene** |
 | `apps-script.gs` | zápis do Sheetu, vetva `typ === 'konzultacia'` (záložná cesta) |
-| `docs/VYSLEDOK-A-PONUKA.md` | ako to funguje — mechanika, meranie, pravidlá |
-| `docs/SUPABASE-REZERVACIA.md` | ako zapnúť formulár na telefón |
-| `docs/PLAN-LIEVIKA.md` | čísla z reklamy (23. 7.), čiastočne prekonané |
+| `docs/VYSLEDOK-A-PONUKA.md` | mechanika výsledku (diagnóza, tiering, meranie, pravidlá). **Písané k 30. 7. / v3** — mechanika platí, „dnes" v texte neznamená dnes |
+| `docs/SUPABASE-REZERVACIA.md` | 🗄️ **historické** — ako sa formulár zapínal (hotové 30. 7.). Nie je to zoznam úloh |
+| `docs/PLAN-LIEVIKA.md` | 🗄️ **historické (23. 7., pred pivotom)** — metriky self-serve modelu. Nečítať ako priority |
+| `docs/PLAN-HOVORY.md` | 🗄️ **čiastočne vykonaný, čiastočne prekonaný (30. 7.)** — jeho predpoklad „cieľ = rezervovaný hovor" sa nepotvrdil |
+| `docs/PLAN-7DNI.md` | 💤 **návrh, zámerne nezačatý** — tretí magnet; vrátiť sa až keď zlyhá oslovenie teplých leadov |
 | `valyra` → `supabase/functions/quizLead/index.ts` | lead, `qualifyLead`, notifikácia, `handleCallBooking` (telefón aj správa) |
 | `valyra` → `supabase/migrations/003_quiz_calls.sql` | tabuľka rezervácií (spustená 30. 7.) |
 | `valyra` → `supabase/migrations/004_quiz_calls_message.sql` | písomná cesta — `phone` nepovinný, `message`, CHECK na kontakt (spustená 3. 8.) |

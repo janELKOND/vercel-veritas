@@ -1,11 +1,23 @@
 # Plán: nový lead magnet „7 dní bez diéty"
 
-**Vytvorené:** 30. 7. 2026
-**Stav:** návrh, nezačaté
+**Vytvorené:** 30. 7. 2026 · **Zosúladené so `STAV.md`:** 19. 8. 2026
+**Stav: 💤 NÁVRH, NEZAČATÉ — a zámerne sa nezačína.**
 **Cieľ:** lead magnet, ktorý vyrába **rezervované hovory**, nie e-maily.
 
+> ⚠️ **Toto nie je aktuálny smer.** Odkedy plán vznikol, sa spravil druhý lead magnet
+> [`/analyza`](../analyza/) — a ten dnes vyrába väčšinu leadov. Prioritou je **dostať
+> úžitok z ľudí, ktorí už v lieviku sú** (písomný dvojkrok, kohorty A/B/C), nie
+> postaviť tretí magnet.
+>
+> **Kedy sa k tomuto vrátiť:** až keď sa ukáže, že problém je v magnete — teda keď
+> ani osobné oslovenie teplých leadov nevyrobí rozhovor. Dovtedy by to bola tretia
+> súbežná stratégia. Rozhodovacie prahy sú v [`STAV.md`](STAV.md).
+>
+> Čo z plánu platí bez ohľadu na to: **deň 6 („čo robiť po zaváhaní")** je Jánova
+> jediná skutočná konkurenčná výhoda a v žiadnom magnete sa zatiaľ nevyužíva.
+
 > Súvisiace: [`PLAN-HOVORY.md`](PLAN-HOVORY.md) — prečo súčasný kvíz hovory nerobí
-> a aktuálne čísla z ad účtu. [`STAV.md`](STAV.md) — kde projekt stojí.
+> (pozor, jeho čísla sú z 30. 7.). [`STAV.md`](STAV.md) — kde projekt stojí.
 >
 > Repo je verejné: žiadne kontakty leadov, ID Sheetu ani ad účtu.
 
@@ -139,6 +151,10 @@ Beriem maximálne 5 nových ľudí mesačne, lebo pri každom som osobne.
 
 ### Fáza 1: na teplé publikum, náklad nula
 
+⚠️ **Číslo 151 je z 30. 7.** K 19. 8. je teplé publikum rádovo väčšie — cez 500 leadov
+z `/analyza` plus leady z kvízu. Prahy nižšie sú počítané na 151, takže ich pri
+prípadnom spustení prepočítaj, nepoužívaj doslova.
+
 Nekupovať reklamu. Pustiť to na **151 ľudí, ktorí už kvíz dokončili** (16.–29. 7.):
 
 > „Pred pár dňami si prešla kvízom. Chcem ti dať niečo praktickejšie —
@@ -168,13 +184,15 @@ podľa **ceny za rezervovaný hovor**, nikdy podľa ceny za lead.
 
 ## 6. Čo z infraštruktúry už existuje
 
+*Stĺpec „Stav" prepočítaný 19. 8. 2026 — dva riadky boli neaktuálne.*
+
 | Časť | Stav |
 |---|---|
 | Resend + `sendEmail` | ✅ hotové |
 | Cron na sériu (`quizBridge`, deň 1/3/5/7) | ⚠️ existuje, treba prerobiť na 7 dní za sebou |
 | `quiz_leads` + `email_logs` (ochrana proti duplicite) | ✅ hotové |
-| `qualifyLead()` + mail „CHCE KONZULTÁCIU" | ⚠️ zmergované, **nenasadené** (viď `STAV.md`) |
-| Formulár „nechaj číslo" | ⚠️ napísaný a otestovaný, **vypnutý** (`BOOKING_ENABLED`) |
+| `qualifyLead()` + mail „CHCE KONZULTÁCIU" | ~~⚠️ zmergované, nenasadené~~ → ✅ **nasadené** (`quizLead` v38) |
+| Formulár „nechaj číslo" | ~~⚠️ napísaný a otestovaný, vypnutý~~ → ✅ **zapnutý 30. 7.**, od 3. 8. aj s písomnou cestou |
 | Meranie (pixel, `trackAd`) | ✅ hotové, len nové názvy eventov |
 | Vstupná stránka | 🔴 nová, ale jednoduchšia než kvíz |
 | **7 e-mailov** | 🔴 **neexistujú — toto je celý produkt** |

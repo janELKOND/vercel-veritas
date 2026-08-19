@@ -1,11 +1,29 @@
 # Plán: z lead magnetu robiť objednávky hovorov
 
-**Vytvorené:** 30. 7. 2026
+**Vytvorené:** 30. 7. 2026 · **Zosúladené so `STAV.md`:** 19. 8. 2026
 **Cieľ:** kvíz nemá vyrábať e-maily, ale **rezervované hovory a nových klientov**.
 
-> Stav projektu je v [`STAV.md`](STAV.md), mechanika v
-> [`VYSLEDOK-A-PONUKA.md`](VYSLEDOK-A-PONUKA.md). Tento dokument je **plán ďalšej
-> etapy** — čo urobiť, v akom poradí a ako poznať, že to funguje.
+> ⚠️ **Stav dokumentu: čiastočne vykonaný, čiastočne prekonaný.** Nie je to zoznam
+> úloh na dnes. Kde projekt reálne stojí: [`STAV.md`](STAV.md).
+
+**Čo sa z tohto plánu stalo (overené 19. 8.):**
+
+| Krok | Stav |
+|---|---|
+| K1 retargeting na dokončené kvízy | ⏸️ **blokované** — Ján musí odsúhlasiť podmienky pre vlastné publiká (API vracia `Terms of service has not been accepted`) |
+| K2 nasadiť `quizLead` + osloviť leadov | ✅ funkcia beží (v38); osobné oslovenia prebehli vo vlnách 24. 7., 29. 7., 30. 7., 11. 8., 17. 8. a 18. 8. |
+| **K3 zapnúť formulár na telefón** | ✅ **HOTOVÉ 30. 7.** — `BOOKING_ENABLED: true`; od 3. 8. sú cesty dve (telefón/správa) |
+| K4 prerobiť magnet na osobný plán | ✅ **spravené inak, než plán čakal** — namiesto prerobenia kvízu vznikol druhý magnet [`/analyza`](../analyza/), ktorý beží vedľa. Kvíz nikto nevypol. |
+| K5 nová reklama na bolesť | ❌ nespravené |
+
+⚠️ **Hlavný predpoklad plánu sa nepotvrdil.** Plán stojí na tom, že cieľom je
+**rezervovaný hovor**. Za celé obdobie kampane je v kalendári **0 rezervácií**, zato
+**15 z 18 kontaktov prišlo písomne**. Od 17. 8. e-maily telefonát ani nesľubujú a
+testuje sa **písomný dvojkrok** (prvá správa nepredáva, len rozhovorí). „Cena za
+rezervovaný hovor" zo sekcie 4 preto dnes **nie je hlavné číslo** — je ním, či človek
+na správu odpovie.
+
+> Mechanika výsledku je v [`VYSLEDOK-A-PONUKA.md`](VYSLEDOK-A-PONUKA.md).
 >
 > Repo je verejné: žiadne kontakty leadov, ID Sheetu ani ad účtu.
 
@@ -116,7 +134,16 @@ sa vrátiť ku K5.
 
 ---
 
-### K3. Zapnúť uspaný formulár na telefón
+### ~~K3. Zapnúť uspaný formulár na telefón~~ ✅ HOTOVÉ 30. 7. 2026
+
+> ⚠️ **Tento krok je spravený.** `BOOKING_ENABLED: true`, migrácia `003` spustená,
+> otestované ostrým POSTom. Od 3. 8. má formulár **dve cesty** (telefón / správa,
+> migrácia `004`) a `Lead` sa páli pri oboch po potvrdenom zápise.
+>
+> **Ako to dopadlo:** predpoklad „nechaj číslo konvertuje lepšie" sa **potvrdil len
+> spolovice** — formulár kontakty naozaj vyrába (v5 je na 7,5 %), ale ľudia si volia
+> **písomnú** cestu, nie telefón (15 z 18). Telefonát ako sľub sa medzitým ukázal ako
+> brzda: jeho zrušenie 6. 8. je jediná zmena s preukázaným efektom (Fisher, p = 0,0085).
 
 **Čo:** `BOOKING_ENABLED: true` + migrácia `003_quiz_calls.sql`. Postup:
 [`SUPABASE-REZERVACIA.md`](SUPABASE-REZERVACIA.md).
@@ -192,12 +219,18 @@ QuizStart → QuizStep 1..11 → QuizComplete → CompleteRegistration
 ```
 
 - `ConsultView` → `ConsultClick` = či ponuka presviedča
-- `Lead` = **potvrdená rezervácia**; páli sa len po zápise, a **dnes sa nepáli**, lebo
-  formulár je vypnutý (K3 to zapne)
-- rezervácie cez Cal.com sa dnes **nemerajú vôbec** — vidno len klik
+- ~~`Lead` = potvrdená rezervácia; **dnes sa nepáli**, lebo formulár je vypnutý~~
+  **OPRAVENÉ 19. 8.: `Lead` sa páli od 30. 7.** po potvrdenom zápise, od 3. 8. pri
+  oboch cestách (`way=call|message`)
+- rezervácie cez cudziu kalendárovú stránku sa **nemerajú** — vidno len klik.
+  Za celé obdobie je tam **0 rezervácií**, takže webhook by meral nulu.
 
-**Kým nie je K3, počítaj hovory ručne** (Cal.com kalendár + prijaté maily). Inak sa
-o „nula hovorov" nedá tvrdiť nič isté.
+~~**Kým nie je K3, počítaj hovory ručne.**~~ Netreba — žiadosť o kontakt sa meria
+priamo cez `Lead` a v `quiz_calls`.
+
+⚠️ **Doplnené 19. 8. — čo sa medzitým ukázalo ako skutočné úzke miesto:** nie meranie,
+ale **vybavovanie**. Stránka vyrába kontakty rýchlejšie, než sa stíhajú vybavovať,
+a odpovedá sa ručne z Gmailu, ktorý sa nikde nezaznamenáva.
 
 ### Rozhodovacie prahy
 
@@ -212,8 +245,9 @@ o „nula hovorov" nedá tvrdiť nič isté.
 
 ## 5. Otvorené otázky
 
-1. **Koľko rezervácií reálne prišlo za 16.–29. 7.?** Ján to vie z Cal.com; z pixelu sa
-   to zistiť nedá. Bez toho je „0 hovorov" domnienka, nie fakt.
+1. ~~**Koľko rezervácií reálne prišlo za 16.–29. 7.?**~~ **ZODPOVEDANÉ:** nula — a
+   platí to aj pre celé nasledujúce obdobie. V kalendári nie je ani jedna rezervácia,
+   15 z 18 kontaktov je písomných. Už to nie je domnienka.
 2. **Prečo 47 % klikov nedorazí na stránku?** Skontrolovať rýchlosť načítania na
    mobile. Je to najväčší jednotlivý únik a s copy nemá nič.
 3. **Tlačí e-mailová séria stále Valyra appku?** `bridgeTemplates.ts` v repe `valyra` —
@@ -231,10 +265,10 @@ o „nula hovorov" nedá tvrdiť nič isté.
 
 | Krok | Kto | Poznámka |
 |---|---|---|
-| K1 retargeting | Claude pripraví, **Ján schváli spustenie** | míňa peniaze |
-| K2 nasadiť funkciu | **len Ján** | Claude nemá Supabase CLI ani token |
-| K2 osloviť 20 leadov | **len Ján** | kontakty sú v Sheete/Supabase |
-| K3 zapnúť formulár | Ján (migrácia + deploy), Claude prepne prepínač | |
-| K4 prerobiť magnet | Claude | väčšia zmena |
-| K5 nová kreatíva | Claude napíše, Ján nasadí v Ads Manageri | |
-| Zacielenie 45+ a iba feed | **len Ján** | 5 minút v Ads Manageri, viď `STAV.md` |
+| K1 retargeting | Claude pripraví, **Ján schváli spustenie** | míňa peniaze · ⏸️ blokuje súhlas s podmienkami pre vlastné publiká |
+| K2 nasadiť funkciu | **len Ján** | Claude nemá Supabase CLI ani token · ✅ hotové |
+| K2 osloviť 20 leadov | **len Ján** | kontakty sú v Supabase · ✅ prebehlo vo vlnách, kľúče v `email_logs` |
+| K3 zapnúť formulár | Ján (migrácia + deploy), Claude prepne prepínač | ✅ **hotové 30. 7.** |
+| K4 prerobiť magnet | Claude | ✅ vyriešené inak — vznikol druhý magnet `/analyza` |
+| K5 nová kreatíva | Claude napíše, Ján nasadí v Ads Manageri | ❌ nespravené |
+| ~~Zacielenie 45+ a iba feed~~ | — | ✅ **HOTOVÉ**, nastavené 23. 7., overené 30. 7. na ad sete |

@@ -1,11 +1,37 @@
 # Rezervácia hovoru — čo doplniť do Supabase funkcie `quizLead`
 
-Výsledková stránka posiela rezerváciu hovoru (telefónne číslo) na tú istú funkciu
-ako lead z kvízu. Rozlišuje ich pole **`typ: 'konzultacia'`**.
+**Stav: ✅ HOTOVÉ A NASADENÉ 30. 7. 2026.** Rozšírené 3. 8. o písomnú cestu.
+**Zosúladené so `STAV.md`:** 19. 8. 2026.
+
+> ⚠️ **Toto je historický implementačný návod, nie zoznam úloh.** Všetko v ňom je
+> spravené. Nechávam ho, lebo vysvetľuje **prečo** je backend postavený takto —
+> najmä prečo klient vyžaduje potvrdenie `kind`, nie len stav `200`.
+>
+> **Ak hľadáš, čo treba spraviť, si v zlom súbore** → [`STAV.md`](STAV.md).
+
+| Čo návod žiadal | Stav |
+|---|---|
+| Migrácia `003_quiz_calls.sql` | ✅ spustená 30. 7. |
+| Vetva `typ === 'konzultacia'` v `quizLead` | ✅ nasadená (dnes `handleCallBooking`) |
+| `BOOKING_ENABLED: true` | ✅ zapnuté 30. 7. — [`app.js:26`](../app.js), [`analyza/app.js:21`](../analyza/app.js) |
+| Ostrý test jednou rezerváciou | ✅ prešiel (`kind:'call'`, riadok overený, testovací zmazaný) |
+| — *pribudlo navyše* | ✅ migrácia `004_quiz_calls_message.sql` (3. 8.): `phone` **nie je povinný**, pribudol `message`, CHECK stráži, že riadok má vždy kontakt |
+
+⚠️ **Schéma nižšie (sekcia 3) je pôvodná z 30. 7.** Dnešná tabuľka má navyše `message`,
+`phone` je nullable a pribudli stavy vybavovania (migrácia `009`). Ako zdroj pravdy
+o schéme ber migrácie v repe `valyra`, nie tento súbor.
+
+<details>
+<summary>Pôvodné varovanie z 30. 7. (už neplatí)</summary>
 
 **Kým to funkcia nepodporuje, nechaj v `app.js` `BOOKING_ENABLED: false`.** Vtedy sa
 formulár nevykreslí a ponuka vedie na Cal.com. Radšej trenie než sľúbený hovor, na
 ktorý nie je kam volať.
+
+</details>
+
+Výsledková stránka posiela rezerváciu hovoru (telefónne číslo) na tú istú funkciu
+ako lead z kvízu. Rozlišuje ich pole **`typ: 'konzultacia'`**.
 
 ---
 
@@ -162,7 +188,11 @@ if (body.typ === "konzultacia") {
 **Pozn.:** názvy `supabase` (klient) a `corsHeaders` použi tie, ktoré už v tvojej
 funkcii sú. Ak sa telo požiadavky parsuje inde, `body` neduplikuj.
 
-## 5. Postup nasadenia
+## 5. ~~Postup nasadenia~~ PREBEHNUTÝ 30. 7. 2026
+
+⚠️ **Nespúšťaj znova.** Kroky 1–3 sú hotové; krok 4 (ostrá rezervácia) prebehol
+a testovací riadok bol zmazaný. Postup nechávam ako vzor pre podobné nasadenia
+a kvôli kroku 5 — tie tri overenia platia pri každej zmene formulára.
 
 1. Vytvor tabuľku (SQL vyššie) v *SQL Editor*.
 2. Vlož kód do funkcie `quizLead` a nasaď ju.

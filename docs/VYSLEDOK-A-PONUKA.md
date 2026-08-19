@@ -1,11 +1,19 @@
 # Kvíz, diagnóza a ponuka koučingu — ako to funguje
 
-**Stav:** nasadené na produkcii (`kviz.valyra.sk`)
-**Posledná zmena:** 30. 7. 2026
+**Čo to je:** popis **mechaniky** výsledkovej stránky — diagnóza, tiering, ponuka, meranie.
+**Napísané k:** 30. 7. 2026 (lievik **v3**, kvíz bol vtedy jediný magnet).
+**Zosúladené so `STAV.md`:** 19. 8. 2026.
 
-Tento dokument popisuje **ako lievik funguje dnes**. Pre históriu rozhodnutí a čísla
-z reklamy pozri [`PLAN-LIEVIKA.md`](PLAN-LIEVIKA.md) — pozor, ten je z 23. 7. a časť
-jeho zámerov je už prekonaná (viď [Čo v pláne už neplatí](#čo-v-pláne-lievika-už-neplatí)).
+> ⚠️ **Toto NIE JE popis súčasného stavu.** Kde lievik stojí dnes, je v
+> [`STAV.md`](STAV.md) — ten prepisuje čokoľvek tu.
+>
+> Odvtedy pribudlo: druhý magnet [`/analyza`](../analyza/) (dnes **hlavný** zdroj
+> leadov, kvíz je vedľajší), verzie v4 a v5, písomná cesta kontaktu vedľa telefónu
+> (3. 8.) a klikacie odpovede (17. 8.).
+>
+> **Ako to čítať:** sekcie 2–5 popisujú mechaniku, ktorá v jadre platí. Každé „dnes",
+> číslo verzie a stav prepínača v tomto texte znamená **30. 7.** — miesta, kde to už
+> nesedí, sú nižšie opravené priamo v texte.
 
 > Repo je verejné. Žiadne kontakty leadov, ID Sheetu ani ID ad účtu tu nie sú.
 
@@ -21,6 +29,20 @@ FB reklama → kvíz (8 otázok o mýtoch) → 3 otázky o človeku
            paralelne: e-mail Jánovi o leade povie, či človek chce konzultáciu
                       (funguje pri každom kvíze, aj bez rezervácie)
 ```
+
+⚠️ **Posledný riadok už neplatí (oprava 19. 8.).** Cal.com nie je primárna cesta od
+30. 7. a od 3. 8. sú cesty **dve**: formulár na telefón **alebo** písomná správa —
+prepínač priamo na výsledku. Odkaz na kalendár (dnes `CAL_URL` = Google Kalendár)
+zostal ako sekundárna možnosť. Dnešný tvar:
+
+```
+… → VÝSLEDOK: diagnóza + ponuka
+           → 📞 nechá číslo  ALEBO  ✍️ napíše správu   → Ján sa ozve → platené vedenie
+           → (sekundárne) odkaz na kalendár
+```
+
+**Realita k 18. 8.:** 15 z 18 kontaktov prišlo **písomne** a v kalendári nie je ani
+jedna rezervácia. Skutočný ďalší krok človeka je odpoveď na e-mail, nie termín.
 
 Predáva sa **hovor**, nie koučing. Ponuka koučingu sa hovorí až na hovore. Valyra je
 nástroj počas platenej spolupráce, nie samostatný cieľ výsledkovej stránky.
@@ -138,13 +160,33 @@ stretnutí, ale za to, že to konečne zaberie."*
 - **Nesľubuje sa nič, čo 15 minút nezvládne.** Pôvodne tam bol „napísaný prvý týždeň" —
   to sa v 15 minútach napísať nedá, tak sa to zmenšilo na pravdu.
 
-### Ako sa hovor rezervuje — dnes Cal.com
+### ~~Ako sa hovor rezervuje — dnes Cal.com~~ OPRAVENÉ 19. 8.
+
+⚠️ **Celá táto podsekcia bola k 30. 7. pravdivá a dnes už nie je.** Nechávam ju, lebo
+vysvetľuje, prečo formulár vznikol — ale **nekonaj podľa nej**.
+
+| Text nižšie tvrdí | Realita (overené v kóde 19. 8.) |
+|---|---|
+| formulár je uspaný za `BOOKING_ENABLED: false` | **`BOOKING_ENABLED: true`** — [`app.js:26`](../app.js) aj [`analyza/app.js:21`](../analyza/app.js), zapnuté **30. 7.** |
+| živá cesta je odkaz na kalendár | živé sú **dve rovnocenné cesty** (telefón / správa) od **3. 8.**; kalendár je sekundárny |
+| `Lead` sa nepáli | páli sa pri **oboch** cestách, rozlíšené `way=call\|message`, vždy až po potvrdenom zápise |
+| „Cal.com" | `CAL_URL` je dnes **Google Kalendár** (`calendar.app.google/…`), Cal.com sa v kóde nevyskytuje |
+
+**Živá cesta je formulár priamo na výsledku.** Tlačidlo v ponuke otvorí prepínač
+`📞 Zavolaj mi` / `✍️ Radšej napíšem`, obe možnosti rovnako veľké. Prísľub súkromia je
+**nad** poľom. Detaily a dôvody: [`STAV.md`](STAV.md), sekcia „Kontakt na výsledku —
+DVE CESTY".
+
+<details>
+<summary>Pôvodné znenie z 30. 7. (historické)</summary>
 
 **Živá cesta je rezervačná stránka Google Kalendára.** Tlačidlo v ponuke je odkaz na `CAL_URL`.
 
 Existuje aj hotový formulár na telefónne číslo, ale je **uspaný za prepínačom**
 `CONFIG.BOOKING_ENABLED: false` — nevykreslí sa a v HTML vôbec nie je. Prečo je
 vypnutý a čo treba na jeho zapnutie: [`SUPABASE-REZERVACIA.md`](SUPABASE-REZERVACIA.md).
+
+</details>
 
 #### Ako sa Ján dozvie, že niekto chce konzultáciu
 
@@ -169,9 +211,11 @@ preložená do ľudskej reči. Skóre a chybné otázky sú až podklad pod tým
 
 Kód je v repe `valyra`, `supabase/functions/quizLead/index.ts`.
 
-#### Uspaný formulár — čo je hotové
+#### ~~Uspaný formulár — čo je hotové~~ ZAPNUTÝ 30. 7. 2026
 
-Kód je celý napísaný a otestovaný, čaká len na zapnutie:
+⚠️ Formulár **beží**. Zoznam nižšie popisuje, ako je postavený — nie čo ešte čaká.
+Od 3. 8. má navyše druhú cestu (písomná správa) a `phone` už nie je povinný
+(migrácia `004_quiz_calls_message.sql`).
 
 - **jediné pole: telefónne číslo.** Meno a e-mail sa berú zo `state` (uložené pri
   odoslaní leadu), takže sa nepýtajú druhýkrát.
@@ -218,9 +262,10 @@ než by scarcity priniesla. `0` sa tiež nezobrazí. Skloňovanie rieši `spotsP
 | `QuizComplete` | zobrazenie e-mailového formulára | `trackCustom` | oba |
 | `CompleteRegistration` | **potvrdený** zápis leadu | `track` | oba |
 | `ConsultView` | zobrazenie ponuky na výsledku | `trackSingleCustom` | **len ad účet** |
-| `ConsultClick` | klik na CTA (dnes odchod na Cal.com) | `trackSingleCustom` | **len ad účet** |
-| `ConsultCalendar` | klik na „vyberiem si termín sám" — **len s uspaným formulárom** | `trackSingleCustom` | **len ad účet** |
-| `Lead` | potvrdená rezervácia — **dnes sa nepáli** (formulár vypnutý) | `trackSingle` | **len ad účet** |
+| `ConsultClick` | klik na CTA (~~odchod na Cal.com~~ **otvorenie formulára**) | `trackSingleCustom` | **len ad účet** |
+| `ConsultCalendar` | klik na „vyberiem si termín sám" (sekundárny odkaz na kalendár) | `trackSingleCustom` | **len ad účet** |
+| `Lead` | ~~potvrdená rezervácia — **dnes sa nepáli** (formulár vypnutý)~~ **páli sa od 30. 7.** pri oboch cestách (`way=call\|message`), vždy až po potvrdenom zápise | `trackSingle` | **len ad účet** |
+| `ConsultWayWrite` | zvolená písomná cesta (od 3. 8.) | `trackSingleCustom` | **len ad účet** |
 | `InstagramClick` | klik na IG odkaz | `trackCustom` | oba |
 
 ### Prečo `trackAd()` a `trackSingleCustom`
@@ -269,15 +314,27 @@ nedostanú — to sú dve úplne odlišné opravy. Oba nesú `tier`, `segment`, 
 
 ### Čo meranie zatiaľ NEVIE
 
-**`ConsultClick` nie je rezervácia** — je to len klik, ktorý človeka pošle na Cal.com.
-Koľko z tých klikov skončí rezervovaným termínom, sa **dnes nemeria** — potrebovalo by
-to Cal.com webhook páliaci `Lead`.
+**`ConsultClick` nie je rezervácia** — je to len klik. Hlavná diera z 30. 7. je ale
+**zavretá**: `Lead` sa od 30. 7. páli po potvrdenom zápise (od 3. 8. pri oboch cestách),
+takže žiadosť o kontakt sa meria priamo.
 
-Prevádzkovo to ale slepé nie je: o každom človeku, ktorý chce konzultáciu, sa Ján
-dozvie z **e-mailu o leade** (viď sekcia 5). Chýba len číslo do Ads Managera, nie
-informácia pre Jána.
+⚠️ **Nemerané zostáva len to, čo sa deje na cudzom kalendári** — koľko klikov na
+`CAL_URL` skončí termínom. Vyžadovalo by to webhook z rezervačnej stránky.
+**Priorita je dnes nízka:** za celé obdobie kampane je v kalendári **0 rezervácií**
+a 15 z 18 kontaktov prišlo písomne. Ten webhook by meral cestu s dokázanou nulou.
 
-Po zapnutí formulára (`BOOKING_ENABLED`) by `Lead` pálil sám kvíz a diera by zmizla.
+⚠️ **Čo je naozaj slepé (nález 18. 8.):**
+
+- `selected_path = 'written_consult'` sa zapíše už pri **ťuknutí** na odpoveď, nie pri
+  odoslaní. Z 25 ľudí, čo ťukli, reálne odoslalo **13 (52 %)**.
+- `breakPoint` (ktorú zo štyroch odpovedí človek ťukol) ide **len na pixel**, do DB nie —
+  per osobu sa nedá dohľadať.
+- **Sledovanie otvorení e-mailov je vypnuté** — `email_events` nemá `email.opened` ani raz.
+- **Správy odoslané ručne z Gmailu sa nikde nezaznamenávajú.** `email_logs` vidí len to,
+  čo ide cez Resend.
+
+Prevádzkovo slepé to nie je: o každom človeku, ktorý chce konzultáciu, sa Ján dozvie
+z **e-mailu o leade** (viď sekcia 5) — a to funguje pri každom dokončenom kvíze.
 
 ---
 
@@ -300,20 +357,24 @@ Payload:
 | `segment` | zložený: `baseSegment\|history\|readiness` |
 | `wrong` | otázky, v ktorých sa mýlil (pre personalizáciu e-mailu) |
 | `ts`, `source` | timestamp, zdroj |
-| `quizVersion` | **`3`** |
+| `quizVersion` | ~~**`3`**~~ → **`5`** od 13. 8. 2026 (viď tabuľka nižšie) |
 
 ### `quizVersion` — prečo naň dávať pozor pri analýze
 
-Zložený `segment` mal počas života kvízu **tri rôzne významy**:
+Zložený `segment` a jeho okolie menili význam **opakovane**:
 
-| verzia | formát `segment` |
-|---|---|
-| v1 | len `baseSegment` |
-| v2 | `baseSegment\|urgencia\|readiness` |
-| **v3** | `baseSegment\|história\|readiness` |
+| verzia | kedy | formát `segment` / čo sa zmenilo |
+|---|---|---|
+| v1 | — | len `baseSegment` |
+| v2 | — | `baseSegment\|urgencia\|readiness` |
+| v3 | — | `baseSegment\|história\|readiness` |
+| **v4** | 10. 8. | pribudla otázka na pripravenosť s hodnotou `informacie` a routing na tri vetvy |
+| **v5** | 13. 8. | otázka na pripravenosť **zrušená** — `readiness` je prázdne, zato pribudol `selected_path` |
 
-**Riadky z rôznych verzií sa nesmú porovnávať naslepo** — prostredný diel znamená
-niečo iné. `quizVersion` je jediné, čo ich rozlíši. Staré riadky ho nemajú.
+**Riadky z rôznych verzií sa nesmú porovnávať naslepo.** `quizVersion` je jediné, čo ich
+rozlíši — a **staré riadky ho nemajú**, takže časť histórie sa férovo porovnať nedá.
+Pri kohortách preto platí pravidlo zo [`STAV.md`](STAV.md): primárne podľa
+`quiz_version`, dátum až ako záloha.
 
 ---
 
@@ -364,31 +425,58 @@ Riešilo nesúlad medzi tým, koho kvíz priťahuje (zvedavcov), a tým, čo sa 
 ## 9. Čo v pláne lievika už neplatí
 
 [`PLAN-LIEVIKA.md`](PLAN-LIEVIKA.md) je z 23. 7. 2026 a **kód je odvtedy ďalej**.
-Stále platia jeho čísla z reklamy a poradie priorít, ale:
+~~Stále platia jeho čísla z reklamy a poradie priorít~~ — **platia už len jeho čísla
+z reklamy** (poradie priorít je celé vybavené, viď hlavička toho dokumentu):
 
-| Plán tvrdí | Realita dnes |
+*Stĺpec „Realita" prepočítaný 19. 8. 2026.*
+
+| Plán tvrdí | Realita |
 |---|---|
 | Zápis ide do Google Sheetu cez Apps Script v `no-cors` | Ide na **Supabase funkciu** `quizLead` s `mode: 'cors'` a kontrolou `response.ok` |
-| Rezervácia konzultácie „sa zatiaľ nezbiera" | Ponuka hovoru **je** na výsledku, Cal.com odkaz je živý |
+| Rezervácia konzultácie „sa zatiaľ nezbiera" | **Zbiera sa** — formulár na výsledku (30. 7.), dve cesty telefón/správa (3. 8.), `Lead` po potvrdenom zápise. ~~Cal.com odkaz je živý~~ → `CAL_URL` je dnes Google Kalendár a je sekundárny |
 | Ponuku zobraziť len segmentom `schudnut`, `navyky`, `potrebujem-podporu` | Tiering ide podľa **histórie a pripravenosti**, nie podľa segmentu brzdy |
-| Valyra je cieľ lievika | Valyra je **nástroj počas platenej spolupráce** |
-| Chýba `quiz_start`, `quiz_step` | `QuizStart` a `QuizComplete` sú nasadené; `quiz_step` po jednotlivých otázkach stále chýba |
+| Valyra je cieľ lievika | Valyra je **nástroj počas platenej spolupráce** — potvrdené pivotom 24. 7. |
+| Chýba `quiz_start`, `quiz_step` | ~~`quiz_step` stále chýba~~ → **`QuizStep` je nasadený od 30. 7.** pre všetkých 11 obrazoviek |
+| Cieľom je registrácia → trial → platiaci | **Opustený model.** Cieľ je hovor alebo písomná konzultácia; za celý čas kampane je **0 € tržieb** a `client_accesses` nie je miera lievika |
 
-**Naďalej platí a je nespravené:**
+**~~Naďalej platí a je nespravené~~ — PREPOČÍTANÉ 19. 8. 2026**
 
-- [ ] Zacielenie **45+ a iba feed** v Ads Manageri (5 minút, polovičná cena za lead)
-- [ ] **E-mailová sekvencia** — najväčšia diera lievika (11 % lead → registrácia)
-- [ ] `Lead` z **Cal.com webhooku** — už len pre sekundárnu cestu; formulár na stránke
-      pálí `Lead` sám
-- [ ] Kampaň **naďalej** optimalizuje na `CompleteRegistration` — na `Lead` neprepínať,
-      kým nebude stabilne 10+ rezervácií týždenne (13. 7. to stálo 28,53 € za dve)
+⚠️ **Tento zoznam bol zdroj dvoch falošných nálezov** („cielenie nie je nastavené",
+„e-mailová sekvencia chýba"). Odškrtnuté podľa [`STAV.md`](STAV.md) a kódu:
+
+- [x] **Zacielenie 45+ a iba feed** — **HOTOVÉ**, nastavené 23. 7., overené 30. 7.
+      priamo na ad sete: `age_min 45`, `age_max 65`, iba `facebook: feed` +
+      `instagram: stream`, `advantage_audience: 0`.
+- [x] **E-mailová sekvencia** — **EXISTUJE A BEŽÍ.** `bridge_0` ide hneď po kvíze,
+      cron `quizBridge` posiela deň 1/3/5/7 (+ `bridge_10`, `bridge_14`). Prepísaná
+      30. 7. (z trialu na hovor) a 17. 8. (prestala sľubovať telefonát).
+      ⚠️ Metrika „11 % lead → registrácia" **je z opusteného self-serve modelu** —
+      registrácia do appky dnes nie je cieľ lievika, Valyra je nástroj v platenej
+      spolupráci. Optimalizovať ju by znamenalo optimalizovať cestu, ktorá nikam
+      nevedie. ⚠️ Skutočné číslo o sérii: **63 % všetkých klikov v e-mailoch je
+      odhlásenie** (38 zo 60 klikov z 3 374 odoslaných).
+- [ ] `Lead` z webhooku rezervačnej stránky — **stále nespravené, ale zámerne
+      odložené**: 0 rezervácií v kalendári za celé obdobie, 15 z 18 kontaktov je
+      písomných. Meralo by cestu s dokázanou nulou.
+- [x] Kampaň **naďalej** optimalizuje na `CompleteRegistration` — platí, na `Lead`
+      neprepínať, kým nebude stabilne 10+ rezervácií týždenne (13. 7. to stálo
+      28,53 € za dve). ⚠️ Rozpočet je od 13. 8. zámerne stlmený na **1 €/deň**.
+
+**Skutočné otvorené diery k 19. 8.** (zdroj: [`STAV.md`](STAV.md)):
+
+- [ ] **48 % ľudí ťukne na odpoveď a neodošle** (12 z 25) — oprava nasadená 18. 8.,
+      v dátach ešte neoverená
+- [ ] **19 ľudí kliklo na Valyru a nemá kam dôjsť** — appka nemá platobnú cestu
+- [ ] **8 nadviazaní z 11. 8. je napísaných a neodoslaných**
 
 ---
 
 ## 10. Pravidlá pre ďalšie zmeny
 
 1. **Pri zmene kvízu bumpni `CACHE` v `sw.js`.** Bez toho ľudia uvidia starú verziu.
-   (Aktuálne `pravda-kviz-v16`.)
+   (~~`pravda-kviz-v16`~~ → **`pravda-kviz-v31`** k 18. 8. 2026.) Bumpni **aj `?v=`
+   v `index.html`** — kvíz aj `/analyza/index.html` majú vlastné odkazy na `style.css`
+   a `app.js` a analýza sa ľahko zabudne.
 2. **Nesľubuj na výsledku nič, čo 15-minútový hovor nesplní.** Ak sa zmení, čo sa na
    hovore reálne dáva, musí sa zmeniť aj druhý bod ponuky.
 3. **`SPOTS_LEFT` drž pravdivé alebo `null`.**
@@ -396,8 +484,9 @@ Stále platia jeho čísla z reklamy a poradie priorít, ale:
    o tebe · asi 5 minút" — a musí to platiť.
 5. **Nerušte `noPressure`** bez toho, aby si vedel, čo tým zapínaš.
 6. **Konverzné signály o hovore posielaj cez `trackAd()`**, nie `fbq('trackCustom')`.
-7. **Pri zmene významu polí zvýš `quizVersion`.** Inak sa dáta v Sheete nedajú
-   férovo porovnať — a už raz sa to stalo dvakrát.
+7. **Pri zmene významu polí zvýš `quizVersion`.** Inak sa dáta nedajú férovo porovnať —
+   a stalo sa to už **štyrikrát** (v2, v3, v4, v5). Dáta sú dnes v **Supabase**, nie
+   v Sheete.
 8. **`Lead` páľ len po potvrdenom zápise**, nikdy pri kliku na tlačidlo. Inak sa
    kampaň učí na signále, ktorý neznamená rezerváciu.
 9. **Testuj bez odosielania.** Pri klikaní naostro nahraď `fbq` prázdnou funkciou
