@@ -154,23 +154,65 @@ const BREAK_POINTS = [
 ];
 
 // Prvý krok na dnes podľa toho, čo človek označil ako svoj problém.
+//
+// TVAR, KTORÝ FUNGUJE (podľa `co-jest`, najsilnejšieho segmentu): merateľný
+// úkon + vymenované jedlá v zátvorke + dovolenie nerátať. Nie diagnóza.
+//
+// `vecerne-chute` bol prepísaný 27. 8. 2026 práve preto, že tvar nedodržiaval:
+// „Zjedz poriadne raňajky" nie je merateľné (koľko je „poriadne"?), žiadne
+// jedlo nebolo pomenované a druhá veta vysvetľovala PREČO namiesto toho, aby
+// dala druhý úkon. Zo všetkých segmentov mal najnižší podiel klikov na CTA.
+//
+// ⚠️ Texty idú cez `gg()` — rodové tvary píš do zátvoriek ({zjedla}), nikdy
+// natvrdo. Do 27. 8. sa `gg()` nevolalo a muž tu čítal ženský tvar.
 const FIRST_STEP = {
   'co-jest': 'K obedu aj večeri pridaj dlaň bielkovín (mäso, ryba, tvaroh, vajcia, strukoviny). Nič nerátaj — len nech tam sú.',
-  'vecerne-chute': 'Zjedz poriadne raňajky s bielkovinami. Večerná chuť je najčastejšie účet za deň, v ktorom si zjedla primálo.',
+  'vecerne-chute': 'K raňajkám daj dlaň bielkovín (vajcia, tvaroh, grécky jogurt) a k obedu druhú. Večerná chuť je účet za deň, v ktorom si {zjedla} primálo — nie slabá vôľa.',
   'nevydrzim': 'Vyber si jednu vec, ktorú udržíš aj v najhorší deň tohto týždňa. Jednu. Dôslednosť porazí dokonalosť.',
   'nemam-cas': 'Priprav si dnes dve porcie navyše z toho, čo aj tak varíš. Zajtrajšok tým máš vyriešený.',
   'potrebujem-podporu': 'Napíš si do kalendára jeden deň v týždni, kedy si spravíš kontrolu. Zodpovednosť drží vtedy, keď motivácia klesne.',
 };
 
-const SEGMENT_CALL_PROMISE = {
-  'co-jest': 'ukážem ti, čo a koľko jesť — bez hádania pri každom jedle',
-  'vecerne-chute': 'nájdeme, čím ti večerné chute začínajú už cez deň, a čo s tým',
-  'nevydrzim': 'postavíme to tak, aby ťa jeden slabší deň nezhodil na začiatok',
-  'nemam-cas': 'zmestíme to do tvojho dňa — bez varenia navyše a hodín v posilňovni',
-  'potrebujem-podporu': 'vieš už, čo robiť — povieme si, ako to udržať, keď motivácia klesne',
-};
+// `SEGMENT_CALL_PROMISE` tu bola do 27. 8. 2026 — päť viet do ponuky hovoru.
+// Posledný čitateľ zmizol s prestavbou v5 (13. 8.): premenná sa ešte priraďovala,
+// ale na stránku sa už nikdy nedostala. Odstránená podľa toho istého pravidla,
+// ktoré 19. 8. vyhodilo `CONFIG.VALYRA.{URL,CTA,…}` — nepoužívaný text vyzerá
+// ako živý a pri ladení segmentov posiela človeka opravovať niečo, čo nikto nevidí.
 
 const CALL_WINDOWS = ['Dnes večer', 'Zajtra doobeda', 'Zajtra večer', 'Kedykoľvek mi to zavolaj'];
+
+// TELEFÓN — kontrola tvaru SK/CZ (27. 8. 2026).
+//
+// Do dnes stačilo „aspoň 9 číslic", takže prešlo aj 123456789, aj rozpísaný
+// dátum. Číslo, na ktoré sa nedá zavolať, je horšie než žiadne: sľúbi sa hovor,
+// ktorý sa nemá ako uskutočniť, a človek márne čaká.
+//
+// Vracia číslo v medzinárodnom tvare, alebo null. Rozsahy sú úmyselne úzke —
+// SK mobil 9xx, CZ mobil 6xx/7xx. Pevné linky sem nepatria: 15-minútový hovor
+// sa dohaduje na mobil.
+//
+// ⚠️ Toto je POHODLIE, nie bezpečnosť. Posledné slovo má quizLead na serveri
+// a tam kontrola ZÁMERNE ostáva voľnejšia (>= 9 číslic), aby sa nestratil lead
+// s legitímnym zahraničným číslom. Sprísniť backend by znamenalo ticho zahodiť
+// kontakt — presne to, čomu sa tu predchádza.
+function normalizePhone(vstup) {
+  // Medzery, pomlčky, lomky a zátvorky sú bežný spôsob zápisu, nie chyba.
+  const t = String(vstup).replace(/[\s()\-/.]/g, '');
+  if (!/^\+?\d+$/.test(t)) return null;
+
+  // Doplnenie predvoľby podľa toho, ako sa číslo píše doma. SK sa píše
+  // s vodiacou nulou (0900 123 456), CZ bez nej (601 123 456) — podľa toho sa
+  // dá domáci zápis rozlíšiť bez toho, aby sa človeka pýtalo na krajinu.
+  let d = t;
+  if (d.startsWith('00')) d = '+' + d.slice(2);         // 00421… → +421…
+  else if (/^09\d{8}$/.test(d)) d = '+421' + d.slice(1); // 0900 123 456 → SK
+  else if (/^9\d{8}$/.test(d)) d = '+421' + d;           // 900 123 456  → SK bez nuly
+  else if (/^[67]\d{8}$/.test(d)) d = '+420' + d;        // 601 123 456  → CZ
+
+  if (/^\+4219\d{8}$/.test(d)) return d;               // SK mobil  +421 9xx xxx xxx
+  if (/^\+420[67]\d{8}$/.test(d)) return d;            // CZ mobil  +420 6xx/7xx xxx xxx
+  return null;
+}
 
 // ---------- STAV ----------
 const state = {
@@ -187,6 +229,8 @@ const state = {
   // ešte majú (v4 aj hodnotu `informacie`), preto sa nesmú miešať s v5.
   selectedPath: null,  // 'written_consult' | 'valyra' — prvá cesta, ktorú človek
                        // reálne použil. Neprepisuje sa: rozhoduje prvý úmysel.
+  entryPoint: null,    // 'break' | 'message' | 'call' — čím sa cesta otvorila.
+                       // Zapisuje sa pri OTVORENÍ, nie pri odoslaní.
   breakPoint: null,    // hodnota z BREAK_POINTS — ťuknutie, ktoré otvorí formulár.
                        // Bez neho sa nedá odoslať; veta navyše je NEPOVINNÁ.
   leadId: null,      // uuid riadku z quizLead → kľúč na predvyplnenie Valyry
@@ -245,9 +289,14 @@ progressTrack.hidden = true; // jedna obrazovka na vstup — ukazovateľ postupu
 //
 // Posiela sa mimo hlavného toku (`keepalive`) a každá chyba sa prehltne:
 // meranie nesmie zhodiť ani spomaliť to, čo človek práve robí.
-function recordPath(path) {
+// `entryPoint` hovorí, ČÍM sa cesta otvorila: 'break' (ťuknutie na čip),
+// 'message' (prvé písmeno v poli) alebo 'call' (rozbalenie telefónu). Bez neho
+// mali všetky tri v databáze rovnakú stopu — selected_path='written_consult' —
+// a nedalo sa zistiť, ktorý vstup ľudia nedokončia.
+function recordPath(path, entryPoint) {
   if (state.selectedPath) return;
   state.selectedPath = path;
+  state.entryPoint = entryPoint || null;
   trackAd('PathSelected', { path, source: CONFIG.SOURCE });
   if (!state.leadId) return; // bez uuid nie je čo v databáze aktualizovať
   try {
@@ -260,6 +309,11 @@ function recordPath(path) {
         typ: 'cesta',
         leadId: state.leadId,
         selectedPath: path,
+        // Odkladá sa UŽ TU, pri otvorení — nie až pri odoslaní. Kto ťukne a
+        // odíde, je presne ten človek, ktorého treba vidieť; doteraz po ňom
+        // v databáze neostalo nič okrem holého 'written_consult'.
+        entryPoint: entryPoint || '',
+        breakPoint: state.breakPoint || '',
         creativeId: CREATIVE_ID,
         quizVersion: CONFIG.FUNNEL_VERSION,
       }),
@@ -274,6 +328,7 @@ const GENDER_FORMS = {
   vydrzala: ['vydržala', 'vydržal'],
   zadala: ['zadala', 'zadal'],
   napisala: ['napísala', 'napísal'],
+  zjedla: ['zjedla', 'zjedol'],
 };
 function gg(text) {
   return String(text).replace(/\{(\w+)\}/g, (m, key) => {
@@ -592,8 +647,9 @@ function showResult(plan) {
   const hot = repeatedRelapse || wantsGuidance;
   const tier = hot ? 'hot' : 'warm';
 
-  const firstStep = FIRST_STEP[state.problem] || FIRST_STEP['co-jest'];
-  const callPromise = SEGMENT_CALL_PROMISE[state.problem] || SEGMENT_CALL_PROMISE['co-jest'];
+  // Cez `gg()`: texty obsahujú rodové tvary v zátvorkách ({zjedla}). Bez toho
+  // videl muž ženský tvar — `vecerne-chute` mu tvrdil „si zjedla primálo".
+  const firstStep = gg(FIRST_STEP[state.problem] || FIRST_STEP['co-jest']);
 
   // Zámerne rozsah, nie jedno číslo. „Potrebuješ 18 týždňov" znie presne, ale
   // realita presná nebude — a nepresný sľub sa vráti ako námietka.
@@ -816,7 +872,7 @@ function showResult(plan) {
       const pane = document.getElementById('askPane');
       if (pane && pane.hidden) {
         pane.hidden = false;
-        recordPath('written_consult');
+        recordPath('written_consult', 'break');
         trackAd('BreakPointSelected', { ...meta, breakPoint: state.breakPoint });
         // Bez fokusu do textarey zámerne: na mobile by vyskočila klávesnica a
         // prekryla by tlačidlo aj slovo „nepovinné". Kto chce písať, klikne sám.
@@ -845,7 +901,7 @@ function showResult(plan) {
   const messageBox = document.getElementById('message');
   if (messageBox) {
     messageBox.addEventListener('input', () => {
-      recordPath('written_consult');
+      recordPath('written_consult', 'message');
       trackAd('MessageStart', meta);
     }, { once: true });
   }
@@ -865,7 +921,7 @@ function showResult(plan) {
       pane.hidden = false;
       callToggle.hidden = true;
       // Telefón je súčasť cesty ku konzultácii, nie tretia cesta.
-      recordPath('written_consult');
+      recordPath('written_consult', 'call');
       trackAd('CallOpen', meta);
       pane.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, { once: true });
@@ -891,7 +947,10 @@ async function submitCallback(meta, getWindow, getMode) {
   const err = document.getElementById(writing ? 'cbErr' : 'callErr');
   const btn = document.getElementById(writing ? 'cbSubmit' : 'callSubmit');
   const input = document.getElementById(writing ? 'message' : 'phone');
-  const phone = writing ? '' : document.getElementById('phone').value.trim();
+  const phoneRaw = writing ? '' : document.getElementById('phone').value.trim();
+  // Do payloadu ide znormalizovaný tvar (+421…), nie to, čo človek napísal —
+  // v tabuľke sa tým prestanú miešať 0900…, +421 900… a 00421 900….
+  const phone = writing ? '' : (normalizePhone(phoneRaw) || '');
   // Veta je NEPOVINNÁ — stačí ťuknutie. Správa sa skladá tak, aby Ján z notifikácie
   // videl to podstatné aj vtedy, keď človek nedopísal nič. Backend navyše vyžaduje
   // neprázdnu správu (CHECK v `quiz_calls`: riadok musí mať telefón alebo správu),
@@ -902,8 +961,8 @@ async function submitCallback(meta, getWindow, getMode) {
     ? [bp ? `Praská mi to ${bp.phrase}.` : '', extra].filter(Boolean).join('\n\n')
     : '';
 
-  if (!writing && phone.replace(/\D/g, '').length < 9) {
-    err.textContent = 'Skontroluj, prosím, číslo — nevyzerá kompletné.';
+  if (!writing && !phone) {
+    err.textContent = 'Skontroluj, prosím, číslo — čakám slovenské alebo české mobilné, napr. 0900 123 456 alebo +421 900 123 456.';
     err.classList.add('show');
     input.focus();
     return;
