@@ -605,13 +605,20 @@ async function submitCallback(consultMeta, getWindow, getMode) {
   const btn = document.getElementById('cbSubmit');
   const writing = getMode() === 'write';
   const input = document.getElementById(writing ? 'message' : 'phone');
-  const phone = writing ? '' : document.getElementById('phone').value.trim();
+  const phoneRaw = writing ? '' : document.getElementById('phone').value.trim();
+  // Do payloadu ide znormalizovaný tvar (+421…), nie to, čo človek napísal.
+  const phone = writing ? '' : (normalizePhone(phoneRaw) || '');
   const message = writing ? document.getElementById('message').value.trim() : '';
 
-  // Voľná validácia: aspoň 9 číslic. Prísnejšia by odmietala legitímne formáty
-  // (medzery, +421, 0042) a vyhodila by lead pre nič.
-  if (!writing && phone.replace(/\D/g, '').length < 9) {
-    err.textContent = 'Skontroluj, prosím, číslo — nevyzerá kompletné.';
+  // Kontrola tvaru je v /shared/phone.js, spoločná s osobnou analýzou (27. 8. 2026).
+  //
+  // Predtým tu stálo „aspoň 9 číslic" s odôvodnením, že prísnejšia kontrola by
+  // odmietala legitímne zápisy (medzery, +421, 0042). To odôvodnenie už neplatí:
+  // `normalizePhone()` všetky tri tvary prijíma a sama ich prevedie. Odmietne
+  // len to, na čo sa naozaj nedá zavolať — a analýza to tak robí od 27. 8.
+  // Obe stránky pritom píšu do toho istého stĺpca `quiz_calls.phone`.
+  if (!writing && !phone) {
+    err.textContent = PHONE_ERR;
     err.classList.add('show');
     input.focus();
     return;
