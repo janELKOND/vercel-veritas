@@ -1,5 +1,88 @@
 # STAV — kde sme skončili
 
+## 🆕 27. 8. 2026 — telefón v použiteľnom tvare, meranie pri otvorení, `vecerne-chute`
+
+**PRIPRAVENÉ, NENASADENÉ** (vetva `fix/funnel-conversion`). Po nasadení: `sw` v34,
+`analyza/app.js?v=12`, `style.css?v=13`. Vyžaduje aj migráciu **011** a nasadenie
+`quizLead` v repe `valyra` — bez nich sa nové polia ticho zahodia (stránka bude
+fungovať, len sa nebude mať čo zapísať).
+
+### Čo sa zistilo pri kontrole čísel
+
+Tri z piatich podozrení sa nepotvrdili — stálo za to overiť ich pred opravou:
+
+- **Formulár po CTA neexistuje.** `written_consult` sa zapisuje pri PRVOM prejave
+  úmyslu (ťuknutie na čip, prvé písmeno, rozbalenie telefónu), nie pri klike na CTA.
+  116 → 47 teda nie je „klikol a nedokončil formulár", ale „otvoril cestu a neodoslal".
+  Formulár už minimum JE: jedno povinné ťuknutie, veta je nepovinná, meno a e-mail
+  sú z brány vyššie. Pridať doň meno/e-mail/povinný telefón by bol krok späť.
+- **Telefón sa zbiera a funguje** — 5 z 58 riadkov v `quiz_calls` ho má. Nie je
+  prázdny preto, že by pole chýbalo, ale preto, že písomná cesta ho zámerne neposiela
+  („Bez telefonátu, zadarmo").
+- **Valyra CTA je preč od 19. 8.** (commit `c4d3d18`). Všetkých 21 klikov je spred
+  toho dátumu; `selected_path='valyra'` už nepribudne.
+
+### Čo sa naozaj opravilo
+
+**1. Telefón — kontrola tvaru SK/CZ.** Doteraz stačilo „aspoň 9 číslic", takže prešlo
+aj `123456789` aj rozpísaný dátum. Nová `normalizePhone()` prijme domáci aj
+medzinárodný zápis (`0900 123 456`, `+421 900 123 456`, `00421…`, CZ `601 123 456`)
+a do DB uloží jednotný tvar `+421900123456`. Neplatné číslo povie, čo sa čaká.
+Backend ostáva voľnejší ZÁMERNE — sprísniť ho by znamenalo ticho zahodiť lead
+so zahraničným číslom.
+
+**2. Meranie pri OTVORENÍ, nie až pri odoslaní.** `BreakPointSelected` existoval, ale
+len na Meta pixeli — teda mimo databázy, v ktorej sa vyhodnocuje po segmentoch.
+Nové stĺpce `entry_point` (`break` | `message` | `call`) a `break_point` sa zapisujú
+už pri otvorení. **Riadok s `entry_point` a bez `consult_requested_at` = človek,
+ktorý začal a nedokončil.** Doteraz po ňom neostalo nič okrem holého
+`selected_path='written_consult'`, spoločného pre všetky tri vstupy.
+
+**3. `vecerne-chute` prepísaný.** Mal najnižší podiel klikov zo všetkých segmentov.
+Nedodržiaval tvar, ktorý funguje pri `co-jest`: merateľný úkon + vymenované jedlá
++ dovolenie nerátať. „Zjedz poriadne raňajky" nie je merateľné a druhá veta
+vysvetľovala PREČO namiesto druhého úkonu. Nové znenie:
+
+> *„K raňajkám daj dlaň bielkovín (vajcia, tvaroh, grécky jogurt) a k obedu druhú.
+> Večerná chuť je účet za deň, v ktorom si {zjedla} primálo — nie slabá vôľa."*
+
+⚠️ **Rozdiel medzi segmentmi je menší, než sa zdalo.** Za celý čas 20,0 % (`co-jest`)
+vs 9,5 % (`vecerne-chute`), ale to mieša éry — pred v5 sa `selected_path` nezapisoval
+vôbec. Od 17. 8. je to **48,5 % vs 32,1 %** na 101 a 56 leadoch. Rozdiel ostáva,
+je ale menší a čísla sú malé — text sa mení preto, že je objektívne slabší, nie
+preto, že by tie dve percentá boli dokázané.
+
+**4. Opravená rodová chyba.** `firstStep` sa vkladal do HTML bez `gg()`, takže mužovi
+tvrdil „si **zjedla** primálo". Teraz ide cez `gg()`, pribudol tvar `zjedla/zjedol`.
+
+**5. `.when-chip` na 44 px.** Jediný prvok na výsledku pod hranicou pohodlného cieľa
+pre palec (mal 36 px). Zvyšok výsledku je na 375 px v poriadku: žiadny vodorovný
+pretok, čipy 54 px, textarea 16 px (bez priblíženia na iOS).
+
+**6. Odstránená `SEGMENT_CALL_PROMISE`** — päť viet bez čitateľa od prestavby v5.
+Rovnaké pravidlo, ktoré 19. 8. vyhodilo `CONFIG.VALYRA.{URL,CTA,…}`.
+
+### Prečo CTA vyskočila v týždni od 17. 8.
+
+Commit **`1049f1e`, 17. 8. 2026 15:31** — *„klikacie odpovede namiesto prazdneho
+textoveho pola"*. Prázdne pole nahradili štyri čipy „Kedy ti to najčastejšie praskne?".
+Podiel klikov: 9,3 % (týždeň 10. 8.) → **42,9 %** (17. 8.) → 33,8 % (24. 8.).
+Deň nato `c19192d` opravil, že tlačidlo po ťuknutí ostávalo mimo obrazovky.
+
+**Poučenie, ktoré platí ďalej:** ťuknutie poráža písanie. Nie je to o viditeľnosti —
+je to prah prvého písmena.
+
+### Otestované
+
+Localhost, stubnuté `fbq` aj `fetch`, 375 px. `normalizePhone` má 24 prípadov
+(SK/CZ, domáci aj medzinárodný zápis, neplatné vstupy) — všetky prechádzajú.
+Prejdená písomná aj telefónna cesta: `entry_point` `break` aj `call` odchádza
+už pri otvorení, `0900 123 456` sa uloží ako `+421900123456` a potvrdenie ho
+tak aj ukáže. Ženský aj mužský tvar nového textu. Na výsledku nie je odkaz na
+`valyra.sk`, stránka nepretečie do strán.
+
+---
+
 ## 🆕 19. 8. 2026 — Valyra prestala byť druhou ponukou
 
 **NASADENÉ.** `sw` v32, `analyza/app.js?v=10`, `analyza.css?v=5`.
