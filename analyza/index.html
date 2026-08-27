@@ -60,6 +60,8 @@
   <!-- Absolútna cesta z rovnakého dôvodu ako pri CSS vyššie — relatívne "app.js"
        by sa na URL /analyza (bez lomítka) vyhodnotilo ako /app.js, čo je KVÍZ,
        nie táto stránka. Presne tento bug spôsobil, že /analyza zobrazovala kvíz. -->
-  <script src="/analyza/app.js?v=12"></script>
+  <!-- Kontrola telefónu je spoločná s kvízom. Musí byť PRED app.js. -->
+  <script src="/shared/phone.js?v=1"></script>
+  <script src="/analyza/app.js?v=13"></script>
 </body>
 </html>

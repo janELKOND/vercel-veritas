@@ -1,5 +1,57 @@
 # STAV — kde sme skončili
 
+## 🆕 27. 8. 2026 (neskôr) — kvíz a analýza majú konečne rovnaký telefón
+
+**PRIPRAVENÉ, NENASADENÉ** (vetva `fix/phone-validation-kviz`). Po nasadení:
+`sw` v35, `app.js?v=24`, `analyza/app.js?v=13`, nový `shared/phone.js?v=1`.
+
+Ráno dostala kontrolu tvaru SK/CZ len **analýza**. Kvíz ostal na starom „aspoň
+9 číslic" — a keďže **obe stránky píšu do toho istého stĺpca `quiz_calls.phone`**,
+v tabuľke by sa začali miešať dva rôzne tvary. Toto to dorovnáva.
+
+### Prečo samostatný súbor, a nie druhá kópia
+
+`shared/phone.js` je **jediný zdroj** pre `normalizePhone()` aj pre znenie chyby
+(`PHONE_ERR`). Načítava sa obyčajným `<script>`-om **pred** `app.js` na oboch
+stránkach.
+
+Dve kópie tej istej funkcie by sa skôr či neskôr rozišli — presne to sa dnes stalo
+medzi kvízom a analýzou a stálo to jeden celý deň rozdielu. `CLAUDE.md` síce hovorí
+„meniť súbežne s `app.js`", ale to je pokyn pre človeka, nie poistka. Toto je poistka.
+
+Nie je to modul zámerne: zvyšok repa žiadny build nemá a kvôli jednej funkcii ho
+nezavádzame.
+
+### Staré odôvodnenie už neplatilo
+
+V kvíze stálo pri voľnej kontrole napísané:
+
+> *„Voľná validácia: aspoň 9 číslic. Prísnejšia by odmietala legitímne formáty
+> (medzery, +421, 0042) a vyhodila by lead pre nič."*
+
+Obava bola oprávnená, ale `normalizePhone()` **všetky tri tvary prijíma** a sama ich
+prevedie na `+421…`. Odmietne len to, na čo sa naozaj nedá zavolať.
+
+### Otestované
+
+Localhost, stubnuté `fbq` aj `fetch`. `shared/phone.js` má 24 prípadov (SK/CZ, domáci
+aj medzinárodný zápis, neplatné vstupy) — všetky prechádzajú.
+
+**Kvíz:** prejdených všetkých 8 otázok + 3 o sebe až po formulár. `123456789` odmietnuté
+jednotnou hláškou, `0900 123 456` odoslané ako `+421900123456`, potvrdenie ukazuje
+znormalizovaný tvar.
+
+**Analýza:** `12.11.1985` odmietnuté, `+420 777 123 456` odoslané ako `+420777123456`,
+`entry_point='call'` odchádza pri otvorení, personalizovaný prvý krok sa stále vykresľuje.
+Konzola bez chýb na oboch stránkach.
+
+### ⚠️ Nezabudni pri ďalšej zmene
+
+Do CORE v `sw.js` pribudol `/shared/phone.js`. Keď sa bude meniť, treba bumpnúť
+`?v=` v **oboch** `index.html` — inak jedna stránka pojde na starej kópii.
+
+---
+
 ## 🆕 27. 8. 2026 — telefón v použiteľnom tvare, meranie pri otvorení, `vecerne-chute`
 
 **PRIPRAVENÉ, NENASADENÉ** (vetva `fix/funnel-conversion`). Po nasadení: `sw` v34,
