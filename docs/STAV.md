@@ -1,5 +1,26 @@
 # STAV — kde sme skončili
 
+## 🆕 29. 8. 2026 — výsledok necháva otvorené dvere k vedeniu
+
+**PRIPRAVENÉ, NENASADENÉ** (vetva `codex/funnel-middle-2026-08-29`). Po nasadení:
+`sw` v36 a `analyza/app.js?v=14`.
+
+Vrch lievika ani fungujúca písomná cesta sa nemenia. Úprava opravuje tri miesta
+v strede lievika:
+
+- sekundárny hovor už neponúka len neurčité „prejdeme si to“, ale sľubuje
+  15 minút, prechod jej čísel a jednu konkrétnu prvú úpravu; volá Ján,
+- jemná veta pod kontaktom priznáva, že po osobnej odpovedi existuje možnosť
+  pokračovať s vedením, bez ceny, obsahu programu a tlaku vo verejnom repe,
+- potvrdenie po písomnej žiadosti už nesľubuje odpoveď „najneskôr zajtra“ a
+  nezatvára dvere vetou „nemusíš nikam volať“. Odkazuje na okamžitý e-mail,
+  kde je súkromná ponuka, a necháva viditeľnú možnosť nechať číslo.
+
+Cena ani platobné podmienky na stránku nešli. Záväzné znenie ostáva v súkromnom
+repe `lievik` a v transakčnom e-maile z `quizLead`.
+
+---
+
 ## 🆕 27. 8. 2026 (neskôr) — kvíz a analýza majú konečne rovnaký telefón
 
 **PRIPRAVENÉ, NENASADENÉ** (vetva `fix/phone-validation-kviz`). Po nasadení:
