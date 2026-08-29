@@ -2,7 +2,7 @@
 
 ## 🆕 29. 8. 2026 — výsledok necháva otvorené dvere k vedeniu
 
-**PRIPRAVENÉ, NENASADENÉ** (vetva `codex/funnel-middle-2026-08-29`). Po nasadení:
+**NASADENÉ 29. 8. 2026.** Produkcia overená na `kviz.valyra.sk/analyza`:
 `sw` v36 a `analyza/app.js?v=14`.
 
 Vrch lievika ani fungujúca písomná cesta sa nemenia. Úprava opravuje tri miesta
