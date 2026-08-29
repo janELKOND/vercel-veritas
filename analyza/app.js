@@ -665,9 +665,9 @@ function showResult(plan) {
   // Telefón je vždy až druhá možnosť a rozbalí sa len po vedomom kliknutí.
   // Slovo „rezervácia" tu zámerne nie je — človek nechá číslo, termín si nevyberá.
   const callPane = `
-      <button type="button" class="btn secondary" id="callToggle">Radšej si to prejdeme spolu? Chcem 15-minútový hovor</button>
+      <button type="button" class="btn secondary" id="callToggle">Radšej si to prejdeme nahlas? 15 minút, volám ja</button>
       <div class="callback" id="callFormPane" hidden>
-        <label class="callback-note callback-promise" for="phone">Číslo použijem len na tento jeden hovor. Nikde ho nezverejňujem a neposielam naň reklamu.</label>
+        <label class="callback-note callback-promise" for="phone">Prejdeme tvoje čísla a jednu konkrétnu vec, ktorú upraviť ako prvú. Číslo použijem len na tento hovor — neposielam naň reklamu.</label>
         <input type="tel" id="phone" inputmode="tel" autocomplete="tel" placeholder="+421 900 123 456">
         <div class="when-label" id="whenLabel">Kedy sa ti to hodí? <span>(nepovinné)</span></div>
         <div class="when-row" id="whenRow" role="group" aria-labelledby="whenLabel">
@@ -723,7 +723,7 @@ function showResult(plan) {
   // je v `lievik/docs/PONUKA.md` stále otvorené a ponuka sa hovorí v odpovedi
   // človeku, nie na stránke. Čísla o peniazoch patria do repa `lievik`.
   const valyraLine = `
-      <p class="soft-link">Valyra je moja appka na jedálničky a denné kroky. Nastavujem ju na čísla ľuďom, ktorých vediem.</p>`;
+      <p class="soft-link">Valyra je moja appka na jedálničky a denné kroky. Nastavujem ju na čísla ľuďom, ktorých vediem. Ak po mojej odpovedi zistíš, že chceš pokračovať so mnou, vysvetlím ti, ako vedenie funguje a či ti sedí. Teraz sa pre nič nemusíš rozhodovať.</p>`;
 
   const ctaBlock = askBlock + (CONFIG.VALYRA.ENABLED ? valyraLine : '');
 
@@ -1009,7 +1009,7 @@ async function submitCallback(meta, getWindow, getMode) {
           // Kto len ťukol a nič nedopísal, ten NIČ NENAPÍSAL — potvrdenie mu to
           // nesmie tvrdiť. Rozlíšenie stojí jednu podmienku a je to presne ten
           // typ drobnosti, na ktorej sa dôvera buď drží, alebo stráca.
-          ? `<p>Pozriem sa na tvoje čísla aj na to, ${extra ? `čo si ${gg('{napisala}')}` : `kedy ti to praská`}, a odpoviem ti osobne najneskôr zajtra na <strong>${state.email}</strong>. Nemusíš nikam volať ani si vyberať termín.</p>`
+          ? `<p>Pozriem sa na tvoje čísla aj na to, ${extra ? `čo si ${gg('{napisala}')}` : `kedy ti to praská`}, a odpoviem ti na <strong>${state.email}</strong>. V e-maile hneď nájdeš aj to, čo je za ďalším krokom, ak budeš chcieť pokračovať. Ak si to radšej prejdeš nahlas, nižšie nechaj číslo — volám ja.</p>`
           : `<p>Ozvem sa ti na <strong>${phone}</strong>${payload.preferredTime ? ` — <strong>${payload.preferredTime.toLowerCase()}</strong>` : ' čo najskôr'}. Ak by ti to nevyhovovalo, napíš mi na <a href="mailto:${CONFIG.CONTACT_EMAIL}">${CONFIG.CONTACT_EMAIL}</a>.</p>`}
       </div>`;
   } catch (e) {
