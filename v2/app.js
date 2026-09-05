@@ -133,6 +133,11 @@ function renderLanding() {
       </ul>
       <button class="primary" id="start">Chcem svoj 7-dňový plán</button>
       <p class="micro">Zadarmo · približne 2 minúty · príde aj na e-mail</p>
+      <div class="path-preview">
+        <div class="eyebrow">Čo môže nasledovať</div>
+        <p><strong>Plán je prvý krok.</strong> Ak budeš chcieť pokračovať, môžeš si potom vypýtať bezplatnú úvodnú konzultáciu so mnou.</p>
+        <p>Keď zistíme, že ti viem pomôcť, ponúknem ti <strong>2 mesiace osobného vedenia cez Valyru za 150 €</strong>. Zaplatíš až po prvom týždni, keď si spoluprácu najprv vyskúšaš.</p>
+      </div>
       <div class="proof">
         <img src="/img/jan-dnes-88.jpg" width="152" height="152" alt="Ján Karas dnes">
         <p><strong>Ján Karas</strong><br>Schudol som 45 kg a osem rokov si výsledok držím. Tento týždeň je postavený na tom, čo pomohlo mne prestať stále začínať znova.</p>
@@ -237,10 +242,17 @@ function renderResult() {
     <div class="days">${plan.days.map((d, i) => `<article class="day"><div class="day-num">${i + 1}</div><div><strong>${d[0]}</strong><p>${d[1]}</p></div></article>`).join('')}</div>
     <p class="micro">Plán som poslal aj na <strong>${escapeHtml(state.email)}</strong>. Ak ho nevidíš, skontroluj priečinok Spam alebo Hromadné.</p>
     <section class="coach-offer" id="help">
-      <div class="eyebrow">Ak nechceš byť na to sám/sama</div>
-      <h3>Plán je začiatok. Rozhoduje, čo spravíš, keď príde zlý deň.</h3>
-      <p>Pozriem sa na tvoju brzdu a poviem ti jednu konkrétnu vec, ktorú by som na tvojom mieste upravil ako prvú. Bez ďalšieho formulára a bez záväzku.</p>
-      <button class="primary" id="helpBtn">Chcem Jánovu osobnú odpoveď</button>
+      <div class="eyebrow">Bezplatná úvodná konzultácia</div>
+      <h3>Nemusíš zisťovať sám/sama, prečo sa ti to stále vracia.</h3>
+      <p>Na krátkej konzultácii prejdeme tvoju hlavnú brzdu a nájdeme prvú úpravu, ktorá sedí do tvojho reálneho života. Konzultácia je bezplatná a bez záväzku.</p>
+      <div class="program-card">
+        <small>Ak si spolupráca sadne</small>
+        <strong>2 mesiace osobného vedenia cez Valyru</strong>
+        <ul><li>jednoduchý plán podľa tvojho života,</li><li>moja pravidelná kontrola a úpravy,</li><li>podpora, aby jeden zlý deň neznamenal koniec.</li></ul>
+        <div class="price"><span>150 € spolu</span><em>platba až po prvom týždni</em></div>
+      </div>
+      <button class="primary" id="helpBtn">Chcem bezplatnú konzultáciu</button>
+      <p class="offer-micro">Najprv sa porozprávame. Až potom sa rozhodneš, či chceš program.</p>
       <div class="contact-box" id="contactBox" hidden></div>
     </section>
   </section>`;
@@ -256,7 +268,7 @@ function openContact() {
   box.innerHTML = `<strong>Kedy ti to najčastejšie praskne?</strong><div class="breaks">${BREAKS.map(x => `<button class="option" data-break="${x.value}">${x.label}</button>`).join('')}</div>
     <div class="field"><label for="note">Chceš niečo doplniť? <span style="font-weight:400">(nepovinné)</span></label><textarea id="note" maxlength="1200" placeholder="Stačí jedna veta…"></textarea></div>
     <div class="error" id="contactError" role="alert" aria-live="polite"></div>
-    <button class="primary" id="sendContact">Poslať Jánovi</button>`;
+    <button class="primary" id="sendContact">Požiadať o konzultáciu</button>`;
   box.querySelectorAll('[data-break]').forEach(x => x.addEventListener('click', () => {
     state.breakPoint = x.dataset.break;
     box.querySelectorAll('[data-break]').forEach(y => y.classList.toggle('active', y === x));
@@ -295,7 +307,7 @@ async function submitContact() {
     state.sent = true;
     track('Lead', { way: 'message', segment: state.problem, funnel_version: CONFIG.VERSION, value: 25, currency: 'EUR' });
     track('Contact', { content_name: 'v2-personal-help' });
-    document.getElementById('contactBox').innerHTML = `<div class="done"><strong>✓ Ján dostal tvoju správu.</strong><br>Pozrie sa na tvoj plán a odpovie ti na <strong>${escapeHtml(state.email)}</strong>. Ak budete chcieť pokračovať, až potom si spolu prejdete ďalší krok.</div>`;
+    document.getElementById('contactBox').innerHTML = `<div class="done"><strong>✓ Žiadosť o konzultáciu je odoslaná.</strong><br>Ján sa pozrie na tvoju situáciu a ozve sa ti na <strong>${escapeHtml(state.email)}</strong>. Na konzultácii si najprv overíte, či ti jeho 2-mesačné vedenie dáva zmysel.</div>`;
   } catch {
     error.textContent = 'Správu sa nepodarilo odoslať. Skús to, prosím, ešte raz.';
     btn.disabled = false;
