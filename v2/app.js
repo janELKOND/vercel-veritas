@@ -138,6 +138,15 @@ function renderLanding() {
         <p><strong>Po pláne môžeš ísť na bezplatnú úvodnú konzultáciu.</strong> Ak zistíme, že ti viem pomôcť, prvých 7 dní môjho 2-mesačného vedenia cez Valyru dostaneš úplne zdarma.</p>
         <p><strong>Prvý týždeň neplatíš nič a nepotrebujem tvoju kartu.</strong> Až po siedmich dňoch sa rozhodneš: skončíš bez poplatku alebo pokračuješ ďalších 7 týždňov za 150 €.</p>
       </div>
+      <figure class="client-result">
+        <img src="/img/clientka-15kg.webp" width="1400" height="1168" loading="lazy" decoding="async" alt="Výsledok klientky pod Jánovým vedením: 85 kg v roku 2024, 75 kg v roku 2025 a 70 kg v roku 2026">
+        <figcaption>
+          <div class="eyebrow">Reálna klientka · reálny výsledok</div>
+          <strong>85 kg → 70 kg. Spolu –15 kg.</strong>
+          <p>Nie fotografia po pár dobrých dňoch, ale postupný výsledok pod mojím vedením od roku 2024 do roku 2026.</p>
+          <small>Každý človek je iný a výsledky sa môžu líšiť.</small>
+        </figcaption>
+      </figure>
       <div class="proof">
         <img src="/img/jan-dnes-88.jpg" width="152" height="152" alt="Ján Karas dnes">
         <p><strong>Ján Karas</strong><br>Schudol som 45 kg a osem rokov si výsledok držím. Tento týždeň je postavený na tom, čo pomohlo mne prestať stále začínať znova.</p>
@@ -245,6 +254,7 @@ function renderResult() {
       <div class="eyebrow">Bezplatná úvodná konzultácia</div>
       <h3>Nemusíš zisťovať sám/sama, prečo sa ti to stále vracia.</h3>
       <p>Na krátkej konzultácii prejdeme tvoju hlavnú brzdu a nájdeme prvú úpravu, ktorá sedí do tvojho reálneho života. Konzultácia je bezplatná a bez záväzku.</p>
+      <div class="result-proof-line"><strong>Moja klientka schudla z 85 na 70 kg.</strong><span>Postupný výsledok pod mojím vedením, nie krátkodobá výzva.</span></div>
       <div class="program-card">
         <div class="free-badge">Prvých 7 dní zdarma</div>
         <small>Najprv si vedenie vyskúšaš</small>

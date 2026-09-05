@@ -56,6 +56,12 @@ h3 { font-size: 25px; }
 .path-preview { margin: 28px 0 0; padding: 20px; border: 1px solid #cbded4; border-radius: 18px; background: rgba(255,253,249,.72); }
 .path-preview p { margin: 9px 0 0; color: var(--soft); font-size: 14px; line-height: 1.55; }
 .path-preview strong { color: var(--ink); }
+.client-result { margin: 24px 0 0; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: var(--card); box-shadow: 0 14px 36px rgba(34,49,43,.09); }
+.client-result img { display: block; width: 100%; height: auto; aspect-ratio: 1400 / 1168; object-fit: cover; }
+.client-result figcaption { padding: 18px 20px 20px; }
+.client-result figcaption > strong { display: block; margin-top: 7px; font-family: Fraunces, Georgia, serif; font-size: 25px; line-height: 1.15; }
+.client-result figcaption p { margin: 8px 0; color: var(--soft); font-size: 14px; line-height: 1.5; }
+.client-result figcaption small { color: #7c8984; font-size: 11px; }
 .proof { display: flex; align-items: center; gap: 14px; margin: 32px 0 0; padding-top: 22px; border-top: 1px solid var(--line); }
 .proof img { width: 76px; height: 76px; border-radius: 18px; object-fit: cover; object-position: top; }
 .proof p { margin: 0; color: var(--soft); line-height: 1.5; font-size: 14px; }
@@ -94,6 +100,9 @@ h3 { font-size: 25px; }
 .coach-offer { background: var(--warm); border-radius: 22px; padding: clamp(22px, 6vw, 34px); margin-top: 30px; }
 .coach-offer p { line-height: 1.6; color: #594a40; }
 .coach-offer .primary { margin-top: 8px; }
+.result-proof-line { display: grid; gap: 3px; margin: 18px 0; padding: 14px 16px; border-left: 4px solid var(--green); border-radius: 10px; background: rgba(255,253,249,.7); }
+.result-proof-line strong { color: var(--green-dark); }
+.result-proof-line span { color: #6d5a4d; font-size: 13px; line-height: 1.45; }
 .program-card { margin: 20px 0 16px; padding: 20px; border-radius: 16px; background: rgba(255,253,249,.76); border: 1px solid rgba(70,53,43,.12); }
 .free-badge { display: inline-block; margin: 0 0 14px; padding: 7px 11px; border-radius: 999px; color: white; background: var(--green); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
 .program-card small { display: block; margin-bottom: 5px; color: var(--green); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
