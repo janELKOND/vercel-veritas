@@ -53,6 +53,9 @@ h3 { font-size: 25px; }
 .primary:focus-visible, .option:focus-visible { outline: 3px solid #101c18; outline-offset: 3px; }
 .primary:disabled { opacity: .58; cursor: wait; transform: none; }
 .micro { color: var(--soft); text-align: center; font-size: 13px; margin: 11px 0 0; }
+.path-preview { margin: 28px 0 0; padding: 20px; border: 1px solid #cbded4; border-radius: 18px; background: rgba(255,253,249,.72); }
+.path-preview p { margin: 9px 0 0; color: var(--soft); font-size: 14px; line-height: 1.55; }
+.path-preview strong { color: var(--ink); }
 .proof { display: flex; align-items: center; gap: 14px; margin: 32px 0 0; padding-top: 22px; border-top: 1px solid var(--line); }
 .proof img { width: 76px; height: 76px; border-radius: 18px; object-fit: cover; object-position: top; }
 .proof p { margin: 0; color: var(--soft); line-height: 1.5; font-size: 14px; }
@@ -91,6 +94,14 @@ h3 { font-size: 25px; }
 .coach-offer { background: var(--warm); border-radius: 22px; padding: clamp(22px, 6vw, 34px); margin-top: 30px; }
 .coach-offer p { line-height: 1.6; color: #594a40; }
 .coach-offer .primary { margin-top: 8px; }
+.program-card { margin: 20px 0 16px; padding: 20px; border-radius: 16px; background: rgba(255,253,249,.76); border: 1px solid rgba(70,53,43,.12); }
+.program-card small { display: block; margin-bottom: 5px; color: var(--green); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.program-card > strong { display: block; font-family: Fraunces, Georgia, serif; font-size: 21px; line-height: 1.2; }
+.program-card ul { margin: 14px 0; padding-left: 20px; color: #594a40; line-height: 1.55; }
+.price { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px 14px; padding-top: 13px; border-top: 1px solid rgba(70,53,43,.13); }
+.price span { color: var(--green-dark); font-size: 20px; font-weight: 800; }
+.price em { color: #6d5a4d; font-size: 13px; font-style: normal; }
+.offer-micro { margin: 9px 0 0; text-align: center; font-size: 12px; }
 .contact-box { margin-top: 16px; padding-top: 18px; border-top: 1px solid rgba(70,53,43,.16); }
 .contact-box[hidden] { display: none; }
 .breaks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 16px; }
