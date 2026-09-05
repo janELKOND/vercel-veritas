@@ -2,7 +2,7 @@ const CONFIG = {
   API: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
   PIXEL: '2221207801987418',
   SOURCE: 'funnel-v2',
-  VERSION: 6,
+  VERSION: 7,
 };
 
 const PROBLEMS = [
@@ -134,9 +134,9 @@ function renderLanding() {
       <button class="primary" id="start">Chcem svoj 7-dňový plán</button>
       <p class="micro">Zadarmo · približne 2 minúty · príde aj na e-mail</p>
       <div class="path-preview">
-        <div class="eyebrow">Čo môže nasledovať</div>
-        <p><strong>Plán je prvý krok.</strong> Ak budeš chcieť pokračovať, môžeš si potom vypýtať bezplatnú úvodnú konzultáciu so mnou.</p>
-        <p>Keď zistíme, že ti viem pomôcť, ponúknem ti <strong>2 mesiace osobného vedenia cez Valyru za 150 €</strong>. Zaplatíš až po prvom týždni, keď si spoluprácu najprv vyskúšaš.</p>
+        <div class="eyebrow">Najprv si ma vyskúšaj</div>
+        <p><strong>Po pláne môžeš ísť na bezplatnú úvodnú konzultáciu.</strong> Ak zistíme, že ti viem pomôcť, prvých 7 dní môjho 2-mesačného vedenia cez Valyru dostaneš úplne zdarma.</p>
+        <p><strong>Prvý týždeň neplatíš nič a nepotrebujem tvoju kartu.</strong> Až po siedmich dňoch sa rozhodneš: skončíš bez poplatku alebo pokračuješ ďalších 7 týždňov za 150 €.</p>
       </div>
       <div class="proof">
         <img src="/img/jan-dnes-88.jpg" width="152" height="152" alt="Ján Karas dnes">
@@ -246,13 +246,15 @@ function renderResult() {
       <h3>Nemusíš zisťovať sám/sama, prečo sa ti to stále vracia.</h3>
       <p>Na krátkej konzultácii prejdeme tvoju hlavnú brzdu a nájdeme prvú úpravu, ktorá sedí do tvojho reálneho života. Konzultácia je bezplatná a bez záväzku.</p>
       <div class="program-card">
-        <small>Ak si spolupráca sadne</small>
+        <div class="free-badge">Prvých 7 dní zdarma</div>
+        <small>Najprv si vedenie vyskúšaš</small>
         <strong>2 mesiace osobného vedenia cez Valyru</strong>
         <ul><li>jednoduchý plán podľa tvojho života,</li><li>moja pravidelná kontrola a úpravy,</li><li>podpora, aby jeden zlý deň neznamenal koniec.</li></ul>
-        <div class="price"><span>150 € spolu</span><em>platba až po prvom týždni</em></div>
+        <div class="price"><span>0 € prvý týždeň</span><em>bez karty a bez záväzku</em></div>
+        <p class="after-trial">Po 7 dňoch sa rozhodneš. Ak pokračuješ, ďalších 7 týždňov stojí spolu 150 €. Ak nie, neplatíš nič.</p>
       </div>
-      <button class="primary" id="helpBtn">Chcem bezplatnú konzultáciu</button>
-      <p class="offer-micro">Najprv sa porozprávame. Až potom sa rozhodneš, či chceš program.</p>
+      <button class="primary" id="helpBtn">Chcem konzultáciu + 7 dní zdarma</button>
+      <p class="offer-micro">Najprv sa porozprávame. Žiadna platba a žiadne rozhodnutie naslepo.</p>
       <div class="contact-box" id="contactBox" hidden></div>
     </section>
   </section>`;
@@ -266,6 +268,7 @@ function openContact() {
   const box = document.getElementById('contactBox');
   box.hidden = false;
   box.innerHTML = `<strong>Kedy ti to najčastejšie praskne?</strong><div class="breaks">${BREAKS.map(x => `<button class="option" data-break="${x.value}">${x.label}</button>`).join('')}</div>
+    <div class="field"><label for="phone">Telefón <span style="font-weight:400">(nepovinné)</span></label><input id="phone" type="tel" inputmode="tel" maxlength="40" placeholder="Ak chceš, aby som ti zavolal"></div>
     <div class="field"><label for="note">Chceš niečo doplniť? <span style="font-weight:400">(nepovinné)</span></label><textarea id="note" maxlength="1200" placeholder="Stačí jedna veta…"></textarea></div>
     <div class="error" id="contactError" role="alert" aria-live="polite"></div>
     <button class="primary" id="sendContact">Požiadať o konzultáciu</button>`;
@@ -288,11 +291,12 @@ async function submitContact() {
   btn.disabled = true;
   btn.textContent = 'Posielam…';
   const selected = BREAKS.find(x => x.value === state.breakPoint);
+  const phone = document.getElementById('phone').value.trim();
   const note = document.getElementById('note').value.trim();
   const message = [`Praská mi to ${selected.phrase}.`, note].filter(Boolean).join('\n\n');
   const repeated = state.history === 'viackrat' || state.history === 'jojo';
   const payload = {
-    typ: 'konzultacia', name: state.name, email: state.email, phone: '', message,
+    typ: 'konzultacia', name: state.name, email: state.email, phone, message,
     preferredTime: '', segment: state.problem, history: state.history,
     readiness: 'podpora', selectedPath: 'written_consult',
     tier: repeated || state.problem === 'potrebujem-podporu' ? 'hot' : 'warm',
@@ -303,11 +307,11 @@ async function submitContact() {
     const res = await fetch(CONFIG.API, { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error(`API ${res.status}`);
     const out = await res.json();
-    if (!out || out.kind !== 'message') throw new Error('unconfirmed');
+    if (!out || !['message', 'call'].includes(out.kind)) throw new Error('unconfirmed');
     state.sent = true;
     track('Lead', { way: 'message', segment: state.problem, funnel_version: CONFIG.VERSION, value: 25, currency: 'EUR' });
     track('Contact', { content_name: 'v2-personal-help' });
-    document.getElementById('contactBox').innerHTML = `<div class="done"><strong>✓ Žiadosť o konzultáciu je odoslaná.</strong><br>Ján sa pozrie na tvoju situáciu a ozve sa ti na <strong>${escapeHtml(state.email)}</strong>. Na konzultácii si najprv overíte, či ti jeho 2-mesačné vedenie dáva zmysel.</div>`;
+    document.getElementById('contactBox').innerHTML = `<div class="done"><strong>✓ Žiadosť o konzultáciu je odoslaná.</strong><br>Ján sa pozrie na tvoju situáciu a ozve sa ti${phone ? ' telefonicky' : ` na <strong>${escapeHtml(state.email)}</strong>`}. Ak si spolupráca sadne, prvý týždeň programu si vyskúšaš zdarma a bez karty.</div>`;
   } catch {
     error.textContent = 'Správu sa nepodarilo odoslať. Skús to, prosím, ešte raz.';
     btn.disabled = false;
