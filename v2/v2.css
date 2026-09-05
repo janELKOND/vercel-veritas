@@ -95,12 +95,14 @@ h3 { font-size: 25px; }
 .coach-offer p { line-height: 1.6; color: #594a40; }
 .coach-offer .primary { margin-top: 8px; }
 .program-card { margin: 20px 0 16px; padding: 20px; border-radius: 16px; background: rgba(255,253,249,.76); border: 1px solid rgba(70,53,43,.12); }
+.free-badge { display: inline-block; margin: 0 0 14px; padding: 7px 11px; border-radius: 999px; color: white; background: var(--green); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
 .program-card small { display: block; margin-bottom: 5px; color: var(--green); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .program-card > strong { display: block; font-family: Fraunces, Georgia, serif; font-size: 21px; line-height: 1.2; }
 .program-card ul { margin: 14px 0; padding-left: 20px; color: #594a40; line-height: 1.55; }
 .price { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px 14px; padding-top: 13px; border-top: 1px solid rgba(70,53,43,.13); }
 .price span { color: var(--green-dark); font-size: 20px; font-weight: 800; }
 .price em { color: #6d5a4d; font-size: 13px; font-style: normal; }
+.program-card .after-trial { margin: 12px 0 0; font-size: 13px; line-height: 1.5; }
 .offer-micro { margin: 9px 0 0; text-align: center; font-size: 12px; }
 .contact-box { margin-top: 16px; padding-top: 18px; border-top: 1px solid rgba(70,53,43,.16); }
 .contact-box[hidden] { display: none; }
