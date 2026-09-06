@@ -2,7 +2,7 @@ const CONFIG = {
   API: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
   PIXEL: '2221207801987418',
   SOURCE: 'funnel-v2',
-  VERSION: 7,
+  VERSION: 8,
   CALENDAR: 'https://calendar.app.google/xfubmW69zjcoGnsH8',
 };
 
@@ -19,13 +19,6 @@ const HISTORIES = [
   { value: 'raz-dva', label: 'Kilá sa mi vrátili raz alebo dvakrát' },
   { value: 'viackrat', label: 'Vrátili sa mi už trikrát alebo viackrát' },
   { value: 'jojo', label: 'Moja váha ide stále hore-dole' },
-];
-
-const BREAKS = [
-  { value: 'vecer', label: 'Večer doma', phrase: 'večer doma' },
-  { value: 'praca', label: 'Cez deň v práci', phrase: 'cez deň v práci' },
-  { value: 'vikend', label: 'Cez víkend', phrase: 'cez víkend' },
-  { value: 'zaciatok', label: 'Po pár dňoch', phrase: 'už po pár dňoch' },
 ];
 
 const PLANS = {
@@ -96,13 +89,42 @@ const PLANS = {
   },
 };
 
-const state = { step: 0, problem: '', history: '', readiness: '', name: '', email: '', leadId: '', breakPoint: '', sent: false };
+const state = { step: 0, problem: '', history: '', readiness: '', name: '', email: '', leadId: '', marketingConsent: false };
 const app = document.getElementById('app');
 
-function track(event, params = {}) {
-  if (typeof fbq !== 'function') return;
+function getCookie(name) {
+  const prefix = `${name}=`;
+  const part = document.cookie.split(';').map(x => x.trim()).find(x => x.startsWith(prefix));
+  return part ? decodeURIComponent(part.slice(prefix.length)) : '';
+}
+
+const attribution = (() => {
+  const q = new URLSearchParams(location.search);
+  const fbclid = (q.get('fbclid') || '').slice(0, 300);
+  const savedFbc = getCookie('_fbc');
+  return {
+    fbp: getCookie('_fbp').slice(0, 200),
+    fbc: (savedFbc || (fbclid ? `fb.1.${Date.now()}.${fbclid}` : '')).slice(0, 400),
+    fbclid,
+    utmSource: (q.get('utm_source') || '').slice(0, 100),
+    utmMedium: (q.get('utm_medium') || '').slice(0, 100),
+    utmCampaign: (q.get('utm_campaign') || '').slice(0, 150),
+    utmContent: (q.get('utm_content') || '').slice(0, 150),
+    utmTerm: (q.get('utm_term') || '').slice(0, 150),
+    eventId: typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `lead-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    landingUrl: location.href.slice(0, 1000),
+  };
+})();
+
+function hasMeasurementConsent() {
+  try { return localStorage.getItem('valyra_fb_consent') === 'granted'; }
+  catch { return false; }
+}
+
+function track(event, params = {}, options = {}) {
+  if (!hasMeasurementConsent() || typeof fbq !== 'function') return;
   const standard = ['Lead', 'CompleteRegistration', 'Contact', 'ViewContent'];
-  fbq(standard.includes(event) ? 'trackSingle' : 'trackSingleCustom', CONFIG.PIXEL, event, { funnel: 'v2', ...params });
+  fbq(standard.includes(event) ? 'trackSingle' : 'trackSingleCustom', CONFIG.PIXEL, event, { funnel: 'v2', ...params }, options);
 }
 
 const creativeId = (() => {
@@ -134,11 +156,7 @@ function renderLanding() {
       </ul>
       <button class="primary" id="start">Chcem svoj 7-dňový plán</button>
       <p class="micro">Zadarmo · približne 2 minúty · príde aj na e-mail</p>
-      <div class="path-preview">
-        <div class="eyebrow">Najprv si ma vyskúšaj</div>
-        <p><strong>Po pláne môžeš ísť na bezplatnú úvodnú konzultáciu.</strong> Ak zistíme, že ti viem pomôcť, prvých 7 dní môjho 2-mesačného vedenia cez Valyru dostaneš úplne zdarma.</p>
-        <p><strong>Prvý týždeň neplatíš nič a nepotrebujem tvoju kartu.</strong> Až po siedmich dňoch sa rozhodneš: skončíš bez poplatku alebo pokračuješ ďalších 7 týždňov za 150 €.</p>
-      </div>
+      <p class="trial-note">Po pláne si môžeš nezáväzne vyskúšať aj 7 dní osobného vedenia zdarma.</p>
       <figure class="client-result">
         <img src="/img/clientka-15kg.webp" width="1400" height="1168" loading="lazy" decoding="async" alt="Výsledok klientky pod Jánovým vedením: 85 kg v roku 2024, 75 kg v roku 2025 a 70 kg v roku 2026">
         <figcaption>
@@ -166,22 +184,25 @@ function shell(content, step) {
 
 function renderProblem() {
   state.step = 1;
-  app.innerHTML = shell(`<div class="eyebrow">Tvoja hlavná brzda</div><h2>Čo ti to kazí najviac?</h2><p class="question-note">Vyber jednu možnosť, ktorá najlepšie sedí na bežný týždeň.</p><div class="options">${PROBLEMS.map(x => `<button class="option" data-value="${x.value}">${x.label}</button>`).join('')}</div>`, 1);
+  app.innerHTML = shell(`<button class="back" id="back" type="button">← Späť</button><div class="eyebrow">Tvoja hlavná brzda</div><h2>Čo ti to kazí najviac?</h2><p class="question-note">Vyber jednu možnosť, ktorá najlepšie sedí na bežný týždeň.</p><div class="options">${PROBLEMS.map(x => `<button class="option" data-value="${x.value}">${x.label}</button>`).join('')}</div>`, 1);
   bindOptions('problem', renderHistory);
+  bindBack(renderLanding);
   track('V2Step', { step: 1, screen: 'problem' });
 }
 
 function renderHistory() {
   state.step = 2;
-  app.innerHTML = shell(`<div class="eyebrow">Tvoja skúsenosť</div><h2>Koľkokrát sa ti kilá vrátili?</h2><p class="question-note">Odpoveď určí, či plán postavíme viac na štarte alebo na udržaní výsledku.</p><div class="options">${HISTORIES.map(x => `<button class="option" data-value="${x.value}">${x.label}</button>`).join('')}</div>`, 2);
+  app.innerHTML = shell(`<button class="back" id="back" type="button">← Späť</button><div class="eyebrow">Tvoja skúsenosť</div><h2>Koľkokrát sa ti kilá vrátili?</h2><p class="question-note">Odpoveď určí, či plán postavíme viac na štarte alebo na udržaní výsledku.</p><div class="options">${HISTORIES.map(x => `<button class="option" data-value="${x.value}">${x.label}</button>`).join('')}</div>`, 2);
   bindOptions('history', renderReadiness);
+  bindBack(renderProblem);
   track('V2Step', { step: 2, screen: 'history' });
 }
 
 function renderReadiness() {
   state.step = 3;
-  app.innerHTML = shell(`<div class="eyebrow">Tvoj ďalší krok</div><h2>Ako chceš pokračovať?</h2><p class="question-note">Pomôže mi ukázať ti správnu možnosť — bez nátlaku.</p><div class="options"><button class="option" data-value="podpora"><strong>Chcem začať čo najskôr</strong><small>Chcem, aby ma niekto viedol a bol pri tom so mnou.</small></button><button class="option" data-value="plan"><strong>Najprv si prejdem plán</strong><small>Chcem konkrétne kroky a potom sa rozhodnem.</small></button><button class="option" data-value="informacie"><strong>Zatiaľ iba zisťujem</strong><small>Chcem si doplniť informácie bez rozhodnutia.</small></button></div>`, 3);
+  app.innerHTML = shell(`<button class="back" id="back" type="button">← Späť</button><div class="eyebrow">Tvoj ďalší krok</div><h2>Ako chceš pokračovať?</h2><p class="question-note">Pomôže mi ukázať ti správnu možnosť — bez nátlaku.</p><div class="options"><button class="option" data-value="podpora"><strong>Chcem začať čo najskôr</strong><small>Chcem, aby ma niekto viedol a bol pri tom so mnou.</small></button><button class="option" data-value="plan"><strong>Najprv si prejdem plán</strong><small>Chcem konkrétne kroky a potom sa rozhodnem.</small></button><button class="option" data-value="informacie"><strong>Zatiaľ iba zisťujem</strong><small>Chcem si doplniť informácie bez rozhodnutia.</small></button></div>`, 3);
   bindOptions('readiness', renderGate);
+  bindBack(renderHistory);
   track('V2Step', { step: 3, screen: 'readiness' });
 }
 
@@ -192,32 +213,40 @@ function bindOptions(key, next) {
   }));
 }
 
+function bindBack(next) {
+  document.getElementById('back')?.addEventListener('click', next);
+}
+
 function renderGate() {
   state.step = 4;
-  app.innerHTML = shell(`<div class="eyebrow">Tvoj plán je pripravený</div><h2>Kam ti ho mám poslať?</h2><p class="question-note">Hneď ho uvidíš aj tu. Pošlem ti ho aj e-mailom — zostane ti poruke.</p>
+  const plan = PLANS[state.problem] || PLANS['co-jest'];
+  app.innerHTML = shell(`<button class="back" id="back" type="button">← Späť</button><div class="eyebrow">Tvoj plán je pripravený</div><h2>Kam ti ho mám poslať?</h2><div class="personal-preview"><small>Podľa tvojich odpovedí</small><strong>${plan.title}</strong><p>${plan.insight}</p></div><p class="question-note">Hneď ho uvidíš aj tu. Na e-mail ti pošlem jeho kópiu, aby si sa k nemu mohla vrátiť.</p>
     <form id="leadForm" novalidate>
       <div class="field"><label for="name">Krstné meno</label><input id="name" name="name" autocomplete="given-name" maxlength="100" required></div>
       <div class="field"><label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="email" maxlength="200" inputmode="email" required></div>
-      <label class="consent"><input id="consent" type="checkbox" required><span>Súhlasím so spracovaním údajov na vytvorenie plánu a so zaslaním dvoch e-mailov od Jána o pláne a možnosti spolupráce. Odhlásiť sa môžem jedným klikom.</span></label>
+      <p class="data-note">E-mail použijem na vytvorenie a doručenie vyžiadaného plánu. <a href="https://valyra.sk/PrivacyPolicy" target="_blank" rel="noopener">Ako spracúvam údaje</a>.</p>
+      <label class="consent"><input id="marketingConsent" type="checkbox"><span>Chcem dostať aj jeden nadväzujúci e-mail od Jána s tipom a možnosťou nezáväznej konzultácie. Odhlásiť sa môžem jedným klikom.</span></label>
       <div class="error" id="leadError" role="alert" aria-live="polite"></div>
       <button class="primary" id="submitLead" type="submit">Zobraziť môj 7-dňový plán</button>
-    </form>`, 3);
+    </form>`, 4);
   document.getElementById('leadForm').addEventListener('submit', submitLead);
-  track('V2Step', { step: 3, screen: 'email' });
+  bindBack(renderReadiness);
+  track('V2Step', { step: 4, screen: 'email' });
 }
 
 async function submitLead(e) {
   e.preventDefault();
   const name = document.getElementById('name').value.trim();
   const email = document.getElementById('email').value.trim().toLowerCase();
-  const consent = document.getElementById('consent').checked;
+  const marketingConsent = document.getElementById('marketingConsent').checked;
   const error = document.getElementById('leadError');
-  if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || !consent) {
-    error.textContent = 'Doplň, prosím, meno, platný e-mail a súhlas.';
+  if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    error.textContent = 'Doplň, prosím, meno a platný e-mail.';
     return;
   }
   state.name = name;
   state.email = email;
+  state.marketingConsent = marketingConsent;
   const btn = document.getElementById('submitLead');
   btn.disabled = true;
   btn.textContent = 'Pripravujem plán…';
@@ -231,7 +260,7 @@ async function submitLead(e) {
       readiness: state.readiness,
       segment: `${state.problem}|${state.history}|${state.readiness}`,
     wrong: [], source: CONFIG.SOURCE, quizVersion: CONFIG.VERSION,
-    creativeId,
+    creativeId, marketingConsent, measurementConsent: hasMeasurementConsent(), ...attribution,
   };
   try {
     const controller = new AbortController();
@@ -241,7 +270,7 @@ async function submitLead(e) {
     if (!res.ok) throw new Error(`API ${res.status}`);
     const out = await res.json();
     state.leadId = out.leadId || out.id || '';
-    track('CompleteRegistration', { content_name: 'funnel-v2-plan', creative_id: creativeId || undefined });
+    track('Lead', { content_name: 'funnel-v2-plan', creative_id: creativeId || undefined }, { eventID: attribution.eventId });
     renderResult();
   } catch {
     error.textContent = 'Plán sa nepodarilo uložiť. Skús to, prosím, ešte raz.';
@@ -253,6 +282,26 @@ async function submitLead(e) {
 function renderResult() {
   const plan = PLANS[state.problem] || PLANS['co-jest'];
   const relapse = state.history === 'viackrat' || state.history === 'jojo';
+  const cta = state.readiness === 'podpora'
+    ? {
+        title: 'Poďme to nastaviť priamo na teba.',
+        text: 'Vyber si termín bezplatného 15-minútového hovoru. Prejdeme tvoju hlavnú brzdu a povieme si prvú konkrétnu úpravu.',
+        label: 'Vybrať termín bezplatného hovoru',
+        className: 'primary calendar-button',
+      }
+    : state.readiness === 'informacie'
+    ? {
+        title: 'Najprv si pokojne prejdi svoj plán.',
+        text: 'Ak zatiaľ iba zisťuješ, nemusíš sa teraz rozhodovať. Keď budeš chcieť prejsť svoju situáciu osobne, termíny nájdeš tu.',
+        label: 'Pozrieť voľné termíny',
+        className: 'calendar-link-soft',
+      }
+    : {
+        title: 'Chceš sa spýtať na svoj plán?',
+        text: 'Na nezáväznom 15-minútovom hovore si prejdeme, ako kroky prispôsobiť tvojmu režimu, chutiam a možnostiam.',
+        label: 'Chcem sa spýtať na svoj plán',
+        className: 'primary calendar-button',
+      };
   app.innerHTML = `${brand()}<section class="result">
     <div class="result-head"><div class="eyebrow">Tvoj plán je hotový</div><h2>${escapeHtml(state.name)}, toto je tvoj najbližší týždeň.</h2><p>Nepridávaj si k nemu ďalších desať pravidiel. Každý deň sprav iba jednu vec.</p></div>
     <div class="diagnosis"><small>Tvoja hlavná brzda</small><h3>${plan.title}</h3><p>${plan.insight}${relapse ? ' Keďže sa ti kilá už vracali, najdôležitejší bude šiesty deň: návrat bez trestu a bez čakania na nový pondelok.' : ''}</p></div>
@@ -260,8 +309,8 @@ function renderResult() {
     <p class="micro">Plán som poslal aj na <strong>${escapeHtml(state.email)}</strong>. Ak ho nevidíš, skontroluj priečinok Spam alebo Hromadné.</p>
     <section class="coach-offer" id="help">
       <div class="eyebrow">Bezplatná úvodná konzultácia</div>
-      <h3>Nemusíš zisťovať sama, prečo sa ti to stále vracia.</h3>
-      <p>Na krátkej konzultácii prejdeme tvoju hlavnú brzdu a nájdeme prvú úpravu, ktorá sedí do tvojho reálneho života. Konzultácia je bezplatná a bez záväzku.</p>
+      <h3>${cta.title}</h3>
+      <p>${cta.text}</p>
       <figure class="result-client-proof">
         <img src="/img/clientka-15kg.webp" width="1400" height="1168" loading="lazy" decoding="async" alt="Premena klientky pod Jánovým vedením: 85 kg v roku 2024, 75 kg v roku 2025 a 70 kg v roku 2026">
         <figcaption>
@@ -280,94 +329,26 @@ function renderResult() {
           <small>Každý človek je iný a výsledky sa môžu líšiť.</small>
         </figcaption>
       </figure>
-      <div class="package-intro">
-        <small>Vyberieme riešenie podľa toho, koľko podpory potrebuješ</small>
-        <strong>Najviac odporúčam osobné vedenie. Najprv si ho však bez rizika vyskúšaš.</strong>
+      <div class="single-next-step">
+        <a class="${cta.className}" id="calendarCta" href="${CONFIG.CALENDAR}" target="_blank" rel="noopener">${cta.label}</a>
+        <p class="offer-micro">Hovor je bezplatný a bez záväzku. Ak si potom vyskúšaš osobné vedenie, prvých 7 dní neplatíš nič. Až potom sa rozhodneš, či pokračuješ ďalších 7 týždňov za 150 €.</p>
       </div>
-      <article class="main-program">
-        <div class="main-program-head"><div><div class="free-badge">Odporúčaná voľba</div><span class="package-kicker">Osobné vedenie · 8 týždňov</span><h4>Prvých 7 dní neplatíš nič</h4></div><div class="main-price"><strong>0 €</strong><span>bez karty<br>a bez záväzku</span></div></div>
-        <p>Najprv si na vlastnej koži overíš, ako vyzerá vedenie, ktoré sa prispôsobuje tebe — nie ty programu.</p>
-        <div class="trial-title">Čo spolu spravíme počas prvého týždňa:</div>
-        <div class="trial-steps">
-          <div><b>1</b><span><strong>Úvodná konzultácia</strong>Prejdeme cieľ, režim a hlavnú brzdu.</span></div>
-          <div><b>2</b><span><strong>Plán na mieru</strong>Nastavím stravu a pohyb, ktoré reálne zvládneš.</span></div>
-          <div><b>3</b><span><strong>Vedenie cez Valyru</strong>Uvidíš úlohy, pokrok a budeš vedieť, čo robiť ďalej.</span></div>
-          <div><b>4</b><span><strong>Kontrola a prvá úprava</strong>Podľa hladu, energie a reality plán upravíme.</span></div>
-        </div>
-        <div class="adaptive-offer"><strong>Program sa mení spolu s tebou.</strong><span>Keď sa zmení tvoj režim, výsledky, hlad, energia, práca alebo rodinné povinnosti, upravíme aj stravu a pohyb.</span></div>
-        <div class="continue-price"><strong>Po 7 dňoch sa rozhodneš ty.</strong><span>Ak ti vedenie sedí, ďalších 7 týždňov stojí spolu <b>150 €</b>. Ak nie, skončíš bez poplatku.</span></div>
-      </article>
-      <div class="alternatives-title">Ak nepotrebuješ práve 8 týždňov osobného vedenia</div>
-      <div class="alternatives">
-        <article class="alternative-card"><div><span class="package-kicker">Samostatný štart · 30 dní</span><h4>Plán na mieru</h4></div><strong class="alt-price">69 €</strong><p>Analýza, kalórie a porcie, jedálniček, pohyb, Valyra a jedna úprava po prvom týždni. Bez pravidelného vedenia.</p></article>
-        <article class="alternative-card"><div><span class="package-kicker">Viac času a podpory · 12 týždňov</span><h4>Kompletná premena</h4></div><strong class="alt-price">229 €</strong><p>Pravidelné konzultácie, prioritná komunikácia, riešenie stagnácie a záverečný plán na udržanie výsledku.</p></article>
-      </div>
-      <button class="primary" id="helpBtn">Chcem vyskúšať 7 dní vedenia zdarma</button>
-      <div class="objections"><div><strong>Nemám čas.</strong><span>Preto nastavíme minimum, ktoré sa zmestí do tvojho reálneho dňa.</span></div><div><strong>Nechcem ďalšiu diétu.</strong><span>Nedostaneš zákazový zoznam, ale plán podľa tvojich chutí a režimu.</span></div><div><strong>Čo ak to vzdám?</strong><span>Slabší deň nie je koniec — plán upravíme a pokračuješ ďalším krokom.</span></div></div>
-      <p class="offer-micro">Nemusíš vedieť, ktorý balíček potrebuješ. Najprv si prejdeme tvoju situáciu — bez platby a bez rozhodnutia naslepo.</p>
-      <div class="contact-box" id="contactBox" hidden></div>
     </section>
   </section>`;
-  document.getElementById('helpBtn').addEventListener('click', openContact, { once: true });
+  document.getElementById('calendarCta').addEventListener('click', recordCalendarIntent);
   track('ViewContent', { content_name: 'v2-seven-day-plan', segment: state.problem });
 }
 
-function openContact() {
-  const btn = document.getElementById('helpBtn');
-  btn.hidden = true;
-  const box = document.getElementById('contactBox');
-  box.hidden = false;
-  box.innerHTML = `<strong>Kedy ti to najčastejšie praskne?</strong><div class="breaks">${BREAKS.map(x => `<button class="option" data-break="${x.value}">${x.label}</button>`).join('')}</div>
-    <div class="field"><label for="phone">Telefón <span style="font-weight:400">(nepovinné)</span></label><input id="phone" type="tel" inputmode="tel" maxlength="40" placeholder="Ak chceš, aby som ti zavolal"></div>
-    <div class="field"><label for="note">Chceš niečo doplniť? <span style="font-weight:400">(nepovinné)</span></label><textarea id="note" maxlength="1200" placeholder="Stačí jedna veta…"></textarea></div>
-    <div class="error" id="contactError" role="alert" aria-live="polite"></div>
-    <button class="primary" id="sendContact">Požiadať o konzultáciu</button>`;
-  box.querySelectorAll('[data-break]').forEach(x => x.addEventListener('click', () => {
-    state.breakPoint = x.dataset.break;
-    box.querySelectorAll('[data-break]').forEach(y => y.classList.toggle('active', y === x));
-  }));
-  document.getElementById('sendContact').addEventListener('click', submitContact);
-  track('V2HelpOpen', { segment: state.problem });
-  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-async function submitContact() {
-  const error = document.getElementById('contactError');
-  if (!state.breakPoint) {
-    error.textContent = 'Vyber, prosím, kedy ti to najčastejšie praskne.';
-    return;
-  }
-  const btn = document.getElementById('sendContact');
-  btn.disabled = true;
-  btn.textContent = 'Posielam…';
-  const selected = BREAKS.find(x => x.value === state.breakPoint);
-  const phone = document.getElementById('phone').value.trim();
-  const note = document.getElementById('note').value.trim();
-  const message = [`Praská mi to ${selected.phrase}.`, note].filter(Boolean).join('\n\n');
+function recordCalendarIntent() {
   const repeated = state.history === 'viackrat' || state.history === 'jojo';
   const payload = {
-    typ: 'konzultacia', leadId: state.leadId, name: state.name, email: state.email, phone, message,
-    preferredTime: '', segment: state.problem, history: state.history,
-    readiness: state.readiness, selectedPath: 'written_consult',
+    typ: 'cesta', leadId: state.leadId, selectedPath: 'calendar',
+    readiness: state.readiness,
     tier: state.readiness === 'podpora' || repeated || state.problem === 'potrebujem-podporu' ? 'hot' : state.readiness === 'informacie' ? 'cold' : 'warm',
-    source: CONFIG.SOURCE, creativeId, band: '7-dňový štartovací plán',
-    quizVersion: CONFIG.VERSION, ts: new Date().toISOString(),
+    source: CONFIG.SOURCE, creativeId, quizVersion: CONFIG.VERSION,
   };
-  try {
-    const res = await fetch(CONFIG.API, { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    const out = await res.json();
-    if (!out || !['message', 'call'].includes(out.kind)) throw new Error('unconfirmed');
-    state.sent = true;
-    track('Lead', { way: 'message', segment: state.problem, funnel_version: CONFIG.VERSION, value: 25, currency: 'EUR' });
-    track('Contact', { content_name: 'v2-personal-help' });
-    document.getElementById('contactBox').innerHTML = `<div class="done"><strong>✓ Žiadosť je odoslaná.</strong><br>Prvým krokom je krátky hovor, na ktorom ti odporučím vhodnú formu pomoci. Vyber si termín, ktorý ti vyhovuje:<a class="calendar-cta" id="calendarCta" href="${CONFIG.CALENDAR}" target="_blank" rel="noopener">📞 Vybrať termín 15-min hovoru</a><span class="calendar-note">Rezervácia termínu je nezáväzná. Ak sa rozhodneš pre osobné vedenie, prvých 7 dní si vyskúšaš zdarma.</span></div>`;
-    document.getElementById('calendarCta').addEventListener('click', () => track('ScheduleIntent', { lead_id: state.leadId, readiness: state.readiness, tier: payload.tier }));
-  } catch {
-    error.textContent = 'Správu sa nepodarilo odoslať. Skús to, prosím, ešte raz.';
-    btn.disabled = false;
-    btn.textContent = 'Skúsiť znova';
-  }
+  fetch(CONFIG.API, { method: 'POST', mode: 'cors', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {});
+  track('ScheduleIntent', { lead_id: state.leadId, readiness: state.readiness, tier: payload.tier });
 }
 
 function escapeHtml(value) {

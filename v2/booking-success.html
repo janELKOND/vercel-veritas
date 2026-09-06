@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="sk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Termín je rezervovaný | Valyra</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="stylesheet" href="/v2/v2.css?v=3">
+</head>
+<body>
+  <main id="app">
+    <div class="brand"><span class="brand-mark">V</span><span>VALYRA</span></div>
+    <section class="booking-success">
+      <div class="success-mark">✓</div>
+      <div class="eyebrow">Termín je rezervovaný</div>
+      <h1>Teším sa na náš hovor.</h1>
+      <p>Potvrdenie a podrobnosti nájdeš v e-maile a vo svojom kalendári. Na hovore prejdeme tvoju situáciu a prvú úpravu, ktorá bude sedieť do tvojho reálneho života.</p>
+      <a class="calendar-link-soft" href="/v2">Späť na Valyru</a>
+    </section>
+  </main>
+  <script>
+    (function () {
+      if (localStorage.getItem('valyra_fb_consent') !== 'granted') return;
+      var uid = new URLSearchParams(location.search).get('uid');
+      if (!uid) return;
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+      (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init','2221207801987418');
+      fbq('trackSingle','2221207801987418','Schedule',{content_name:'valyra-consultation'},{eventID:uid.slice(0,200)});
+    }());
+  </script>
+</body>
+</html>
+
