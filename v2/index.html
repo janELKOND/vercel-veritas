@@ -22,37 +22,44 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/v2/v2.css?v=2">
+  <link rel="stylesheet" href="/v2/v2.css?v=3">
   <script>
-    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
-    (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-    fbq('consent', 'revoke');
-    fbq('init','2221207801987418');
-    if (localStorage.getItem('valyra_fb_consent') === 'granted') {
+    window.enableValyraMeasurement = function () {
+      if (window.fbq) return;
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+      (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
       fbq('consent', 'grant');
+      fbq('init','2221207801987418');
       fbq('track','PageView');
-    }
+    };
+    if (localStorage.getItem('valyra_fb_consent') === 'granted') window.enableValyraMeasurement();
   </script>
 </head>
 <body>
   <main id="app"></main>
   <div class="consent-bar" id="consentBar" role="dialog" aria-label="Súhlas s analytickými cookies">
     <span>Cookies používame na meranie reklamy a zlepšenie funnelu. Bez súhlasu ti plán funguje rovnako.</span>
-    <button type="button" id="consentGrant">Súhlasím s meraním</button>
+    <div class="consent-actions"><button type="button" class="consent-reject" id="consentReject">Odmietnuť</button><button type="button" id="consentGrant">Súhlasím</button></div>
   </div>
   <footer><a href="https://valyra.sk/PrivacyPolicy">Ochrana osobných údajov</a></footer>
-  <script src="/v2/app.js?v=2"></script>
+  <script src="/v2/app.js?v=3"></script>
   <script>
     (function () {
       var bar = document.getElementById('consentBar');
       var grant = document.getElementById('consentGrant');
-      if (localStorage.getItem('valyra_fb_consent') === 'granted') bar.hidden = true;
+      var reject = document.getElementById('consentReject');
+      var stored = localStorage.getItem('valyra_fb_consent');
+      if (stored === 'granted' || stored === 'denied') bar.hidden = true;
       grant.addEventListener('click', function () {
         localStorage.setItem('valyra_fb_consent', 'granted');
-        if (typeof fbq === 'function') { fbq('consent', 'grant'); fbq('track', 'PageView'); }
+        window.enableValyraMeasurement();
+        bar.hidden = true;
+      });
+      reject.addEventListener('click', function () {
+        localStorage.setItem('valyra_fb_consent', 'denied');
         bar.hidden = true;
       });
     }());
