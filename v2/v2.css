@@ -103,17 +103,15 @@ h3 { font-size: 25px; }
 .result-proof-line { display: grid; gap: 3px; margin: 18px 0; padding: 14px 16px; border-left: 4px solid var(--green); border-radius: 10px; background: rgba(255,253,249,.7); }
 .result-proof-line strong { color: var(--green-dark); }
 .result-proof-line span { color: #6d5a4d; font-size: 13px; line-height: 1.45; }
+.result-client-proof { display: grid; overflow: hidden; margin: 22px 0; border-radius: 18px; background: #fff; border: 1px solid rgba(70,53,43,.12); box-shadow: 0 12px 34px rgba(70,53,43,.09); }
+.result-client-proof img { display: block; width: 100%; height: auto; }
+.result-client-proof figcaption { padding: 20px; }
+.result-client-proof figcaption > strong { display: block; margin: 7px 0 6px; color: var(--green-dark); font-family: Fraunces, Georgia, serif; font-size: 25px; line-height: 1.15; }
+.result-client-proof figcaption p { margin: 0 0 8px; }
+.result-client-proof figcaption small { color: var(--soft); font-size: 11px; }
 .package-intro { display: grid; gap: 5px; margin: 22px 0 14px; }
 .package-intro small, .package-kicker { color: var(--green); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
 .package-intro > strong { font-family: Fraunces, Georgia, serif; font-size: 21px; line-height: 1.25; }
-.packages { display: grid; gap: 12px; margin: 14px 0 16px; }
-.package-card { position: relative; padding: 19px; border-radius: 16px; background: rgba(255,253,249,.8); border: 1px solid rgba(70,53,43,.14); }
-.package-card.featured { border: 2px solid var(--green); background: #fff; box-shadow: 0 12px 30px rgba(20,107,76,.12); }
-.package-card h4 { margin: 7px 0 0; font-family: Fraunces, Georgia, serif; font-size: 21px; line-height: 1.2; }
-.package-duration { margin-top: 2px; color: #6d5a4d; font-size: 13px; }
-.package-price { margin-top: 12px; color: var(--green-dark); font-size: 21px; font-weight: 800; }
-.package-card ul { margin: 14px 0; padding-left: 20px; color: #594a40; line-height: 1.55; font-size: 14px; }
-.package-note { margin: 0 !important; padding-top: 13px; border-top: 1px solid rgba(70,53,43,.13); font-size: 13px; line-height: 1.5 !important; }
 .free-badge { display: inline-block; margin: 0 0 14px; padding: 7px 11px; border-radius: 999px; color: white; background: var(--green); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
 .program-card small { display: block; margin-bottom: 5px; color: var(--green); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .program-card > strong { display: block; font-family: Fraunces, Georgia, serif; font-size: 21px; line-height: 1.2; }
@@ -122,8 +120,29 @@ h3 { font-size: 25px; }
 .price span { color: var(--green-dark); font-size: 20px; font-weight: 800; }
 .price em { color: #6d5a4d; font-size: 13px; font-style: normal; }
 .program-card .after-trial { margin: 12px 0 0; font-size: 13px; line-height: 1.5; }
+.main-program { padding: clamp(20px, 5vw, 28px); border-radius: 20px; background: #fff; border: 2px solid var(--green); box-shadow: 0 16px 40px rgba(20,107,76,.14); }
+.main-program-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.main-program h4, .alternative-card h4 { margin: 6px 0 0; font-family: Fraunces, Georgia, serif; line-height: 1.15; }
+.main-program h4 { font-size: clamp(24px, 5vw, 31px); }
+.main-price { flex: 0 0 auto; display: grid; text-align: right; }
+.main-price strong { color: var(--green-dark); font-size: 32px; line-height: 1; }
+.main-price span { margin-top: 4px; color: var(--soft); font-size: 11px; line-height: 1.25; }
+.trial-title { margin: 20px 0 12px; font-weight: 800; }
+.trial-steps { display: grid; gap: 9px; }
+.trial-steps > div { display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start; padding: 12px; border-radius: 12px; background: var(--mint); }
+.trial-steps b { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--green); color: #fff; }
+.trial-steps span { color: #4f5d55; font-size: 13px; line-height: 1.4; }
+.trial-steps span strong { display: block; color: var(--ink); font-size: 14px; }
 .adaptive-offer { display: grid; gap: 5px; margin: 18px 0; padding: 16px; border-radius: 14px; background: var(--green-dark); color: white; }
 .adaptive-offer span { color: #d8eee4; font-size: 13px; line-height: 1.5; }
+.continue-price { display: grid; gap: 4px; padding-top: 16px; border-top: 1px solid var(--line); }
+.continue-price span { color: #665b52; font-size: 14px; line-height: 1.5; }
+.alternatives-title { margin: 24px 0 10px; color: #6d5a4d; font-size: 13px; font-weight: 700; text-align: center; }
+.alternatives { display: grid; gap: 10px; margin-bottom: 18px; }
+.alternative-card { display: grid; grid-template-columns: 1fr auto; gap: 5px 14px; padding: 17px; border-radius: 15px; background: rgba(255,253,249,.78); border: 1px solid rgba(70,53,43,.14); }
+.alternative-card h4 { font-size: 19px; }
+.alternative-card p { grid-column: 1 / -1; margin: 7px 0 0; font-size: 13px; line-height: 1.5; }
+.alt-price { color: var(--green-dark); font-size: 19px; }
 .offer-micro { margin: 9px 0 0; text-align: center; font-size: 12px; }
 .contact-box { margin-top: 16px; padding-top: 18px; border-top: 1px solid rgba(70,53,43,.16); }
 .contact-box[hidden] { display: none; }
@@ -138,15 +157,15 @@ footer { padding: 0 18px 30px; text-align: center; font-size: 12px; color: var(-
   .primary { width: auto; min-width: 310px; }
   .panel .primary, .coach-offer .primary { width: 100%; }
   .hero { padding-top: 50px; }
-  .packages { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
-  .package-card { padding: 17px 15px; }
-  .package-card h4 { font-size: 18px; }
-  .package-price { font-size: 18px; }
+  .result-client-proof { grid-template-columns: 1.25fr .9fr; align-items: center; }
+  .trial-steps, .alternatives { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 420px) {
   .breaks { grid-template-columns: 1fr; }
   .panel { border-radius: 20px; padding: 22px 18px; }
+  .main-program-head { display: grid; }
+  .main-price { text-align: left; }
 }
 
 @media (prefers-reduced-motion: reduce) {
