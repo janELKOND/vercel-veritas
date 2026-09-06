@@ -2,7 +2,7 @@ const CONFIG = {
   API: 'https://ztuudcgmzbkkbldnkqay.supabase.co/functions/v1/quizLead',
   PIXEL: '2221207801987418',
   SOURCE: 'funnel-v2',
-  VERSION: 8,
+  VERSION: 9,
   CALENDAR: 'https://calendar.app.google/xfubmW69zjcoGnsH8',
 };
 
