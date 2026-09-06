@@ -146,15 +146,15 @@ function renderLanding() {
   state.step = 0;
   app.innerHTML = `${brand()}
     <section class="hero">
-      <div class="eyebrow">7 dní bez diéty</div>
-      <h1>Zisti, čo ti bráni schudnúť — a dostaň 7-dňový plán, ktorý zvládneš aj bez diéty.</h1>
+      <div class="eyebrow">Tvoj 7-dňový akčný štart</div>
+      <h1>Zisti, čo ti bráni schudnúť — a získaj svoj 7-dňový akčný štart.</h1>
       <p class="lead">Za dve minúty zistíš svoju hlavnú brzdu a dostaneš konkrétne raňajky, obedy, večere a jeden zvládnuteľný návyk na každý deň.</p>
       <ul class="promise">
         <li><span class="tick">✓</span><span>Každý deň iba <strong>jeden zvládnuteľný krok</strong></span></li>
         <li><span class="tick">✓</span><span>Bez zakázaných jedál a bez dokonalého režimu</span></li>
         <li><span class="tick">✓</span><span>Podľa tvojej skutočnej brzdy, nie všeobecná poučka</span></li>
       </ul>
-      <button class="primary" id="start">Chcem svoj 7-dňový plán</button>
+      <button class="primary" id="start">Chcem svoj 7-dňový akčný štart</button>
       <p class="micro">Zadarmo · približne 2 minúty · príde aj na e-mail</p>
       <p class="trial-note">Po pláne si môžeš nezáväzne vyskúšať aj 7 dní osobného vedenia zdarma.</p>
       <figure class="client-result">
@@ -179,7 +179,7 @@ function renderLanding() {
 }
 
 function shell(content, step) {
-  return `${brand()}<section class="shell"><div class="topline"><span>7-dňový plán</span><span>Krok ${step} z 4</span></div><div class="progress"><span style="width:${step / 4 * 100}%"></span></div><div class="panel">${content}</div></section>`;
+  return `${brand()}<section class="shell"><div class="topline"><span>7-dňový akčný štart</span><span>Krok ${step} z 4</span></div><div class="progress"><span style="width:${step / 4 * 100}%"></span></div><div class="panel">${content}</div></section>`;
 }
 
 function renderProblem() {
@@ -227,7 +227,7 @@ function renderGate() {
       <p class="data-note">E-mail použijem na vytvorenie a doručenie vyžiadaného plánu. <a href="https://valyra.sk/PrivacyPolicy" target="_blank" rel="noopener">Ako spracúvam údaje</a>.</p>
       <label class="consent"><input id="marketingConsent" type="checkbox"><span>Chcem dostať aj jeden nadväzujúci e-mail od Jána s tipom a možnosťou nezáväznej konzultácie. Odhlásiť sa môžem jedným klikom.</span></label>
       <div class="error" id="leadError" role="alert" aria-live="polite"></div>
-      <button class="primary" id="submitLead" type="submit">Zobraziť môj 7-dňový plán</button>
+      <button class="primary" id="submitLead" type="submit">Zobraziť môj 7-dňový akčný štart</button>
     </form>`, 4);
   document.getElementById('leadForm').addEventListener('submit', submitLead);
   bindBack(renderReadiness);
@@ -253,7 +253,7 @@ async function submitLead(e) {
   const problemLabel = PROBLEMS.find(x => x.value === state.problem)?.label || '';
   const payload = {
     name, email, score: null, maxScore: null,
-    band: '7-dňový štartovací plán',
+    band: 'Tvoj 7-dňový akčný štart',
     bandName: `Tvoja brzda: ${problemLabel}`,
     baseSegment: state.problem,
     history: state.history,
