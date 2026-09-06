@@ -103,7 +103,17 @@ h3 { font-size: 25px; }
 .result-proof-line { display: grid; gap: 3px; margin: 18px 0; padding: 14px 16px; border-left: 4px solid var(--green); border-radius: 10px; background: rgba(255,253,249,.7); }
 .result-proof-line strong { color: var(--green-dark); }
 .result-proof-line span { color: #6d5a4d; font-size: 13px; line-height: 1.45; }
-.program-card { margin: 20px 0 16px; padding: 20px; border-radius: 16px; background: rgba(255,253,249,.76); border: 1px solid rgba(70,53,43,.12); }
+.package-intro { display: grid; gap: 5px; margin: 22px 0 14px; }
+.package-intro small, .package-kicker { color: var(--green); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; }
+.package-intro > strong { font-family: Fraunces, Georgia, serif; font-size: 21px; line-height: 1.25; }
+.packages { display: grid; gap: 12px; margin: 14px 0 16px; }
+.package-card { position: relative; padding: 19px; border-radius: 16px; background: rgba(255,253,249,.8); border: 1px solid rgba(70,53,43,.14); }
+.package-card.featured { border: 2px solid var(--green); background: #fff; box-shadow: 0 12px 30px rgba(20,107,76,.12); }
+.package-card h4 { margin: 7px 0 0; font-family: Fraunces, Georgia, serif; font-size: 21px; line-height: 1.2; }
+.package-duration { margin-top: 2px; color: #6d5a4d; font-size: 13px; }
+.package-price { margin-top: 12px; color: var(--green-dark); font-size: 21px; font-weight: 800; }
+.package-card ul { margin: 14px 0; padding-left: 20px; color: #594a40; line-height: 1.55; font-size: 14px; }
+.package-note { margin: 0 !important; padding-top: 13px; border-top: 1px solid rgba(70,53,43,.13); font-size: 13px; line-height: 1.5 !important; }
 .free-badge { display: inline-block; margin: 0 0 14px; padding: 7px 11px; border-radius: 999px; color: white; background: var(--green); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
 .program-card small { display: block; margin-bottom: 5px; color: var(--green); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .program-card > strong { display: block; font-family: Fraunces, Georgia, serif; font-size: 21px; line-height: 1.2; }
@@ -112,6 +122,8 @@ h3 { font-size: 25px; }
 .price span { color: var(--green-dark); font-size: 20px; font-weight: 800; }
 .price em { color: #6d5a4d; font-size: 13px; font-style: normal; }
 .program-card .after-trial { margin: 12px 0 0; font-size: 13px; line-height: 1.5; }
+.adaptive-offer { display: grid; gap: 5px; margin: 18px 0; padding: 16px; border-radius: 14px; background: var(--green-dark); color: white; }
+.adaptive-offer span { color: #d8eee4; font-size: 13px; line-height: 1.5; }
 .offer-micro { margin: 9px 0 0; text-align: center; font-size: 12px; }
 .contact-box { margin-top: 16px; padding-top: 18px; border-top: 1px solid rgba(70,53,43,.16); }
 .contact-box[hidden] { display: none; }
@@ -126,6 +138,10 @@ footer { padding: 0 18px 30px; text-align: center; font-size: 12px; color: var(-
   .primary { width: auto; min-width: 310px; }
   .panel .primary, .coach-offer .primary { width: 100%; }
   .hero { padding-top: 50px; }
+  .packages { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+  .package-card { padding: 17px 15px; }
+  .package-card h4 { font-size: 18px; }
+  .package-price { font-size: 18px; }
 }
 
 @media (max-width: 420px) {
