@@ -254,54 +254,37 @@ function renderResult() {
       <div class="eyebrow">Bezplatná úvodná konzultácia</div>
       <h3>Nemusíš zisťovať sám/sama, prečo sa ti to stále vracia.</h3>
       <p>Na krátkej konzultácii prejdeme tvoju hlavnú brzdu a nájdeme prvú úpravu, ktorá sedí do tvojho reálneho života. Konzultácia je bezplatná a bez záväzku.</p>
-      <div class="result-proof-line"><strong>Moja klientka schudla z 85 na 70 kg.</strong><span>Postupný výsledok pod mojím vedením, nie krátkodobá výzva.</span></div>
+      <figure class="result-client-proof">
+        <img src="/img/clientka-15kg.webp" width="1400" height="1168" loading="lazy" decoding="async" alt="Premena klientky pod Jánovým vedením: 85 kg v roku 2024, 75 kg v roku 2025 a 70 kg v roku 2026">
+        <figcaption>
+          <div class="eyebrow">Reálna klientka · postupná premena</div>
+          <strong>85 kg → 70 kg. Spolu −15 kg.</strong>
+          <p>Nie rýchla diéta ani fotografia po pár dobrých dňoch. Výsledok vznikal postupne pod mojím vedením popri bežnom živote.</p>
+          <small>Každý človek je iný a výsledky sa môžu líšiť.</small>
+        </figcaption>
+      </figure>
       <div class="package-intro">
         <small>Vyberieme riešenie podľa toho, koľko podpory potrebuješ</small>
-        <strong>Tri cesty. Žiadny univerzálny program pre každého.</strong>
+        <strong>Najviac odporúčam osobné vedenie. Najprv si ho však bez rizika vyskúšaš.</strong>
       </div>
-      <div class="packages">
-        <article class="package-card">
-          <span class="package-kicker">Samostatný štart</span>
-          <h4>Plán na mieru</h4>
-          <div class="package-duration">30 dní</div>
-          <div class="package-price">69 €</div>
-          <ul>
-            <li>vstupná analýza, kalórie a porcie,</li>
-            <li>jedálniček a pohyb na mieru,</li>
-            <li>Valyra na 30 dní,</li>
-            <li>jedna úprava po prvom týždni.</li>
-          </ul>
-          <p class="package-note">Pre človeka, ktorý chce presný plán, ale nepotrebuje pravidelné osobné vedenie.</p>
-        </article>
-        <article class="package-card featured">
-          <div class="free-badge">Najčastejšia voľba</div>
-          <span class="package-kicker">Najprv si ma vyskúšaš</span>
-          <h4>Osobné vedenie</h4>
-          <div class="package-duration">8 týždňov</div>
-          <div class="package-price">0 € prvých 7 dní</div>
-          <ul>
-            <li>strava a pohyb podľa tvojho života,</li>
-            <li>Valyra a pravidelná kontrola výsledkov,</li>
-            <li>priebežné úpravy podľa hladu, energie a režimu,</li>
-            <li>moja osobná podpora, keď príde slabší deň.</li>
-          </ul>
-          <p class="package-note"><strong>Bez karty a bez záväzku.</strong> Po týždni sa rozhodneš. Ak pokračuješ, ďalších 7 týždňov stojí spolu 150 €.</p>
-        </article>
-        <article class="package-card">
-          <span class="package-kicker">Viac času a podpory</span>
-          <h4>Kompletná premena</h4>
-          <div class="package-duration">12 týždňov</div>
-          <div class="package-price">229 €</div>
-          <ul>
-            <li>všetko z 8-týždňového vedenia,</li>
-            <li>pravidelné konzultácie a prioritná komunikácia,</li>
-            <li>viac kontrolných bodov a riešenie stagnácie,</li>
-            <li>záverečný plán na udržanie výsledku.</li>
-          </ul>
-          <p class="package-note">Pre väčšiu zmenu alebo opakované návraty, keď chceš dlhšie vedenie až k samostatnosti.</p>
-        </article>
+      <article class="main-program">
+        <div class="main-program-head"><div><div class="free-badge">Odporúčaná voľba</div><span class="package-kicker">Osobné vedenie · 8 týždňov</span><h4>Prvých 7 dní neplatíš nič</h4></div><div class="main-price"><strong>0 €</strong><span>bez karty<br>a bez záväzku</span></div></div>
+        <p>Najprv si na vlastnej koži overíš, ako vyzerá vedenie, ktoré sa prispôsobuje tebe — nie ty programu.</p>
+        <div class="trial-title">Čo spolu spravíme počas prvého týždňa:</div>
+        <div class="trial-steps">
+          <div><b>1</b><span><strong>Úvodná konzultácia</strong>Prejdeme cieľ, režim a hlavnú brzdu.</span></div>
+          <div><b>2</b><span><strong>Plán na mieru</strong>Nastavím stravu a pohyb, ktoré reálne zvládneš.</span></div>
+          <div><b>3</b><span><strong>Vedenie cez Valyru</strong>Uvidíš úlohy, pokrok a budeš vedieť, čo robiť ďalej.</span></div>
+          <div><b>4</b><span><strong>Kontrola a prvá úprava</strong>Podľa hladu, energie a reality plán upravíme.</span></div>
+        </div>
+        <div class="adaptive-offer"><strong>Program sa mení spolu s tebou.</strong><span>Keď sa zmení tvoj režim, výsledky, hlad, energia, práca alebo rodinné povinnosti, upravíme aj stravu a pohyb.</span></div>
+        <div class="continue-price"><strong>Po 7 dňoch sa rozhodneš ty.</strong><span>Ak ti vedenie sedí, ďalších 7 týždňov stojí spolu <b>150 €</b>. Ak nie, skončíš bez poplatku.</span></div>
+      </article>
+      <div class="alternatives-title">Ak nepotrebuješ práve 8 týždňov osobného vedenia</div>
+      <div class="alternatives">
+        <article class="alternative-card"><div><span class="package-kicker">Samostatný štart · 30 dní</span><h4>Plán na mieru</h4></div><strong class="alt-price">69 €</strong><p>Analýza, kalórie a porcie, jedálniček, pohyb, Valyra a jedna úprava po prvom týždni. Bez pravidelného vedenia.</p></article>
+        <article class="alternative-card"><div><span class="package-kicker">Viac času a podpory · 12 týždňov</span><h4>Kompletná premena</h4></div><strong class="alt-price">229 €</strong><p>Pravidelné konzultácie, prioritná komunikácia, riešenie stagnácie a záverečný plán na udržanie výsledku.</p></article>
       </div>
-      <div class="adaptive-offer"><strong>Program sa prispôsobuje tebe — aj počas spolupráce.</strong><span>Keď sa zmení tvoj režim, výsledky, hlad, energia, práca alebo rodinné povinnosti, upravíme aj stravu a pohyb.</span></div>
       <button class="primary" id="helpBtn">Chcem bezplatnú konzultáciu a vybrať balíček</button>
       <p class="offer-micro">Nemusíš vedieť, ktorý balíček potrebuješ. Najprv si prejdeme tvoju situáciu — bez platby a bez rozhodnutia naslepo.</p>
       <div class="contact-box" id="contactBox" hidden></div>
