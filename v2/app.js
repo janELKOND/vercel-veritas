@@ -147,8 +147,8 @@ function renderLanding() {
   app.innerHTML = `${brand()}
     <section class="hero">
       <div class="eyebrow">7 dní bez diéty</div>
-      <h1>Prestaň začínať odznova.</h1>
-      <p class="lead">Za dve minúty zistíš, čo ti pri chudnutí najčastejšie podkopáva nohy, a dostaneš jednoduchý plán na najbližších sedem dní.</p>
+      <h1>Zisti, čo ti bráni schudnúť — a dostaň 7-dňový plán, ktorý zvládneš aj bez diéty.</h1>
+      <p class="lead">Za dve minúty zistíš svoju hlavnú brzdu a dostaneš konkrétne raňajky, obedy, večere a jeden zvládnuteľný návyk na každý deň.</p>
       <ul class="promise">
         <li><span class="tick">✓</span><span>Každý deň iba <strong>jeden zvládnuteľný krok</strong></span></li>
         <li><span class="tick">✓</span><span>Bez zakázaných jedál a bez dokonalého režimu</span></li>
@@ -220,7 +220,7 @@ function bindBack(next) {
 function renderGate() {
   state.step = 4;
   const plan = PLANS[state.problem] || PLANS['co-jest'];
-  app.innerHTML = shell(`<button class="back" id="back" type="button">← Späť</button><div class="eyebrow">Tvoj plán je pripravený</div><h2>Kam ti ho mám poslať?</h2><div class="personal-preview"><small>Podľa tvojich odpovedí</small><strong>${plan.title}</strong><p>${plan.insight}</p></div><p class="question-note">Hneď ho uvidíš aj tu. Na e-mail ti pošlem jeho kópiu, aby si sa k nemu mohla vrátiť.</p>
+  app.innerHTML = shell(`<button class="back" id="back" type="button">← Späť</button><div class="eyebrow">Tvoj plán je pripravený</div><h2>Kam ti ho mám poslať?</h2><div class="personal-preview"><small>Podľa tvojich odpovedí</small><strong>${plan.title}</strong><p>${plan.insight}</p></div><p class="question-note">Plán ti zobrazíme hneď a pošleme aj e-mailom, aby sa nestratil a mohla si sa k nemu vrátiť.</p>
     <form id="leadForm" novalidate>
       <div class="field"><label for="name">Krstné meno</label><input id="name" name="name" autocomplete="given-name" maxlength="100" required></div>
       <div class="field"><label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="email" maxlength="200" inputmode="email" required></div>
@@ -282,7 +282,7 @@ async function submitLead(e) {
 function renderResult() {
   const plan = PLANS[state.problem] || PLANS['co-jest'];
   const relapse = state.history === 'viackrat' || state.history === 'jojo';
-  const cta = state.readiness === 'podpora'
+  let cta = state.readiness === 'podpora'
     ? {
         title: 'Poďme to nastaviť priamo na teba.',
         text: 'Vyber si termín bezplatného 15-minútového hovoru. Prejdeme tvoju hlavnú brzdu a povieme si prvú konkrétnu úpravu.',
@@ -302,9 +302,16 @@ function renderResult() {
         label: 'Chcem sa spýtať na svoj plán',
         className: 'primary calendar-button',
       };
+  const todayStep = plan.days[0];
+  if (state.readiness === 'podpora') cta = { ...cta, label: 'Vybrať termín pre moje vedenie' };
+  else if (state.readiness === 'plan') cta = { ...cta, label: `Spýtať sa na: ${plan.title.toLowerCase()}` };
+  else if (state.problem === 'vecerne-chute') cta = { ...cta, label: 'Pomôcť s večernými chuťami' };
+  else if (state.problem === 'nemam-cas') cta = { ...cta, label: 'Nastaviť plán pre môj čas' };
+  else if (state.problem === 'nevydrzim') cta = { ...cta, label: 'Nastaviť plán, ktorý vydržím' };
   app.innerHTML = `${brand()}<section class="result">
     <div class="result-head"><div class="eyebrow">Tvoj plán je hotový</div><h2>${escapeHtml(state.name)}, toto je tvoj najbližší týždeň.</h2><p>Nepridávaj si k nemu ďalších desať pravidiel. Každý deň sprav iba jednu vec.</p></div>
     <div class="diagnosis"><small>Tvoja hlavná brzda</small><h3>${plan.title}</h3><p>${plan.insight}${relapse ? ' Keďže sa ti kilá už vracali, najdôležitejší bude šiesty deň: návrat bez trestu a bez čakania na nový pondelok.' : ''}</p></div>
+    <div class="personal-preview"><small>Sprav dnes</small><strong>${todayStep[0]}</strong><p>${todayStep[1]}</p></div>
     <div class="days">${plan.days.map((d, i) => `<article class="day"><div class="day-num">${i + 1}</div><div><strong>${d[0]}</strong><p>${d[1]}</p></div></article>`).join('')}</div>
     <p class="micro">Plán som poslal aj na <strong>${escapeHtml(state.email)}</strong>. Ak ho nevidíš, skontroluj priečinok Spam alebo Hromadné.</p>
     <section class="coach-offer" id="help">
