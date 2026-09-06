@@ -3,6 +3,7 @@ const CONFIG = {
   PIXEL: '2221207801987418',
   SOURCE: 'funnel-v2',
   VERSION: 7,
+  CALENDAR: 'https://calendar.app.google/xfubmW69zjcoGnsH8',
 };
 
 const PROBLEMS = [
@@ -62,7 +63,7 @@ const PLANS = {
       ['Zopakuj minimum', 'Dnes nič nepridávaj. Dôslednosť je cieľ, nie výkon.'],
       ['Priprav záložný obed', 'Rozhodni vopred, čo zješ, keď pôvodný plán padne.'],
       ['Skráť pohyb, nezruš ho', 'Ak nemáš 30 minút, sprav 10. Nula nie je jediná alternatíva.'],
-      ['Označ úspech', 'Zapíš si, čo si dodržal(a). Mozog potrebuje vidieť sériu.'],
+      ['Označ úspech', 'Zapíš si, čo si dodržala. Mozog potrebuje vidieť sériu.'],
       ['Nacvič návrat', 'Keď niečo nevyjde, ďalší krok je normálny. Nečakaj na pondelok.'],
       ['Ponechaj len to, čo fungovalo', 'Na ďalší týždeň si zober dve veci, nie sedem nových pravidiel.'],
     ],
@@ -95,7 +96,7 @@ const PLANS = {
   },
 };
 
-const state = { step: 0, problem: '', history: '', name: '', email: '', leadId: '', breakPoint: '', sent: false };
+const state = { step: 0, problem: '', history: '', readiness: '', name: '', email: '', leadId: '', breakPoint: '', sent: false };
 const app = document.getElementById('app');
 
 function track(event, params = {}) {
@@ -160,7 +161,7 @@ function renderLanding() {
 }
 
 function shell(content, step) {
-  return `${brand()}<section class="shell"><div class="topline"><span>7-dňový plán</span><span>Krok ${step} z 3</span></div><div class="progress"><span style="width:${step / 3 * 100}%"></span></div><div class="panel">${content}</div></section>`;
+  return `${brand()}<section class="shell"><div class="topline"><span>7-dňový plán</span><span>Krok ${step} z 4</span></div><div class="progress"><span style="width:${step / 4 * 100}%"></span></div><div class="panel">${content}</div></section>`;
 }
 
 function renderProblem() {
@@ -173,8 +174,15 @@ function renderProblem() {
 function renderHistory() {
   state.step = 2;
   app.innerHTML = shell(`<div class="eyebrow">Tvoja skúsenosť</div><h2>Koľkokrát sa ti kilá vrátili?</h2><p class="question-note">Odpoveď určí, či plán postavíme viac na štarte alebo na udržaní výsledku.</p><div class="options">${HISTORIES.map(x => `<button class="option" data-value="${x.value}">${x.label}</button>`).join('')}</div>`, 2);
-  bindOptions('history', renderGate);
+  bindOptions('history', renderReadiness);
   track('V2Step', { step: 2, screen: 'history' });
+}
+
+function renderReadiness() {
+  state.step = 3;
+  app.innerHTML = shell(`<div class="eyebrow">Tvoj ďalší krok</div><h2>Ako chceš pokračovať?</h2><p class="question-note">Pomôže mi ukázať ti správnu možnosť — bez nátlaku.</p><div class="options"><button class="option" data-value="podpora"><strong>Chcem začať čo najskôr</strong><small>Chcem, aby ma niekto viedol a bol pri tom so mnou.</small></button><button class="option" data-value="plan"><strong>Najprv si prejdem plán</strong><small>Chcem konkrétne kroky a potom sa rozhodnem.</small></button><button class="option" data-value="informacie"><strong>Zatiaľ iba zisťujem</strong><small>Chcem si doplniť informácie bez rozhodnutia.</small></button></div>`, 3);
+  bindOptions('readiness', renderGate);
+  track('V2Step', { step: 3, screen: 'readiness' });
 }
 
 function bindOptions(key, next) {
@@ -185,8 +193,8 @@ function bindOptions(key, next) {
 }
 
 function renderGate() {
-  state.step = 3;
-  app.innerHTML = shell(`<div class="eyebrow">Tvoj plán je pripravený</div><h2>Kam ti ho mám poslať?</h2><p class="question-note">Hneď ho uvidíš aj tu. Pošlem ti ho na e-mail, aby si sa k nemu vedel(a) vrátiť.</p>
+  state.step = 4;
+  app.innerHTML = shell(`<div class="eyebrow">Tvoj plán je pripravený</div><h2>Kam ti ho mám poslať?</h2><p class="question-note">Hneď ho uvidíš aj tu. Pošlem ti ho aj e-mailom — zostane ti poruke.</p>
     <form id="leadForm" novalidate>
       <div class="field"><label for="name">Krstné meno</label><input id="name" name="name" autocomplete="given-name" maxlength="100" required></div>
       <div class="field"><label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="email" maxlength="200" inputmode="email" required></div>
@@ -220,8 +228,8 @@ async function submitLead(e) {
     bandName: `Tvoja brzda: ${problemLabel}`,
     baseSegment: state.problem,
     history: state.history,
-    readiness: 'plan',
-    segment: `${state.problem}|${state.history}|plan`,
+      readiness: state.readiness,
+      segment: `${state.problem}|${state.history}|${state.readiness}`,
     wrong: [], source: CONFIG.SOURCE, quizVersion: CONFIG.VERSION,
     creativeId,
   };
@@ -252,7 +260,7 @@ function renderResult() {
     <p class="micro">Plán som poslal aj na <strong>${escapeHtml(state.email)}</strong>. Ak ho nevidíš, skontroluj priečinok Spam alebo Hromadné.</p>
     <section class="coach-offer" id="help">
       <div class="eyebrow">Bezplatná úvodná konzultácia</div>
-      <h3>Nemusíš zisťovať sám/sama, prečo sa ti to stále vracia.</h3>
+      <h3>Nemusíš zisťovať sama, prečo sa ti to stále vracia.</h3>
       <p>Na krátkej konzultácii prejdeme tvoju hlavnú brzdu a nájdeme prvú úpravu, ktorá sedí do tvojho reálneho života. Konzultácia je bezplatná a bez záväzku.</p>
       <figure class="result-client-proof">
         <img src="/img/clientka-15kg.webp" width="1400" height="1168" loading="lazy" decoding="async" alt="Premena klientky pod Jánovým vedením: 85 kg v roku 2024, 75 kg v roku 2025 a 70 kg v roku 2026">
@@ -285,7 +293,8 @@ function renderResult() {
         <article class="alternative-card"><div><span class="package-kicker">Samostatný štart · 30 dní</span><h4>Plán na mieru</h4></div><strong class="alt-price">69 €</strong><p>Analýza, kalórie a porcie, jedálniček, pohyb, Valyra a jedna úprava po prvom týždni. Bez pravidelného vedenia.</p></article>
         <article class="alternative-card"><div><span class="package-kicker">Viac času a podpory · 12 týždňov</span><h4>Kompletná premena</h4></div><strong class="alt-price">229 €</strong><p>Pravidelné konzultácie, prioritná komunikácia, riešenie stagnácie a záverečný plán na udržanie výsledku.</p></article>
       </div>
-      <button class="primary" id="helpBtn">Chcem bezplatnú konzultáciu a vybrať balíček</button>
+      <button class="primary" id="helpBtn">Chcem vyskúšať 7 dní vedenia zdarma</button>
+      <div class="objections"><div><strong>Nemám čas.</strong><span>Preto nastavíme minimum, ktoré sa zmestí do tvojho reálneho dňa.</span></div><div><strong>Nechcem ďalšiu diétu.</strong><span>Nedostaneš zákazový zoznam, ale plán podľa tvojich chutí a režimu.</span></div><div><strong>Čo ak to vzdám?</strong><span>Slabší deň nie je koniec — plán upravíme a pokračuješ ďalším krokom.</span></div></div>
       <p class="offer-micro">Nemusíš vedieť, ktorý balíček potrebuješ. Najprv si prejdeme tvoju situáciu — bez platby a bez rozhodnutia naslepo.</p>
       <div class="contact-box" id="contactBox" hidden></div>
     </section>
@@ -328,10 +337,10 @@ async function submitContact() {
   const message = [`Praská mi to ${selected.phrase}.`, note].filter(Boolean).join('\n\n');
   const repeated = state.history === 'viackrat' || state.history === 'jojo';
   const payload = {
-    typ: 'konzultacia', name: state.name, email: state.email, phone, message,
+    typ: 'konzultacia', leadId: state.leadId, name: state.name, email: state.email, phone, message,
     preferredTime: '', segment: state.problem, history: state.history,
-    readiness: 'podpora', selectedPath: 'written_consult',
-    tier: repeated || state.problem === 'potrebujem-podporu' ? 'hot' : 'warm',
+    readiness: state.readiness, selectedPath: 'written_consult',
+    tier: state.readiness === 'podpora' || repeated || state.problem === 'potrebujem-podporu' ? 'hot' : state.readiness === 'informacie' ? 'cold' : 'warm',
     source: CONFIG.SOURCE, creativeId, band: '7-dňový štartovací plán',
     quizVersion: CONFIG.VERSION, ts: new Date().toISOString(),
   };
@@ -343,7 +352,8 @@ async function submitContact() {
     state.sent = true;
     track('Lead', { way: 'message', segment: state.problem, funnel_version: CONFIG.VERSION, value: 25, currency: 'EUR' });
     track('Contact', { content_name: 'v2-personal-help' });
-    document.getElementById('contactBox').innerHTML = `<div class="done"><strong>✓ Žiadosť o konzultáciu je odoslaná.</strong><br>Ján sa pozrie na tvoju situáciu, odporučí ti vhodnú formu pomoci a ozve sa ti${phone ? ' telefonicky' : ` na <strong>${escapeHtml(state.email)}</strong>`}. Ak si vyberieš osobné vedenie, prvý týždeň si ho vyskúšaš zdarma a bez karty.</div>`;
+    document.getElementById('contactBox').innerHTML = `<div class="done"><strong>✓ Žiadosť je odoslaná.</strong><br>Prvým krokom je krátky hovor, na ktorom ti odporučím vhodnú formu pomoci. Vyber si termín, ktorý ti vyhovuje:<a class="calendar-cta" id="calendarCta" href="${CONFIG.CALENDAR}" target="_blank" rel="noopener">📞 Vybrať termín 15-min hovoru</a><span class="calendar-note">Rezervácia termínu je nezáväzná. Ak sa rozhodneš pre osobné vedenie, prvých 7 dní si vyskúšaš zdarma.</span></div>`;
+    document.getElementById('calendarCta').addEventListener('click', () => track('ScheduleIntent', { lead_id: state.leadId, readiness: state.readiness, tier: payload.tier }));
   } catch {
     error.textContent = 'Správu sa nepodarilo odoslať. Skús to, prosím, ešte raz.';
     btn.disabled = false;
