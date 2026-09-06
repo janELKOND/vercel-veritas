@@ -255,16 +255,55 @@ function renderResult() {
       <h3>Nemusíš zisťovať sám/sama, prečo sa ti to stále vracia.</h3>
       <p>Na krátkej konzultácii prejdeme tvoju hlavnú brzdu a nájdeme prvú úpravu, ktorá sedí do tvojho reálneho života. Konzultácia je bezplatná a bez záväzku.</p>
       <div class="result-proof-line"><strong>Moja klientka schudla z 85 na 70 kg.</strong><span>Postupný výsledok pod mojím vedením, nie krátkodobá výzva.</span></div>
-      <div class="program-card">
-        <div class="free-badge">Prvých 7 dní zdarma</div>
-        <small>Najprv si vedenie vyskúšaš</small>
-        <strong>2 mesiace osobného vedenia cez Valyru</strong>
-        <ul><li>jednoduchý plán podľa tvojho života,</li><li>moja pravidelná kontrola a úpravy,</li><li>podpora, aby jeden zlý deň neznamenal koniec.</li></ul>
-        <div class="price"><span>0 € prvý týždeň</span><em>bez karty a bez záväzku</em></div>
-        <p class="after-trial">Po 7 dňoch sa rozhodneš. Ak pokračuješ, ďalších 7 týždňov stojí spolu 150 €. Ak nie, neplatíš nič.</p>
+      <div class="package-intro">
+        <small>Vyberieme riešenie podľa toho, koľko podpory potrebuješ</small>
+        <strong>Tri cesty. Žiadny univerzálny program pre každého.</strong>
       </div>
-      <button class="primary" id="helpBtn">Chcem konzultáciu + 7 dní zdarma</button>
-      <p class="offer-micro">Najprv sa porozprávame. Žiadna platba a žiadne rozhodnutie naslepo.</p>
+      <div class="packages">
+        <article class="package-card">
+          <span class="package-kicker">Samostatný štart</span>
+          <h4>Plán na mieru</h4>
+          <div class="package-duration">30 dní</div>
+          <div class="package-price">69 €</div>
+          <ul>
+            <li>vstupná analýza, kalórie a porcie,</li>
+            <li>jedálniček a pohyb na mieru,</li>
+            <li>Valyra na 30 dní,</li>
+            <li>jedna úprava po prvom týždni.</li>
+          </ul>
+          <p class="package-note">Pre človeka, ktorý chce presný plán, ale nepotrebuje pravidelné osobné vedenie.</p>
+        </article>
+        <article class="package-card featured">
+          <div class="free-badge">Najčastejšia voľba</div>
+          <span class="package-kicker">Najprv si ma vyskúšaš</span>
+          <h4>Osobné vedenie</h4>
+          <div class="package-duration">8 týždňov</div>
+          <div class="package-price">0 € prvých 7 dní</div>
+          <ul>
+            <li>strava a pohyb podľa tvojho života,</li>
+            <li>Valyra a pravidelná kontrola výsledkov,</li>
+            <li>priebežné úpravy podľa hladu, energie a režimu,</li>
+            <li>moja osobná podpora, keď príde slabší deň.</li>
+          </ul>
+          <p class="package-note"><strong>Bez karty a bez záväzku.</strong> Po týždni sa rozhodneš. Ak pokračuješ, ďalších 7 týždňov stojí spolu 150 €.</p>
+        </article>
+        <article class="package-card">
+          <span class="package-kicker">Viac času a podpory</span>
+          <h4>Kompletná premena</h4>
+          <div class="package-duration">12 týždňov</div>
+          <div class="package-price">229 €</div>
+          <ul>
+            <li>všetko z 8-týždňového vedenia,</li>
+            <li>pravidelné konzultácie a prioritná komunikácia,</li>
+            <li>viac kontrolných bodov a riešenie stagnácie,</li>
+            <li>záverečný plán na udržanie výsledku.</li>
+          </ul>
+          <p class="package-note">Pre väčšiu zmenu alebo opakované návraty, keď chceš dlhšie vedenie až k samostatnosti.</p>
+        </article>
+      </div>
+      <div class="adaptive-offer"><strong>Program sa prispôsobuje tebe — aj počas spolupráce.</strong><span>Keď sa zmení tvoj režim, výsledky, hlad, energia, práca alebo rodinné povinnosti, upravíme aj stravu a pohyb.</span></div>
+      <button class="primary" id="helpBtn">Chcem bezplatnú konzultáciu a vybrať balíček</button>
+      <p class="offer-micro">Nemusíš vedieť, ktorý balíček potrebuješ. Najprv si prejdeme tvoju situáciu — bez platby a bez rozhodnutia naslepo.</p>
       <div class="contact-box" id="contactBox" hidden></div>
     </section>
   </section>`;
@@ -321,7 +360,7 @@ async function submitContact() {
     state.sent = true;
     track('Lead', { way: 'message', segment: state.problem, funnel_version: CONFIG.VERSION, value: 25, currency: 'EUR' });
     track('Contact', { content_name: 'v2-personal-help' });
-    document.getElementById('contactBox').innerHTML = `<div class="done"><strong>✓ Žiadosť o konzultáciu je odoslaná.</strong><br>Ján sa pozrie na tvoju situáciu a ozve sa ti${phone ? ' telefonicky' : ` na <strong>${escapeHtml(state.email)}</strong>`}. Ak si spolupráca sadne, prvý týždeň programu si vyskúšaš zdarma a bez karty.</div>`;
+    document.getElementById('contactBox').innerHTML = `<div class="done"><strong>✓ Žiadosť o konzultáciu je odoslaná.</strong><br>Ján sa pozrie na tvoju situáciu, odporučí ti vhodnú formu pomoci a ozve sa ti${phone ? ' telefonicky' : ` na <strong>${escapeHtml(state.email)}</strong>`}. Ak si vyberieš osobné vedenie, prvý týždeň si ho vyskúšaš zdarma a bez karty.</div>`;
   } catch {
     error.textContent = 'Správu sa nepodarilo odoslať. Skús to, prosím, ešte raz.';
     btn.disabled = false;
