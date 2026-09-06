@@ -5,27 +5,58 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>7-dňový štartovací plán bez diéty | Valyra</title>
   <meta name="description" content="Za dve minúty získaš jednoduchý 7-dňový plán podľa toho, čo ti pri chudnutí najčastejšie prekáža.">
+  <link rel="canonical" href="https://kviz.valyra.sk/v2">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://kviz.valyra.sk/v2">
+  <meta property="og:title" content="Prestaň začínať odznova | Valyra">
+  <meta property="og:description" content="Zisti svoju hlavnú brzdu a získaj konkrétny 7-dňový plán bez diéty.">
+  <meta property="og:image" content="https://kviz.valyra.sk/img/clientka-15kg.webp">
+  <meta property="og:image:alt" content="Postupná premena klientky pod Jánovým vedením">
+  <meta property="og:site_name" content="Valyra">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Prestaň začínať odznova | Valyra">
+  <meta name="twitter:description" content="Zisti svoju hlavnú brzdu a získaj konkrétny 7-dňový plán bez diéty.">
+  <meta name="twitter:image" content="https://kviz.valyra.sk/img/clientka-15kg.webp">
   <meta name="theme-color" content="#f7f2ed">
   <link rel="icon" href="/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/v2/v2.css?v=1">
+  <link rel="stylesheet" href="/v2/v2.css?v=2">
   <script>
     !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
     n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
     n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
     t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
     (window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('consent', 'revoke');
     fbq('init','2221207801987418');
-    fbq('track','PageView');
+    if (localStorage.getItem('valyra_fb_consent') === 'granted') {
+      fbq('consent', 'grant');
+      fbq('track','PageView');
+    }
   </script>
-  <noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=2221207801987418&ev=PageView&noscript=1"></noscript>
 </head>
 <body>
   <main id="app"></main>
+  <div class="consent-bar" id="consentBar" role="dialog" aria-label="Súhlas s analytickými cookies">
+    <span>Cookies používame na meranie reklamy a zlepšenie funnelu. Bez súhlasu ti plán funguje rovnako.</span>
+    <button type="button" id="consentGrant">Súhlasím s meraním</button>
+  </div>
   <footer><a href="https://valyra.sk/PrivacyPolicy">Ochrana osobných údajov</a></footer>
-  <script src="/v2/app.js?v=1"></script>
+  <script src="/v2/app.js?v=2"></script>
+  <script>
+    (function () {
+      var bar = document.getElementById('consentBar');
+      var grant = document.getElementById('consentGrant');
+      if (localStorage.getItem('valyra_fb_consent') === 'granted') bar.hidden = true;
+      grant.addEventListener('click', function () {
+        localStorage.setItem('valyra_fb_consent', 'granted');
+        if (typeof fbq === 'function') { fbq('consent', 'grant'); fbq('track', 'PageView'); }
+        bar.hidden = true;
+      });
+    }());
+  </script>
 </body>
 </html>
 
