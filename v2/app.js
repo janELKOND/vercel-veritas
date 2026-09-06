@@ -271,6 +271,15 @@ function renderResult() {
           <small>Každý človek je iný a výsledky sa môžu líšiť.</small>
         </figcaption>
       </figure>
+      <figure class="result-client-proof">
+        <img src="/img/clientka-20kg.webp" width="1100" height="916" loading="lazy" decoding="async" alt="Premena klientky pod Jánovým vedením: vľavo pred spoluprácou, vpravo po schudnutí 20 kg za 5 mesiacov">
+        <figcaption>
+          <div class="eyebrow">Reálna klientka · 5 mesiacov</div>
+          <strong>−20 kg za 5 mesiacov.</strong>
+          <p>Stravu a pohyb sme nastavili podľa jej života a počas spolupráce priebežne upravovali podľa výsledkov a aktuálnych potrieb.</p>
+          <small>Každý človek je iný a výsledky sa môžu líšiť.</small>
+        </figcaption>
+      </figure>
       <div class="package-intro">
         <small>Vyberieme riešenie podľa toho, koľko podpory potrebuješ</small>
         <strong>Najviac odporúčam osobné vedenie. Najprv si ho však bez rizika vyskúšaš.</strong>
