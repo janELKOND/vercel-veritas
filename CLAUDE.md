@@ -1,7 +1,11 @@
 # vercel-veritas — kvíz „Pravda o chudnutí"
 
-Lead-gen PWA nasadená na Verceli. Zbiera odpovede, zaradí človeka do segmentu,
-vypýta e-mail a na výsledku ponúkne kontakt (telefón **alebo** správa).
+Od 5. 11. 2026 je koreň `kviz.valyra.sk` **voľný kvíz bez lead magnetu**: žiadny e-mail,
+žiadny pixel, žiadna ponuka, výsledok a vysvetlenia hneď. Popis lievika nižšie platí už
+len pre `/analyza` a `/v2`, ktoré bežia ďalej. Aktualizácia je v `docs/STAV.md`.
+
+Pôvodne lead-gen PWA nasadená na Verceli. Zbierala odpovede, zaradila človeka do segmentu,
+vypýtala e-mail a na výsledku ponúkla kontakt (telefón **alebo** správa).
 
 ⚠️ **Cieľom lievika nie je registrácia do appky.** Predáva sa **dvojmesačné platené
 vedenie (60 dní) cez hovor alebo písomnú konzultáciu**; Valyra je nástroj v ňom,
@@ -19,8 +23,8 @@ rozhodnutie z 19. 8. 2026.
 
 | Súbor | Čo je to |
 |---|---|
-| `index.html` · `app.js` | **kvíz** „Pravda o chudnutí" — logika, segmentácia, výsledok, odoslanie leadu |
-| `analyza/index.html` · `analyza/app.js` | **osobná analýza** — druhý lead magnet, beží vedľa kvízu a je **dnes hlavný zdroj leadov**. Vlastná kópia výsledku a `submitCallback` — **meniť súbežne s `app.js`** |
+| `index.html` · `app.js` | **voľný kvíz** „Pravda o chudnutí" — otázky a výsledok, nič sa neodosiela |
+| `analyza/index.html` · `analyza/app.js` | **osobná analýza** — druhý lead magnet, beží vedľa kvízu a je **dnes hlavný zdroj leadov**. Vlastná kópia výsledku a `submitCallback`, od 5. 11. 2026 už bez dvojičky v `app.js` |
 | `style.css` | zdieľaný oboma stránkami (`.diagnosis`, `.offer`, `.callback`, `.way-tab`) |
 | `shared/phone.js` | **kontrola tvaru telefónu — jediný zdroj pre obe stránky** (`normalizePhone()`, `PHONE_ERR`). Načítava sa `<script>`-om **pred** `app.js` v oboch `index.html`. Obe stránky píšu do toho istého `quiz_calls.phone`, preto sa tu nesmie vyrobiť druhá kópia |
 | `sw.js` | service worker — **pri zmene bumpni verziu cache** aj `?v=` v oboch `index.html`, inak ľudia uvidia starú verziu |

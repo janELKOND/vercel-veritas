@@ -1,5 +1,23 @@
 # STAV — kde sme skončili
 
+## 🆕 5. 11. 2026 — koreň kvízu je voľný kvíz, nie lead magnet
+
+`kviz.valyra.sk/` po novom len pýta otázky a hneď ukáže výsledok. Nič sa neodosiela,
+preto `index.html` neobsahuje pixel ani Clarity a `app.js` nevolá `quizLead`.
+
+- odstránené: otázky o brzde, histórii a pripravenosti, e-mailová brána, ponuka
+  Reštart plán, príbeh s fotkami, `QuizStart`/`CompleteRegistration`/`Consult*` eventy,
+- pridaných 7 otázok (mlieko, hnedý cukor, spánok, džús, váha, energia makroživín,
+  olej a orechy), spolu 15; pásma sa počítajú z podielu správnych odpovedí,
+- výsledok ukazuje všetky chybné odpovede s vysvetlením a tlačidlo na zdieľanie,
+- `/analyza` a `/v2` sa nemenili a fungujú ďalej; `style.css` a `shared/phone.js`
+  ostávajú zdieľané s nimi.
+
+Ku dňu zmeny nebežala na ad účte žiadna aktívna reklama. Kampaň, ktorá by viedla
+na koreň, už nedostane `CompleteRegistration`.
+
+---
+
 ## 🆕 29. 8. 2026 — výsledok necháva otvorené dvere k vedeniu
 
 **NASADENÉ 29. 8. 2026.** Produkcia overená na `kviz.valyra.sk/analyza`:

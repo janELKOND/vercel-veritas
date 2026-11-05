@@ -608,6 +608,10 @@ h1, h2, .display {
 }
 .recap-item strong { color: var(--ink); display: block; margin-bottom: 3px; }
 
+.recap-right { display: block; font-weight: 700; color: var(--sage); margin-bottom: 4px; }
+.recap-explain { font-size: 14.5px; }
+.recap-explain strong { display: inline; margin: 0; }
+
 /* ---------- coach card ---------- */
 .coach-card {
   background: var(--berry-tint);
