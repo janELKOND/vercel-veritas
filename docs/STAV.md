@@ -15,7 +15,7 @@ preto `index.html` neobsahuje pixel ani Clarity a `app.js` nevolá `quizLead`.
 
 Tvrdenia boli v ten istý deň overené proti zdrojom (NHS, WHO, nariadenie EÚ 1169/2011,
 Compendium of Physical Activities 2024, Hall 2008, Vujović 2022, Al Khatib 2017,
-Ramos-Campo 2021, Endotext NEAT, Flood-Obbagy 2009, Klein & Kiat 2015). Pri zmene
+metaanalýza spot reduction v Human Movement 2021, Endotext NEAT, Flood-Obbagy 2009, Klein & Kiat 2015). Pri zmene
 čísla v otázke treba overiť aj zdroj, kvíz je verejný.
 
 Ku dňu zmeny nebežala na ad účte žiadna aktívna reklama. Kampaň, ktorá by viedla
