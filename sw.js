@@ -1,4 +1,4 @@
-const CACHE = 'pravda-kviz-v39';
+const CACHE = 'pravda-kviz-v40';
 const CORE = ['/', '/index.html', '/style.css', '/app.js', '/shared/phone.js', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (e) => {

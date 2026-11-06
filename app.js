@@ -1,6 +1,7 @@
 /* ============================================================
    Pravda o chudnutí — voľný kvíz
-   Bez e-mailu, bez registrácie, bez merania. Výsledok sa ukáže hneď.
+   Bez e-mailu, bez registrácie. Výsledok sa ukáže hneď.
+   Meranie: len anonymná Vercel Web Analytics (virtuálne stránky, viď mark()).
    Lead magnet bol vypnutý 5. 11. 2026: kvíz sa rozdáva ľuďom zadarmo.
    ============================================================ */
 
@@ -137,6 +138,22 @@ const BANDS = [
   },
 ];
 
+// ---------- MERANIE ----------
+// Vercel Web Analytics: kroky kvízu sa zapisujú ako virtuálne stránky, lebo vlastné
+// eventy sú len na Pro pláne. V Analytics → Pages sa dá prečítať lievik:
+//   /  →  /kviz/start (prvá odpoveď)  →  /kviz/vysledok (dokončený)  →  /kviz/zdielanie
+// Každý krok sa zapíše najviac raz za načítanie stránky, opakovanie kvízu ho nezdvojí.
+const marked = new Set();
+function mark(step) {
+  if (marked.has(step)) return;
+  marked.add(step);
+  try {
+    if (typeof window.va === 'function') window.va('pageview', { path: `/kviz/${step}` });
+  } catch (error) {
+    // Meranie nesmie nikdy rozbiť kvíz.
+  }
+}
+
 // ---------- STAV ----------
 const state = {
   index: 0,
@@ -197,6 +214,7 @@ function showQuestion() {
 
 function answer(chosenIdx) {
   const item = QUESTIONS[state.index];
+  if (state.index === 0) mark('start');
   const isCorrect = chosenIdx === item.correct;
   state.answers.push({
     q: item.q,
@@ -273,6 +291,7 @@ function showResult() {
   const score = state.answers.filter(a => a.correct).length;
   const missed = state.answers.filter(a => !a.correct);
   const band = bandFor(score);
+  mark('vysledok');
 
   app.innerHTML = `
     <section class="result">
@@ -304,6 +323,7 @@ function showResult() {
 async function share(score, total) {
   const text = `Mám ${score} z ${total} v kvíze Pravda o chudnutí. Koľko dáš ty?`;
   const btn = document.getElementById('shareBtn');
+  mark('zdielanie');
 
   if (navigator.share) {
     try {
