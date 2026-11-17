@@ -175,7 +175,7 @@ function introHookHtml() {
 }
 
 function creditHtml() {
-  return '<p class="footnote">Kvíz pripravil Ján Karas, tréner a výživový poradca. Slúži na vzdelávanie a nenahrádza radu lekára.</p>';
+  return '<p class="footnote">Pripravil Ján Karas. Slúži na vzdelávanie a nenahrádza radu lekára.</p>';
 }
 
 function updateProgress(step) {

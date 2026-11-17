@@ -433,7 +433,7 @@ function renderForm() {
       <button class="btn" id="submitFormBtn">Spočítaj mi to</button>
 
       <p class="intro-note">Na konci ťa poprosím o e-mail — pošlem ti na neho tvoju analýzu, aby si ju mala po ruke. Svoje čísla uvidíš aj tu na stránke.</p>
-      <p class="footnote">Počíta Ján — tréner a výživový poradca, ktorý sám schudol 45 kg a drží si to už 8 rokov.</p>
+      <p class="footnote">Pripravil Ján Karas.</p>
     </section>
   `;
 
